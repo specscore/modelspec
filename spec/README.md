@@ -43,11 +43,7 @@ references GraphSpec; see
 
 ## Open Questions
 
-- **Cross-module references.** `entity = "..."` property references and component
-  embedding are same-module names today. The first consumer pilot needed both a
-  property referencing another module's entity and an embedded component owned by
-  another module (a shared time-window value object). Should ModelSpec add qualified
-  names / an import mechanism for read-only cross-module references, or forbid them
-  (forcing typed-id conventions and per-module component copies, which reintroduces
-  drift for shared value objects)? *(Raised 2026-07-08.)*
-- **Module identity in HCL.** See [hcl-authoring.md](hcl-authoring.md#open-questions).
+- **Module identity in HCL** (standalone distribution only). See
+  [hcl-authoring.md](hcl-authoring.md#open-questions). Cross-module references were
+  resolved by [decision 0014](decisions/0014-module-qualified-references.md)
+  (module-qualified names, consumer-provided resolution).

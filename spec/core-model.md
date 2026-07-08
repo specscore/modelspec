@@ -165,9 +165,30 @@ edge table, or another physical representation.
 
 Entity-reference properties are the canonical structural relationships of a model.
 Graph-oriented consumers (such as GraphSpec tooling) may derive edges from them;
-relationships that carry semantics beyond a typed reference — cross-module
-endpoints, role metadata, cardinality constraints, lifecycle — are declared in the
-domain-semantics layer, not duplicated here.
+relationships that carry semantics beyond a typed reference — role metadata,
+cardinality constraints, lifecycle — are declared in the domain-semantics layer, not
+duplicated here.
+
+Reference attributes (`entity`, `component`, `enum`, and `use` entries) accept
+**module-qualified names** for read-only cross-module references
+([decision 0014](decisions/0014-module-qualified-references.md)):
+
+```hcl
+property "space" {
+  entity   = "core.Space"
+  required = true
+}
+
+property "timeWindow" {
+  component = "calendarius.TimeWindow"
+  required  = true
+}
+```
+
+Bare names remain same-module references. Qualified references never modify or
+extend the referenced concept, and they imply a dependency of the referencing module
+on the referenced module. Resolution of module names is consumer-provided; ModelSpec
+defines the syntax and semantics only.
 
 ## Collection
 

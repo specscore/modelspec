@@ -66,6 +66,10 @@ ModelSpec v0 HCL uses:
   `field`, `collection`, `recordset`, `column`, and `projection`
 - attributes for scalar and list settings: `type`, `required`, `unique`, `key`,
   `source`, `bind`, `query`, and similar metadata
+- module-qualified names (`core.Space`, `calendarius.TimeWindow`) in reference
+  attributes (`entity`, `component`, `enum`, `use` entries) for read-only
+  cross-module references; bare names remain same-module
+  ([decision 0014](decisions/0014-module-qualified-references.md))
 - literal values for model semantics: strings, numbers, booleans, lists, and object
   literals where explicitly specified
 

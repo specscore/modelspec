@@ -21,6 +21,7 @@ format: https://specscore.md/decisions-index-specification
 | [0011](0011-yaml-serialization-out-of-v0.md) | YAML Serialization Out Of v0 | Approved | 2026-07-08 | format,yaml,scope | — |
 | [0012](0012-graphspec-is-a-consumer.md) | GraphSpec Is A Consumer Of ModelSpec | Approved | 2026-07-08 | architecture,graphspec,boundaries | — |
 | [0013](0013-named-enums.md) | Named Enums Are A Core Concept | Approved | 2026-07-08 | model,enum,vocabulary | — |
+| [0014](0014-module-qualified-references.md) | Module-Qualified Cross-Module References | Approved | 2026-07-08 | model,references,modules,composition | — |
 
 ## Open Questions
 

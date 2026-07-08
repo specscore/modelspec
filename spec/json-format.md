@@ -238,7 +238,9 @@ A validator consuming the JSON AST serialization MUST check:
 - enum value lists are non-empty and free of duplicate values.
 - recordset column arrays preserve order and allow duplicate `name` values.
 - references resolve, including `use`, `component`, `enum`, `entity`, `source`, and
-  `bind`.
+  `bind`. Module-qualified references are preserved verbatim in the serialization
+  and MUST resolve within the consumer-provided module set; an unknown module is the
+  same diagnostic class as an unresolved bare name.
 - primitive types are in the supported type set.
 - constraints use supported keys and valid value types.
 - projection hints do not become authoritative backend requirements.
