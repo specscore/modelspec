@@ -86,20 +86,23 @@
     "taskSummary": {
       "key": ["id"],
       "query": "from tasks select id, title, completed",
-      "columns": {
-        "id": {
+      "columns": [
+        {
+          "name": "id",
           "type": "uuid",
           "bind": "Task.id"
         },
-        "title": {
+        {
+          "name": "title",
           "type": "string",
           "bind": "Task.title"
         },
-        "completed": {
+        {
+          "name": "completed",
           "type": "bool",
           "bind": "Task.completed"
         }
-      }
+      ]
     }
   }
 }

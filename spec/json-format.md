@@ -130,7 +130,8 @@ query seam.
 
 ## Recordsets
 
-Recordsets are keyed by recordset name:
+Recordsets are keyed by recordset name. `columns` MUST be an ordered array because
+recordset column order is semantic and duplicate column names are allowed.
 
 ```json
 {
@@ -138,23 +139,25 @@ Recordsets are keyed by recordset name:
     "taskSummary": {
       "key": ["id"],
       "query": "from tasks select id, title, completed",
-      "columns": {
-        "id": {
+      "columns": [
+        {
+          "name": "id",
           "type": "uuid",
           "bind": "Task.id"
         },
-        "title": {
+        {
+          "name": "title",
           "type": "string",
           "bind": "Task.title"
         }
-      }
+      ]
     }
   }
 }
 ```
 
-JSON object member order is not semantic. If a consumer needs stable display or column
-order, a future revision should add explicit `order` metadata or array-based shapes.
+Entity properties, component fields, collections, and top-level named concepts use
+object maps because names are unique and order is not semantic.
 
 ## Projections
 
@@ -213,6 +216,8 @@ A validator consuming the JSON AST serialization MUST check:
 - `module.id` and `module.version` are present.
 - component, entity, collection, recordset, projection, and migration names are unique
   within their object maps.
+- entity property and collection field names are unique within their scopes.
+- recordset column arrays preserve order and allow duplicate `name` values.
 - references resolve, including `use`, `component`, `entity`, `source`, and `bind`.
 - primitive types are in the supported type set.
 - constraints use supported keys and valid value types.
@@ -220,7 +225,5 @@ A validator consuming the JSON AST serialization MUST check:
 
 ## Open Questions
 
-- Should ordered attributes use arrays instead of object maps in v0, or should order
-  remain explicitly non-semantic until a target needs it?
 - Where should a JSON Schema for this AST serialization be published?
 - Should YAML be a supported secondary serialization of the same AST?

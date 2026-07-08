@@ -15,6 +15,9 @@ Serialize the AST to JSON first for validators, generators, OpenVaultDB ingestio
 other machine consumers. Add YAML later only as a secondary serialization if a concrete
 consumer needs it.
 
+Use singular named HCL blocks for declarations and use JSON shapes that fit AST
+semantics. JSON does not need to mirror the HCL surface exactly.
+
 ## Options
 
 | Option | Strengths | Weaknesses | Recommended Role |
@@ -54,9 +57,43 @@ ModelSpec AST
 
 The AST owns semantics. Serializations carry the AST.
 
+## HCL Block Syntax
+
+Prefer singular named blocks:
+
+```hcl
+entity "User" {
+  property "email" {
+    type = "string"
+  }
+}
+```
+
+over map-style authoring:
+
+```hcl
+entity "User" {
+  properties = {
+    email = {
+      type = "string"
+    }
+  }
+}
+```
+
+The block form is easier to read, easier to extend with nested declarations, and gives
+validators better source locations.
+
+## Ordering
+
+Entity and property names are unique, so the JSON AST can represent them as object
+maps.
+
+Recordset columns are different: column order matters, and duplicate column names are
+possible in SQL result sets. The JSON AST should represent recordset columns as an
+array of objects with a `name` field.
+
 ## Open Questions
 
 - What is the minimum normative HCL grammar for v0?
-- Should JSON use object maps for named concepts or arrays with explicit `name`
-  fields to preserve source order?
 - Where should generated JSON Schema artifacts be published?

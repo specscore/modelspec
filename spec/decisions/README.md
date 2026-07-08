@@ -14,6 +14,7 @@ format: https://specscore.md/decisions-index-specification
 | [0004](0004-query-seam.md) | Opaque Query Seam | Approved | 2026-07-08 | query,dtql | — |
 | [0005](0005-json-interchange-format.md) | JSON Interchange Format | Approved | 2026-07-08 | format,json,interchange | — |
 | [0006](0006-hcl-source-ast-serialization-boundary.md) | HCL Source And AST Serialization Boundary | Approved | 2026-07-08 | format,hcl,json,yaml,ast | — |
+| [0007](0007-hcl-blocks-and-recordset-column-order.md) | HCL Blocks And Recordset Column Order | Approved | 2026-07-08 | format,hcl,ast,recordset | — |
 
 ## Open Questions
 
