@@ -17,6 +17,7 @@ format: https://specscore.md/decisions-index-specification
 | [0007](0007-hcl-blocks-and-recordset-column-order.md) | HCL Blocks And Recordset Column Order | Approved | 2026-07-08 | format,hcl,ast,recordset | — |
 | [0008](0008-migration-capabilities-out-of-scope.md) | Migration Capabilities Out Of Scope | Approved | 2026-07-08 | migrations,scope | — |
 | [0009](0009-hcl-v0-grammar-scope.md) | HCL v0 Grammar Scope | Approved | 2026-07-08 | format,hcl,grammar | — |
+| [0010](0010-json-schema-publication.md) | JSON Schema Publication | Approved | 2026-07-08 | json-schema,publication | — |
 
 ## Open Questions
 

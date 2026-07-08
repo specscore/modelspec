@@ -242,6 +242,7 @@ GraphSpec is intentionally outside this architecture.
 - [spec/](spec/README.md): the ModelSpec language specification.
 - [docs/](docs/README.md): architecture, [OpenVaultDB](https://openvaultdb.com/) integration, SpecScore integration, and catalog notes.
 - [examples/](examples/README.md): example ModelSpec modules.
+- [schema/](schema/README.md): planned JSON Schema publication location.
 
 ## Authored And Machine Formats
 

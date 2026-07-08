@@ -95,4 +95,4 @@ array of objects with a `name` field.
 
 ## Open Questions
 
-- Where should generated JSON Schema artifacts be published?
+None at this time.

@@ -223,7 +223,19 @@ A validator consuming the JSON AST serialization MUST check:
 - constraints use supported keys and valid value types.
 - projection hints do not become authoritative backend requirements.
 
+## JSON Schema Publication
+
+Generated JSON Schema artifacts SHOULD be published in this repository under
+`schema/`.
+
+The website SHOULD expose stable copies at:
+
+- `https://modelspec.org/schema/modelspec-ast.schema.json`
+- `https://modelspec.org/schema/modelspec-ast-1.0-draft.schema.json`
+
+The repository copy is the source of truth. Website URLs are stable distribution
+endpoints for tools and documentation.
+
 ## Open Questions
 
-- Where should a JSON Schema for this AST serialization be published?
 - Should YAML be a supported secondary serialization of the same AST?
