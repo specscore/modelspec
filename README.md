@@ -13,7 +13,7 @@ Repository: <https://github.com/specscore/modelspec>
 
 Although this repository is maintained under the SpecScore GitHub organization,
 ModelSpec is an independent specification. Any project can adopt it without adopting
-SpecScore, OpenVaultDB, GraphSpec, or any specific backend.
+SpecScore, [OpenVaultDB](https://openvaultdb.com/), GraphSpec, or any specific backend.
 
 ## What ModelSpec Defines
 
@@ -121,7 +121,7 @@ ModelSpec keeps the original design principles that motivated the project:
 - Entity semantics separated from storage containers.
 - Logical models separated from physical projections.
 - Advisory storage projections rather than app-owned storage decisions.
-- Generators for GraphQL, Go, TypeScript, SQLite, PostgreSQL, Firestore, InGitDB, and OpenVaultDB schemas.
+- Generators for GraphQL, Go, TypeScript, SQLite, PostgreSQL, Firestore, InGitDB, and [OpenVaultDB](https://openvaultdb.com/) schemas.
 - A future catalog for canonical entities, reusable modules, and dataset mappings.
 - Go-inspired composition with simple embedded components.
 
@@ -180,9 +180,9 @@ projection "sqlite" {
 }
 ```
 
-## OpenVaultDB
+## [OpenVaultDB](https://openvaultdb.com/)
 
-OpenVaultDB consumes ModelSpec directly.
+[OpenVaultDB](https://openvaultdb.com/) consumes ModelSpec directly.
 
 Applications publish a ModelSpec module. A user's vault loads the current ModelSpec
 and the target ModelSpec, then uses them for:
@@ -195,7 +195,7 @@ and the target ModelSpec, then uses them for:
 - DALGO metadata
 - backend generators
 
-OpenVaultDB remains independent from SpecScore. It depends on ModelSpec semantics, not
+[OpenVaultDB](https://openvaultdb.com/) remains independent from SpecScore. It depends on ModelSpec semantics, not
 on SpecScore ownership or tooling.
 
 ## SpecScore
@@ -240,7 +240,7 @@ GraphSpec is intentionally outside this architecture.
 ## Repository Structure
 
 - [spec/](spec/README.md): the ModelSpec language specification.
-- [docs/](docs/README.md): architecture, OpenVaultDB integration, SpecScore integration, and catalog notes.
+- [docs/](docs/README.md): architecture, [OpenVaultDB](https://openvaultdb.com/) integration, SpecScore integration, and catalog notes.
 - [examples/](examples/README.md): example ModelSpec modules.
 
 ## Status
