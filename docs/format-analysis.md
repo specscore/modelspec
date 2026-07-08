@@ -95,5 +95,4 @@ array of objects with a `name` field.
 
 ## Open Questions
 
-- What is the minimum normative HCL grammar for v0?
 - Where should generated JSON Schema artifacts be published?

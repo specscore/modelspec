@@ -57,6 +57,25 @@ properties = {
 The singular block style treats each model member as a declaration, gives validators
 clear source locations, supports nested declarations, and keeps diffs small.
 
+## V0 Grammar Scope
+
+ModelSpec v0 HCL uses:
+
+- singular named blocks for declarations: `entity`, `component`, `property`, `field`,
+  `collection`, `recordset`, `column`, and `projection`
+- attributes for scalar and list settings: `type`, `required`, `unique`, `key`,
+  `source`, `bind`, `query`, and similar metadata
+- literal values for model semantics: strings, numbers, booleans, lists, and object
+  literals where explicitly specified
+
+ModelSpec v0 HCL does not support map-style declaration containers as canonical
+syntax. For example, `properties = { ... }` is not the canonical way to declare
+entity properties.
+
+ModelSpec v0 HCL does not use dynamic HCL expressions or functions for model
+semantics. A later version may add constrained expression support where it has a clear
+portable meaning.
+
 ## Why HCL
 
 HCL is readable for humans, handles nested blocks well, and keeps repeated model
@@ -86,4 +105,4 @@ serialization MUST preserve recordset column order and duplicates.
 
 ## Open Questions
 
-- What exact HCL grammar should be normative for v0?
+None at this time.
