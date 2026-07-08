@@ -266,5 +266,4 @@ ModelSpec is licensed under the Apache License, Version 2.0. See [LICENSE](LICEN
 
 ## Open Questions
 
-- Should ModelSpec include migration capabilities beyond descriptive metadata only if
-  a concrete reusable migration model becomes clear?
+None at this time.

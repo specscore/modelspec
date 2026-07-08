@@ -8,9 +8,8 @@ between model versions.
 ModelSpec does not execute migrations. Consumers such as OpenVaultDB use ModelSpec to
 compare current and target models and produce migration plans.
 
-Current direction: migrations are the responsibility of the store implementation
-driver. ModelSpec should not grow migration capabilities beyond descriptive metadata
-unless a concrete, reusable, storage-neutral migration model becomes clear.
+Migrations are the responsibility of the store implementation driver. ModelSpec does
+not include migration capabilities beyond descriptive metadata in v0.
 
 ## Version Identity
 
@@ -84,6 +83,4 @@ It does not define:
 
 ## Open Questions
 
-- Should ModelSpec include migration capabilities beyond descriptive metadata only if
-  a concrete reusable model emerges? Current direction: store implementation drivers
-  own planning, approval, checkpointing, rollback, and execution.
+None at this time.

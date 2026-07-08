@@ -41,4 +41,4 @@ schema projections.
 
 ## Open Questions
 
-- Should ModelSpec include migration capabilities beyond descriptive metadata?
+None at this time.
