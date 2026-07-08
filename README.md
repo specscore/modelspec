@@ -7,9 +7,8 @@ ModelSpec is an open specification language for application data models.
 It describes the logical model of an application independently of storage engines,
 programming languages, API layers, and deployment platforms.
 
-Website: <https://modelspec.org>
-
-Repository: <https://github.com/specscore/modelspec>
+Repository: <https://github.com/specscore/modelspec> — the canonical home. A website
+at `modelspec.org` is planned but not yet live.
 
 Although this repository is maintained under the SpecScore GitHub organization,
 ModelSpec is an independent specification. Any project can adopt it without adopting
