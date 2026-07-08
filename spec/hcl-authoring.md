@@ -38,6 +38,7 @@ ModelSpec HCL SHOULD use singular named blocks for model members:
 
 - `entity "User" { ... }`
 - `component "Auditable" { ... }`
+- `enum "BookingStatus" { ... }`
 - `property "email" { ... }`
 - `field "createdAt" { ... }`
 - `collection "users" { ... }`
@@ -61,8 +62,8 @@ clear source locations, supports nested declarations, and keeps diffs small.
 
 ModelSpec v0 HCL uses:
 
-- singular named blocks for declarations: `entity`, `component`, `property`, `field`,
-  `collection`, `recordset`, `column`, and `projection`
+- singular named blocks for declarations: `entity`, `component`, `enum`, `property`,
+  `field`, `collection`, `recordset`, `column`, and `projection`
 - attributes for scalar and list settings: `type`, `required`, `unique`, `key`,
   `source`, `bind`, `query`, and similar metadata
 - literal values for model semantics: strings, numbers, booleans, lists, and object
@@ -95,8 +96,8 @@ a `properties` object map because entity property names are unique.
 
 ## Ordering And Duplicate Names
 
-Entity names, component names, collection names, and entity property names MUST be
-unique within their scopes. Their declaration order is not semantic, although tools
+Entity names, component names, enum names, collection names, and entity property
+names MUST be unique within their scopes. Their declaration order is not semantic, although tools
 may preserve it for documentation and stable diffs.
 
 Recordset column order is semantic. Recordset column names MAY repeat because SQL

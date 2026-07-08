@@ -6,12 +6,13 @@ Define the core ModelSpec language for logical application data models.
 
 ## Structural Concepts
 
-ModelSpec has four foundational structural concepts:
+ModelSpec has five foundational structural concepts:
 
 | Concept | Purpose |
 |---|---|
 | Entity | Identity-bearing business object and semantic anchor. |
 | Component | Reusable group of fields with no independent identity. |
+| Enum | Named, reusable controlled vocabulary of values. |
 | Collection | Named data source or storage-neutral container projection. |
 | Recordset | Tabular result shape for query or procedure output. |
 
@@ -100,6 +101,45 @@ entity "Invoice" {
 This is intentionally close to Go struct embedding: reusable building blocks compose
 into larger models without creating deep inheritance trees.
 
+Components are also ModelSpec's value-object mechanism: an immutable concept without
+identity — Money, Address, DateRange, GeoLocation — is modelled as a component and
+embedded wherever it is used. Adjacent specifications (such as GraphSpec) reference
+ModelSpec components rather than defining a separate value-object concept.
+
+## Enum
+
+An Enum is a named, reusable controlled vocabulary. It gives value lists a stable,
+addressable identity so they can be shared across entities, components, and
+collections, and referenced by adjacent specifications and generators.
+
+```hcl
+enum "BookingStatus" {
+  values = ["requested", "confirmed", "cancelled"]
+}
+
+entity "Booking" {
+  key = ["id"]
+
+  property "id" {
+    type = "uuid"
+  }
+
+  property "status" {
+    type = "string"
+    enum = "BookingStatus"
+  }
+}
+```
+
+The inline `enum` constraint (a literal value list on a single property) remains
+valid for single-use vocabularies. A property references a named enum by name; the
+named form is preferred whenever a vocabulary is reused or needs to be addressable.
+
+Named enums cover data vocabularies. Lifecycle states of a domain concept — where
+transitions and their semantics matter — belong to the domain-semantics layer
+(GraphSpec), not to ModelSpec. See
+[decision 0013](decisions/0013-named-enums.md).
+
 ## Relationships
 
 Relationships are associations between entities. A property can reference another
@@ -122,6 +162,12 @@ entity "Order" {
 
 Backends decide whether this becomes a foreign key, document reference, nested path,
 edge table, or another physical representation.
+
+Entity-reference properties are the canonical structural relationships of a model.
+Graph-oriented consumers (such as GraphSpec tooling) may derive edges from them;
+relationships that carry semantics beyond a typed reference — cross-module
+endpoints, role metadata, cardinality constraints, lifecycle — are declared in the
+domain-semantics layer, not duplicated here.
 
 ## Collection
 

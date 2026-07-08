@@ -23,6 +23,7 @@ ModelSpec defines storage-neutral application data models:
 - fields and properties
 - relationships
 - reusable components
+- named enumerations
 - constraints
 - indexes
 - projections
@@ -213,15 +214,19 @@ specscore validate
 ```
 
 ModelSpec is not a sub-language of GraphSpec. GraphSpec and ModelSpec solve different
-problems and should remain independently specified.
+problems and are independently specified. GraphSpec is a consumer of ModelSpec: it
+references ModelSpec models, components, and enums (for example
+`model: modelspec://reservations.Booking`) instead of defining structure itself. ModelSpec
+never references GraphSpec. See
+[decision 0012](spec/decisions/0012-graphspec-is-a-consumer.md).
 
 ## Target Architecture
 
 ```text
-                ModelSpec
-               /    |     \
-              /     |      \
-     OpenVaultDB   DALGO   Generators
+                    ModelSpec
+               /    |     |     \
+              /     |     |      \
+     OpenVaultDB  DALGO  GraphSpec  Generators
            |
       GraphQL
       DTQL
@@ -235,7 +240,7 @@ SpecScore
  validates ModelSpec
 ```
 
-GraphSpec is intentionally outside this architecture.
+GraphSpec consumes ModelSpec for structure; ModelSpec does not depend on GraphSpec.
 
 ## Repository Structure
 

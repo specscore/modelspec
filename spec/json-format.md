@@ -18,6 +18,7 @@ A ModelSpec JSON AST serialization MUST be a JSON object with these top-level fi
 | `modelspec` | Yes | Format identifier and version. |
 | `module` | Yes | Module identity and version metadata. |
 | `components` | No | Reusable field groups. |
+| `enums` | No | Named controlled vocabularies. |
 | `entities` | No | Identity-bearing application data concepts. |
 | `collections` | No | Storage-neutral data sources or collection projections. |
 | `recordsets` | No | Strict tabular result shapes. |
@@ -66,6 +67,23 @@ Components are keyed by component name:
   }
 }
 ```
+
+## Enums
+
+Named enums are keyed by enum name:
+
+```json
+{
+  "enums": {
+    "BookingStatus": {
+      "values": ["requested", "confirmed", "cancelled"]
+    }
+  }
+}
+```
+
+A property references a named enum through its `enum` attribute; a literal value list
+in that attribute remains valid for single-use vocabularies.
 
 ## Entities
 
@@ -214,11 +232,13 @@ A validator consuming the JSON AST serialization MUST check:
 
 - `modelspec` is present and supported.
 - `module.id` and `module.version` are present.
-- component, entity, collection, recordset, projection, and migration names are unique
-  within their object maps.
+- component, enum, entity, collection, recordset, projection, and migration names are
+  unique within their object maps.
 - entity property and collection field names are unique within their scopes.
+- enum value lists are non-empty and free of duplicate values.
 - recordset column arrays preserve order and allow duplicate `name` values.
-- references resolve, including `use`, `component`, `entity`, `source`, and `bind`.
+- references resolve, including `use`, `component`, `enum`, `entity`, `source`, and
+  `bind`.
 - primitive types are in the supported type set.
 - constraints use supported keys and valid value types.
 - projection hints do not become authoritative backend requirements.

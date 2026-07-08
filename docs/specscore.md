@@ -3,7 +3,9 @@
 SpecScore validates ModelSpec but does not own ModelSpec semantics.
 
 ModelSpec is a first-class specification that SpecScore can understand alongside
-other specifications. It is not a sub-language of GraphSpec.
+other specifications. It is not a sub-language of GraphSpec; GraphSpec is a consumer
+that references ModelSpec models for structure (see
+[decision 0012](../spec/decisions/0012-graphspec-is-a-consumer.md)).
 
 ## Supported Validation Modes
 

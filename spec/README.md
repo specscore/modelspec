@@ -9,7 +9,7 @@ systems consume. It is storage-agnostic, language-agnostic, and backend-agnostic
 
 | Path | Purpose |
 |---|---|
-| [core-model.md](core-model.md) | Entities, components, relationships, collections, recordsets, constraints, and validation. |
+| [core-model.md](core-model.md) | Entities, components, enums, relationships, collections, recordsets, constraints, and validation. |
 | [hcl-authoring.md](hcl-authoring.md) | HCL authored source format. |
 | [json-format.md](json-format.md) | JSON serialization of the ModelSpec AST. |
 | [projections.md](projections.md) | Logical-to-physical projection model and advisory backend mapping hints. |
@@ -35,9 +35,11 @@ generators.
 SpecScore validates ModelSpec documents and may provide linting, validation, and
 semantic checks. SpecScore does not define ModelSpec semantics.
 
-GraphSpec is not part of the ModelSpec architecture. GraphSpec describes connected
-domain models; ModelSpec describes application data models and their storage-neutral
-schema projections.
+GraphSpec consumes ModelSpec. GraphSpec describes connected domain models — modules,
+relationships, commands, events, lifecycle — and references ModelSpec models,
+components, and enums for structure instead of redefining it. ModelSpec never
+references GraphSpec; see
+[decision 0012](decisions/0012-graphspec-is-a-consumer.md).
 
 ## Open Questions
 

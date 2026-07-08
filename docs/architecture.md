@@ -3,10 +3,10 @@
 ModelSpec is the independent specification for application data models.
 
 ```text
-                ModelSpec
-               /    |     \
-              /     |      \
-     OpenVaultDB   DALGO   Generators
+                    ModelSpec
+               /    |     |     \
+              /     |     |      \
+     OpenVaultDB  DALGO  GraphSpec  Generators
            |
       GraphQL
       DTQL
@@ -20,7 +20,9 @@ SpecScore
  validates ModelSpec
 ```
 
-GraphSpec is intentionally outside this architecture.
+GraphSpec consumes ModelSpec: graph entities reference ModelSpec models instead of
+defining structure. ModelSpec does not depend on GraphSpec. See
+[decision 0012](../spec/decisions/0012-graphspec-is-a-consumer.md).
 
 ## Responsibilities
 
@@ -40,7 +42,9 @@ ModelSpec is not part of OpenVaultDB. OpenVaultDB is one consumer.
 ModelSpec is not part of SpecScore. SpecScore is one validator.
 
 ModelSpec is not part of GraphSpec. GraphSpec solves a different domain-modelling
-problem.
+problem and is one more consumer: it references ModelSpec models for structure while
+owning connected domain semantics (modules, relationships, commands, events,
+lifecycle). The dependency arrow never points out of ModelSpec.
 
 ## Design Rule
 
