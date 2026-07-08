@@ -106,4 +106,11 @@ serialization MUST preserve recordset column order and duplicates.
 
 ## Open Questions
 
-None at this time.
+- **Module identity.** The HCL grammar has no module-identity declaration: nothing in
+  a `.hcl` file states which ModelSpec module it defines, while the JSON
+  serialization carries a URL-ish global `module.id`. Consumers that reference
+  models by short name (for example GraphSpec's `modelspec://<module>.<Entity>`
+  scheme) currently have nothing to resolve against except directory convention.
+  Should HCL gain a `module` identity block (short name + optional global id), a
+  per-file header, or should identity remain a packaging concern outside the
+  grammar? *(Raised by the first consumer pilot, 2026-07-08.)*
