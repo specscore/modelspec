@@ -47,3 +47,10 @@ references GraphSpec; see
   [hcl-authoring.md](hcl-authoring.md#open-questions). Cross-module references were
   resolved by [decision 0014](decisions/0014-module-qualified-references.md)
   (module-qualified names, consumer-provided resolution).
+- **Polymorphic references (union types).** A property today references exactly one
+  entity or component. Consumer pilots keep hitting "reference to any of several
+  principal-like entities" (e.g. an authorization subject or an audit actor that may
+  be a user, an application, or an automated agent). The current idiom — an optional
+  typed reference plus a string discriminator/scope — works but pushes the
+  constraint out of the model. Should ModelSpec support a union/interface reference
+  form, and if so at what cost to backend mapping simplicity?
