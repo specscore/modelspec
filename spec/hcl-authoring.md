@@ -100,9 +100,21 @@ a `properties` object map because entity property names are unique.
 
 ## Ordering And Duplicate Names
 
-Entity names, component names, enum names, collection names, and entity property
-names MUST be unique within their scopes. Their declaration order is not semantic, although tools
-may preserve it for documentation and stable diffs.
+Name scopes are explicit ([decision 0015](decisions/0015-concept-namespaces-and-reserved-names.md)):
+
+- **Entity, component, and enum names share ONE flat namespace per module** — the
+  *referenceable trio* that consumers may address by bare concept name. An entity
+  and an enum with the same name in one module is an error, not a coexistence.
+- **Collection names** form a separate scope per module, and **recordset names**
+  another. They are addressable by consumers only in kind-explicit form, never by
+  bare name.
+- **Entity property names** are unique within their entity.
+- **Reserved names:** `entities`, `components`, `enums`, `collections`, and
+  `recordsets` are forbidden as concept names in any scope — they are the kind
+  tokens of consumer reference syntax.
+
+Declaration order is not semantic, although tools may preserve it for
+documentation and stable diffs.
 
 Recordset column order is semantic. Recordset column names MAY repeat because SQL
 queries can return multiple columns with the same display name. The AST and JSON

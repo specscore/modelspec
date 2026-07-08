@@ -22,6 +22,7 @@ format: https://specscore.md/decisions-index-specification
 | [0012](0012-graphspec-is-a-consumer.md) | GraphSpec Is A Consumer Of ModelSpec | Approved | 2026-07-08 | architecture,graphspec,boundaries | — |
 | [0013](0013-named-enums.md) | Named Enums Are A Core Concept | Approved | 2026-07-08 | model,enum,vocabulary | — |
 | [0014](0014-module-qualified-references.md) | Module-Qualified Cross-Module References | Approved | 2026-07-08 | model,references,modules,composition | — |
+| [0015](0015-concept-namespaces-and-reserved-names.md) | Concept Namespaces And Reserved Names | Approved | 2026-07-08 | model,namespaces,references,collections,recordsets | — |
 
 ## Open Questions
 

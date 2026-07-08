@@ -16,6 +16,13 @@ ModelSpec has five foundational structural concepts:
 | Collection | Named data source or storage-neutral container projection. |
 | Recordset | Tabular result shape for query or procedure output. |
 
+Entity, component, and enum names share one flat namespace per module — the
+*referenceable trio* a consumer may address by bare concept name. Collection and
+recordset names are separate scopes, addressable only in kind-explicit form. The
+five kind tokens (`entities`, `components`, `enums`, `collections`,
+`recordsets`) are reserved and forbidden as concept names
+([decision 0015](decisions/0015-concept-namespaces-and-reserved-names.md)).
+
 ## Entity
 
 An Entity is a logical, identity-bearing business object. It owns canonical
