@@ -68,7 +68,9 @@ JSON first.
 
 ## Observed Consequences
 
-None observed yet.
+This decision was too easy to read as making JSON the authored source of truth.
+Decision 0006 clarifies that HCL is the authored source format, while JSON is the
+first serialization of the ModelSpec AST.
 
 ## Affected Features
 

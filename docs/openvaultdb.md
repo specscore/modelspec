@@ -4,9 +4,9 @@
 
 OpenVaultDB is the cleanest early consumer of ModelSpec.
 
-An application publishes a ModelSpec JSON module. The user's vault decides how to
-store it, maps it to the selected backend, and enforces the application-declared
-model.
+An application authors a ModelSpec module in HCL and may publish a compiled ModelSpec
+AST serialization. The user's vault decides how to store it, maps it to the selected
+backend, and enforces the application-declared model.
 
 The storage decision belongs to the vault, not the app.
 
@@ -72,7 +72,8 @@ checkpointing, audit, rollback, and execution.
 
 ## Advisory Mapping Suggestions
 
-Apps may provide optional projection hints in ModelSpec JSON.
+Apps may provide optional projection hints in the ModelSpec source or compiled AST
+serialization.
 
 For InGitDB, the same entity could be stored as:
 

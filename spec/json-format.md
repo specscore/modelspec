@@ -2,16 +2,16 @@
 
 ## Purpose
 
-Define the first machine-readable ModelSpec interchange format.
+Define the JSON serialization of the ModelSpec AST.
 
-ModelSpec JSON is the v0 ingestion format for validators, generators, and consumers
-such as OpenVaultDB. Human-friendly authoring formats such as HCL may still exist, but
-they should compile or export to this JSON shape before toolchain interoperability is
-required.
+ModelSpec JSON is a machine-readable serialization for validators, generators, and
+consumers such as OpenVaultDB. HCL remains the intended authored source format.
+Tooling should parse HCL into a ModelSpec AST and serialize that AST to JSON when
+machine ingestion or API transport needs it.
 
 ## Format Identity
 
-A ModelSpec JSON document MUST be a JSON object with these top-level fields:
+A ModelSpec JSON AST serialization MUST be a JSON object with these top-level fields:
 
 | Field | Required | Purpose |
 |---|---|---|
@@ -24,7 +24,7 @@ A ModelSpec JSON document MUST be a JSON object with these top-level fields:
 | `projections` | No | Advisory target-specific mapping hints. |
 | `migrations` | No | Semantic migration metadata. |
 
-The `modelspec` field MUST be the string `1.0-draft` for this draft format.
+The `modelspec` field MUST be the string `1.0-draft` for this draft serialization.
 
 ## Module Metadata
 
@@ -207,7 +207,7 @@ ModelSpec does not execute migrations in v0.
 
 ## Validation Requirements
 
-A ModelSpec JSON validator MUST check:
+A validator consuming the JSON AST serialization MUST check:
 
 - `modelspec` is present and supported.
 - `module.id` and `module.version` are present.
@@ -222,5 +222,5 @@ A ModelSpec JSON validator MUST check:
 
 - Should ordered attributes use arrays instead of object maps in v0, or should order
   remain explicitly non-semantic until a target needs it?
-- Should ModelSpec publish a JSON Schema alongside this prose specification?
-- Should YAML be a supported alternate serialization of the same object model?
+- Where should a JSON Schema for this AST serialization be published?
+- Should YAML be a supported secondary serialization of the same AST?

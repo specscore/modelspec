@@ -243,14 +243,16 @@ GraphSpec is intentionally outside this architecture.
 - [docs/](docs/README.md): architecture, [OpenVaultDB](https://openvaultdb.com/) integration, SpecScore integration, and catalog notes.
 - [examples/](examples/README.md): example ModelSpec modules.
 
-## Machine-Readable Format
+## Authored And Machine Formats
 
-ModelSpec JSON is the first normative machine-readable interchange format.
+HCL is the intended authored source format for ModelSpec.
 
-Human-friendly authoring formats may exist, but validators, generators, and consumers
-should target the JSON object model for interoperability. See
-[spec/json-format.md](spec/json-format.md) and
-[examples/todo.modelspec.json](examples/todo.modelspec.json).
+Tooling should parse HCL into a ModelSpec AST. Validators, generators, and consumers
+can then ingest serialized AST forms, with JSON as the first machine-readable
+serialization and YAML as a possible secondary serialization. See
+[spec/hcl-authoring.md](spec/hcl-authoring.md),
+[spec/json-format.md](spec/json-format.md), and
+[docs/format-analysis.md](docs/format-analysis.md).
 
 ## Status
 
@@ -264,5 +266,5 @@ ModelSpec is licensed under the Apache License, Version 2.0. See [LICENSE](LICEN
 
 ## Open Questions
 
-- Should ModelSpec include migration capabilities beyond descriptive metadata, such as
-  normative migration plans or executable transform declarations?
+- Should ModelSpec include migration capabilities beyond descriptive metadata only if
+  a concrete reusable migration model becomes clear?
