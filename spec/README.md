@@ -10,6 +10,7 @@ systems consume. It is storage-agnostic, language-agnostic, and backend-agnostic
 | Path | Purpose |
 |---|---|
 | [core-model.md](core-model.md) | Entities, components, relationships, collections, recordsets, constraints, and validation. |
+| [json-format.md](json-format.md) | First machine-readable ModelSpec interchange format. |
 | [projections.md](projections.md) | Logical-to-physical projection model and advisory backend mapping hints. |
 | [migration-metadata.md](migration-metadata.md) | Versioning and migration metadata carried by a model. |
 | [out-of-scope.md](out-of-scope.md) | Boundaries that ModelSpec intentionally does not cross. |

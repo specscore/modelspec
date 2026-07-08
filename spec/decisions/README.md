@@ -12,6 +12,7 @@ format: https://specscore.md/decisions-index-specification
 | [0002](0002-property-field-column.md) | Property, Field, And Column Are Distinct | Approved | 2026-07-08 | model,terminology | — |
 | [0003](0003-collection-kind.md) | Collection Kind, Not Table Type | Approved | 2026-07-08 | model,collection | — |
 | [0004](0004-query-seam.md) | Opaque Query Seam | Approved | 2026-07-08 | query,dtql | — |
+| [0005](0005-json-interchange-format.md) | JSON Interchange Format | Approved | 2026-07-08 | format,json,interchange | — |
 
 ## Open Questions
 

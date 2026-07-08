@@ -243,6 +243,15 @@ GraphSpec is intentionally outside this architecture.
 - [docs/](docs/README.md): architecture, [OpenVaultDB](https://openvaultdb.com/) integration, SpecScore integration, and catalog notes.
 - [examples/](examples/README.md): example ModelSpec modules.
 
+## Machine-Readable Format
+
+ModelSpec JSON is the first normative machine-readable interchange format.
+
+Human-friendly authoring formats may exist, but validators, generators, and consumers
+should target the JSON object model for interoperability. See
+[spec/json-format.md](spec/json-format.md) and
+[examples/todo.modelspec.json](examples/todo.modelspec.json).
+
 ## Status
 
 ModelSpec is in early specification development. The current work preserves and
