@@ -12,8 +12,8 @@ Use HCL as the authored source format.
 Use a ModelSpec AST as the semantic representation.
 
 Serialize the AST to JSON first for validators, generators, OpenVaultDB ingestion, and
-other machine consumers. Add YAML later only as a secondary serialization if a concrete
-consumer needs it.
+other machine consumers. YAML is not supported in v0 and can be reconsidered later
+only if a concrete consumer needs it.
 
 Use singular named HCL blocks for declarations and use JSON shapes that fit AST
 semantics. JSON does not need to mirror the HCL surface exactly.
@@ -50,7 +50,7 @@ HCL source
 ModelSpec AST
     |
     +--> JSON serialization
-    +--> YAML serialization, optional
+    +--> YAML serialization, not in v0
     +--> generator input
     +--> validator input
 ```

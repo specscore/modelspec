@@ -18,6 +18,7 @@ format: https://specscore.md/decisions-index-specification
 | [0008](0008-migration-capabilities-out-of-scope.md) | Migration Capabilities Out Of Scope | Approved | 2026-07-08 | migrations,scope | — |
 | [0009](0009-hcl-v0-grammar-scope.md) | HCL v0 Grammar Scope | Approved | 2026-07-08 | format,hcl,grammar | — |
 | [0010](0010-json-schema-publication.md) | JSON Schema Publication | Approved | 2026-07-08 | json-schema,publication | — |
+| [0011](0011-yaml-serialization-out-of-v0.md) | YAML Serialization Out Of v0 | Approved | 2026-07-08 | format,yaml,scope | — |
 
 ## Open Questions
 
