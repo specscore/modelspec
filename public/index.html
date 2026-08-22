@@ -1,0 +1,475 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ModelSpec — Define your application data model once.</title>
+  <meta name="description" content="ModelSpec is an open specification language for application data models. It describes an application's logical model independently of storage engines, programming languages, API layers and deployment platforms." />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <meta property="og:title" content="ModelSpec — one logical model, projected everywhere" />
+  <meta property="og:description" content="Define your application data model once. Storage engines, languages and API layers become projections of it, not the place your model lives." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://modelspec.org" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <div class="grain" aria-hidden="true"></div>
+
+  <header class="site-head">
+    <a class="brand" href="#top" aria-label="ModelSpec home">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 40 40" width="28" height="28">
+          <circle cx="9" cy="20" r="4" fill="currentColor"/>
+          <circle cx="31" cy="8" r="3" fill="none" stroke="currentColor" stroke-width="2"/>
+          <circle cx="31" cy="20" r="3" fill="none" stroke="currentColor" stroke-width="2"/>
+          <circle cx="31" cy="32" r="3" fill="none" stroke="currentColor" stroke-width="2"/>
+          <path d="M13 20 L28 9 M13 20 L28 20 M13 20 L28 31" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/>
+        </svg>
+      </span>
+      <span class="brand-name">ModelSpec</span>
+    </a>
+    <button class="nav-toggle" id="navToggle" aria-label="Open menu" aria-expanded="false" aria-controls="siteNav">
+      <span class="nav-toggle-bars" aria-hidden="true"></span>
+    </button>
+    <nav class="site-nav" id="siteNav" aria-label="Primary">
+      <a href="#why">Why</a>
+      <a href="#concepts">Concepts</a>
+      <a href="#example">Example</a>
+      <a href="#consumers">Consumers</a>
+      <a href="#scope">Scope</a>
+      <a href="#status">Status</a>
+      <a class="nav-cta" href="https://github.com/specscore/modelspec" rel="noopener">GitHub ↗</a>
+    </nav>
+  </header>
+
+  <main id="top">
+
+    <!-- HERO -->
+    <section class="hero">
+      <div class="hero-copy reveal">
+        <p class="eyebrow"><span class="dot"></span>Open specification · preview</p>
+        <h1>Define your application data model <em>once</em>.</h1>
+        <p class="lede">
+          ModelSpec is an open specification language for application data models. It
+          describes the logical model of an application independently of storage engines,
+          programming languages, API layers and deployment platforms — so a schema, a
+          contract and a type become <em>projections</em> of your model rather than four
+          places your model lives.
+        </p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="https://github.com/specscore/modelspec" rel="noopener">Read the spec</a>
+          <a class="btn btn-ghost" href="#concepts">See how it works</a>
+        </div>
+        <ul class="hero-tags">
+          <li>Storage-neutral</li>
+          <li>Transport-neutral</li>
+          <li>Language-neutral</li>
+          <li>Apache&nbsp;2.0</li>
+        </ul>
+      </div>
+
+      <!-- Fan-out diagram: define once → project everywhere -->
+      <div class="fanout reveal" aria-hidden="true">
+        <div class="fan-source">
+          <span class="fan-kicker">logical</span>
+          ModelSpec
+        </div>
+        <svg class="fan-wires" viewBox="0 0 120 360" preserveAspectRatio="none">
+          <path d="M0 180 C 70 180, 50 30, 120 30" />
+          <path d="M0 180 C 70 180, 50 90, 120 90" />
+          <path d="M0 180 C 70 180, 60 150, 120 150" />
+          <path d="M0 180 C 70 180, 60 210, 120 210" />
+          <path d="M0 180 C 70 180, 50 270, 120 270" />
+          <path d="M0 180 C 70 180, 50 330, 120 330" />
+        </svg>
+        <ul class="fan-targets">
+          <li style="--i:0"><span>PostgreSQL</span></li>
+          <li style="--i:1"><span>Firestore</span></li>
+          <li style="--i:2"><span>SQLite</span></li>
+          <li style="--i:3"><span>GraphQL</span></li>
+          <li style="--i:4"><span>Go</span></li>
+          <li style="--i:5"><span>TypeScript</span></li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- TARGETS MARQUEE -->
+    <section class="targets-strip" aria-label="Projection targets named in the specification">
+      <ul>
+        <li>PostgreSQL</li><li>SQLite</li><li>Firestore</li><li>GraphQL</li>
+        <li>Go</li><li>TypeScript</li><li>inGitDB</li><li>OpenVaultDB</li>
+        <li>PostgreSQL</li><li>SQLite</li><li>Firestore</li><li>GraphQL</li>
+      </ul>
+    </section>
+
+    <!-- WHY -->
+    <section id="why" class="band">
+      <div class="band-head reveal">
+        <p class="section-label">01 — The problem</p>
+        <h2>Every application defines the same model again and again.</h2>
+        <p class="section-sub">
+          Database schema, ORM model, API contract, frontend type, migration script —
+          the same shape, restated in five places. Each copy eventually drifts.
+        </p>
+      </div>
+
+      <div class="drift-grid">
+        <div class="drift-col reveal">
+          <p class="drift-tag drift-tag--bad">Today</p>
+          <ol class="chain chain--drift">
+            <li>Database schema</li>
+            <li>ORM model</li>
+            <li>API contract</li>
+            <li>Frontend type</li>
+            <li>Migration script</li>
+          </ol>
+          <p class="drift-note">Five definitions. Five chances to drift.</p>
+        </div>
+
+        <div class="drift-arrow reveal" aria-hidden="true">→</div>
+
+        <div class="drift-col reveal">
+          <p class="drift-tag drift-tag--good">With ModelSpec</p>
+          <div class="chain-source">ModelSpec</div>
+          <ul class="chain chain--fan">
+            <li>PostgreSQL</li>
+            <li>Firestore</li>
+            <li>SQLite</li>
+            <li>GraphQL</li>
+            <li>Go · TypeScript</li>
+          </ul>
+          <p class="drift-note">One logical model. Generated representations.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- DIFFERENTIATOR -->
+    <section class="band band--alt">
+      <div class="band-head reveal">
+        <p class="section-label">02 — Where it sits</p>
+        <h2>Storage schemas are projections, not the application model.</h2>
+        <p class="section-sub">
+          A table layout, a Firestore collection hierarchy and a SQLite DDL file each
+          encode operational tradeoffs. They are worth having — but they should not be
+          the only place your application's meaning exists.
+        </p>
+      </div>
+
+      <div class="compare reveal">
+        <table>
+          <thead>
+            <tr><th>Project</th><th>Primary focus</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>TypeSpec</td><td>API contracts</td></tr>
+            <tr><td>OpenAPI</td><td>HTTP APIs</td></tr>
+            <tr><td>Prisma</td><td>Database schemas</td></tr>
+            <tr><td>DBML</td><td>Database modelling</td></tr>
+            <tr><td>Atlas</td><td>Database schemas &amp; migrations</td></tr>
+            <tr class="row-self"><td>ModelSpec</td><td>Application data models</td></tr>
+          </tbody>
+        </table>
+
+        <div class="layer-stack" aria-hidden="true">
+          <div class="layer" style="--d:0"><span>Application model</span></div>
+          <div class="layer" style="--d:1"><span>Storage projection</span></div>
+          <div class="layer" style="--d:2"><span>Transport projection</span></div>
+          <div class="layer" style="--d:3"><span>Language projection</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CONCEPTS -->
+    <section id="concepts" class="band">
+      <div class="band-head reveal">
+        <p class="section-label">03 — Core concepts</p>
+        <h2>A small, honest vocabulary.</h2>
+        <p class="section-sub">
+          Entities carry identity. Components are reusable groups with none. Enums are
+          named vocabularies. Projections map the logical model onto a target.
+        </p>
+      </div>
+
+      <div class="concept-grid">
+        <article class="card reveal">
+          <h3>Entity</h3>
+          <p>An identity-bearing object — <code>User</code>, <code>Order</code>, <code>Invoice</code>. Its identity is declared, not inferred.</p>
+          <pre><code><span class="k">entity</span> <span class="s">"User"</span> {
+  <span class="k">key</span> = [<span class="s">"id"</span>]
+
+  <span class="k">property</span> <span class="s">"id"</span> {
+    type = <span class="s">"uuid"</span>
+  }
+}</code></pre>
+        </article>
+
+        <article class="card reveal">
+          <h3>Component</h3>
+          <p>A reusable group of fields with no independent identity — composition over inheritance.</p>
+          <pre><code><span class="k">component</span> <span class="s">"Auditable"</span> {
+  <span class="k">field</span> <span class="s">"createdAt"</span> {
+    type     = <span class="s">"datetime"</span>
+    required = <span class="n">true</span>
+  }
+}</code></pre>
+        </article>
+
+        <article class="card reveal">
+          <h3>Composition</h3>
+          <p>Entities <em>use</em> components, much like Go struct embedding — no deep type hierarchies.</p>
+          <pre><code><span class="k">entity</span> <span class="s">"Invoice"</span> {
+  <span class="k">key</span> = [<span class="s">"id"</span>]
+  <span class="k">use</span> = [<span class="s">"Auditable"</span>]
+}</code></pre>
+        </article>
+
+        <article class="card reveal">
+          <h3>Projection</h3>
+          <p>An advisory mapping of the logical model onto one storage target. Add a target without touching the model.</p>
+          <pre><code><span class="k">projection</span> <span class="s">"sqlite"</span> {
+  <span class="k">collection</span> <span class="s">"users"</span> {
+    source = <span class="s">"User"</span>
+  }
+}</code></pre>
+        </article>
+      </div>
+    </section>
+
+    <!-- EXAMPLE -->
+    <section id="example" class="band band--alt">
+      <div class="band-head reveal">
+        <p class="section-label">04 — A complete example</p>
+        <h2>One model, one file, no storage engine chosen yet.</h2>
+        <p class="section-sub">
+          ModelSpec is authored in HCL. Tooling parses it into an AST, which is then
+          serialized to JSON for machine ingestion.
+        </p>
+      </div>
+
+      <div class="file reveal">
+        <div class="file-name">model.hcl</div>
+        <pre><code><span class="k">component</span> <span class="s">"Auditable"</span> {
+  <span class="k">field</span> <span class="s">"createdAt"</span> {
+    type     = <span class="s">"datetime"</span>
+    required = <span class="n">true</span>
+  }
+
+  <span class="k">field</span> <span class="s">"updatedAt"</span> {
+    type     = <span class="s">"datetime"</span>
+    required = <span class="n">true</span>
+  }
+}
+
+<span class="k">entity</span> <span class="s">"User"</span> {
+  <span class="k">key</span> = [<span class="s">"id"</span>]
+  <span class="k">use</span> = [<span class="s">"Auditable"</span>]
+
+  <span class="k">property</span> <span class="s">"id"</span> {
+    type = <span class="s">"uuid"</span>
+  }
+
+  <span class="k">property</span> <span class="s">"email"</span> {
+    type     = <span class="s">"string"</span>
+    required = <span class="n">true</span>
+    unique   = <span class="n">true</span>
+    format   = <span class="s">"email"</span>
+  }
+}
+
+<span class="k">entity</span> <span class="s">"Order"</span> {
+  <span class="k">key</span> = [<span class="s">"id"</span>]
+
+  <span class="k">property</span> <span class="s">"id"</span> {
+    type = <span class="s">"uuid"</span>
+  }
+
+  <span class="k">property</span> <span class="s">"user"</span> {
+    entity   = <span class="s">"User"</span>
+    required = <span class="n">true</span>
+  }
+}
+
+<span class="k">projection</span> <span class="s">"sqlite"</span> {
+  <span class="k">collection</span> <span class="s">"users"</span> {
+    source = <span class="s">"User"</span>
+    <span class="k">index</span> <span class="s">"users_email_unique"</span> {
+      fields = [<span class="s">"email"</span>]
+      unique = <span class="n">true</span>
+    }
+  }
+}</code></pre>
+      </div>
+
+      <p class="import-lead reveal">
+        The same logical model — <code>User</code> → <code>Orders</code> → <code>OrderItems</code> —
+        becomes a nested Firestore path or three flat PostgreSQL tables without the model
+        definition changing. Models can also reference concepts in other modules by
+        qualified name, so a shared vocabulary can be defined once and reused.
+      </p>
+    </section>
+
+    <!-- CONSUMERS -->
+    <section id="consumers" class="band">
+      <div class="band-head reveal">
+        <p class="section-label">05 — Consumers</p>
+        <h2>An independent specification, with real consumers.</h2>
+        <p class="section-sub">
+          ModelSpec is maintained under the SpecScore GitHub organisation, but it is
+          independent: any project can adopt it without adopting SpecScore, OpenVaultDB,
+          GraphSpec, or any particular backend.
+        </p>
+      </div>
+
+      <div class="concept-grid">
+        <article class="card reveal">
+          <h3>OpenVaultDB</h3>
+          <p>
+            Consumes ModelSpec directly. An application publishes a module; a user's vault
+            loads the current and target models and uses them for schema validation,
+            migration planning and backend mapping.
+            <a href="https://openvaultdb.com/" rel="noopener">openvaultdb.com&nbsp;↗</a>
+          </p>
+        </article>
+
+        <article class="card reveal">
+          <h3>GraphSpec</h3>
+          <p>
+            A <em>consumer</em>, not a parent. GraphSpec references ModelSpec entities,
+            components and enums rather than defining structure itself. ModelSpec never
+            references GraphSpec.
+          </p>
+        </article>
+
+        <article class="card reveal">
+          <h3>SpecScore</h3>
+          <p>
+            Validates ModelSpec but does not own its semantics — linting, structural
+            validation and semantic checks over ModelSpec documents.
+            <a href="https://specscore.md/" rel="noopener">specscore.md&nbsp;↗</a>
+          </p>
+        </article>
+
+        <article class="card reveal">
+          <h3>Generators</h3>
+          <p>
+            Generator targets named by the specification — GraphQL, Go, TypeScript, SQLite,
+            PostgreSQL, Firestore, inGitDB and OpenVaultDB schemas.
+            <em>Planned; none are implemented yet.</em>
+          </p>
+        </article>
+      </div>
+    </section>
+
+    <!-- SCOPE -->
+    <section id="scope" class="band band--alt">
+      <div class="band-head reveal">
+        <p class="section-label">06 — Scope</p>
+        <h2>What ModelSpec defines, and what it deliberately doesn't.</h2>
+        <p class="section-sub">
+          A specification is as useful as its boundaries are clear.
+        </p>
+      </div>
+
+      <div class="compare reveal">
+        <div>
+          <p class="section-label">Defines</p>
+          <ul class="pill-list">
+            <li>Entities</li>
+            <li>Fields &amp; properties</li>
+            <li>Relationships</li>
+            <li>Reusable components</li>
+            <li>Named enumerations</li>
+            <li>Constraints</li>
+            <li>Indexes</li>
+            <li>Projections</li>
+            <li>Migration metadata</li>
+            <li>Storage-neutral schemas</li>
+          </ul>
+        </div>
+
+        <div class="nongoals">
+          <p class="section-label">Does not define</p>
+          <ul class="strike-list">
+            <li>RBAC or permissions</li>
+            <li>OAuth or identity flows</li>
+            <li>Feature specifications</li>
+            <li>Workflows</li>
+            <li>Deployment topology</li>
+            <li>UI behaviour</li>
+          </ul>
+          <p class="drift-note">Those belong to adjacent specifications and to application architecture.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- STATUS -->
+    <section id="status" class="band band--tight">
+      <div class="band-head reveal">
+        <p class="section-label">07 — Status</p>
+        <h2>Preview. The specification is still moving.</h2>
+        <p class="section-sub">
+          ModelSpec is in early specification development, published as a preview so it can
+          be read and argued with. The grammar and vocabulary may change before
+          ModelSpec&nbsp;v1.0, and no generator has been implemented yet — the value
+          proposition is specified, not yet executed.
+        </p>
+      </div>
+
+      <div class="file reveal">
+        <div class="file-name">Honest status</div>
+        <ul class="pill-list">
+          <li>Specification — active</li>
+          <li>HCL authoring grammar — drafted</li>
+          <li>JSON serialization — first machine format</li>
+          <li>YAML serialization — out of scope for v0</li>
+          <li>Generators — planned, none built</li>
+          <li>Conformance corpus — planned</li>
+        </ul>
+        <p class="drift-note">
+          Decisions are recorded in the open, in the repository, and superseded ones are
+          kept rather than rewritten.
+        </p>
+      </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="cta">
+      <div class="reveal">
+        <h2>Read it, and tell us where it's wrong.</h2>
+        <p>ModelSpec is an open specification in preview. Feedback, ideas and contributions are welcome — especially from anyone who has watched a data model drift across five layers.</p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="https://github.com/specscore/modelspec" rel="noopener">Explore on GitHub ↗</a>
+          <a class="btn btn-ghost" href="https://github.com/specscore/modelspec/tree/main/spec/decisions" rel="noopener">Read the decisions</a>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-foot">
+    <div class="foot-brand">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 40 40" width="22" height="22">
+          <circle cx="9" cy="20" r="4" fill="currentColor"/>
+          <circle cx="31" cy="8" r="3" fill="none" stroke="currentColor" stroke-width="2"/>
+          <circle cx="31" cy="20" r="3" fill="none" stroke="currentColor" stroke-width="2"/>
+          <circle cx="31" cy="32" r="3" fill="none" stroke="currentColor" stroke-width="2"/>
+          <path d="M13 20 L28 9 M13 20 L28 20 M13 20 L28 31" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/>
+        </svg>
+      </span>
+      <span class="brand-name">ModelSpec</span>
+    </div>
+    <nav aria-label="Footer">
+      <a href="https://github.com/specscore/modelspec" rel="noopener">GitHub ↗</a>
+      <a href="https://openvaultdb.com/" rel="noopener">OpenVaultDB ↗</a>
+      <a href="https://specscore.md/" rel="noopener">SpecScore ↗</a>
+    </nav>
+    <p class="foot-legal">Apache License 2.0 · An open specification · Preview</p>
+  </footer>
+
+  <script src="/script.js" defer></script>
+</body>
+</html>
