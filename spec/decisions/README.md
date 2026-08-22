@@ -23,6 +23,7 @@ format: https://specscore.md/decisions-index-specification
 | [0013](0013-named-enums.md) | Named Enums Are A Core Concept | Approved | 2026-07-08 | model,enum,vocabulary | — |
 | [0014](0014-module-qualified-references.md) | Module-Qualified Cross-Module References | Approved | 2026-07-08 | model,references,modules,composition | — |
 | [0015](0015-concept-namespaces-and-reserved-names.md) | Concept Namespaces And Reserved Names | Approved | 2026-07-08 | model,namespaces,references,collections,recordsets | — |
+| [0016](0016-modelspec-supersedes-polymodel.md) | ModelSpec Supersedes PolyModel | Approved | 2026-08-22 | governance,naming,supersession,public-surface | — |
 
 ## Open Questions
 
