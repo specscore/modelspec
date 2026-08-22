@@ -1,0 +1,16 @@
+{
+  // Static landing site for modelspec.org. Single page, no build step: plain
+  // index.html + style.css + a small script.js (scroll-reveal + mobile nav),
+  // served as Cloudflare Workers static assets. Mirrors specscore/specscore.
+  "name": "modelspec-org",
+  "compatibility_date": "2026-06-02",
+  "observability": {
+    "enabled": true
+  },
+  "assets": {
+    "directory": "public"
+  },
+  "routes": [
+    { "pattern": "modelspec.org", "custom_domain": true }
+  ]
+}
