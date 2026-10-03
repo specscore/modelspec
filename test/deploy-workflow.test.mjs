@@ -83,3 +83,13 @@ test('the production build is the guarded one and runs on every event', () => {
   assert.ok(!/OVDB_DIRECTORY_INDEX_URL|MODELSPEC_REGISTRY_INDEX_URL|MEANINGGRAPH_REGISTRY_INDEX_URL|--use-fixture/.test(step('Production build')));
   assert.match(code, /BUILD_COMMIT: \$\{\{ github\.sha \}\}/);
 });
+
+test('deploy.yml runs every check that site.yml runs, in the same order, so a deploy never skips one', () => {
+  const commands = text => [...text.matchAll(/^\s+(?:- )?run: (\S[^\n]*)$/gm)].map(match => match[1]);
+  const site = readFileSync(`${REPO}/.github/workflows/site.yml`, 'utf8').replace(/^[ \t]*#.*$/gm, '').replace(/[ \t]+#.*$/gm, '');
+  const theirs = commands(site);
+  const mine = commands(code);
+  assert.ok(theirs.length >= 4, 'site.yml has its checks');
+  for (const command of theirs) assert.ok(mine.includes(command), `site.yml runs "${command}", deploy.yml does not`);
+  assert.deepEqual(mine.filter(command => theirs.includes(command)), theirs.filter((command, i) => theirs.indexOf(command) === i), 'the same order');
+});
