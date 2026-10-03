@@ -14,8 +14,11 @@ export const BUILD_INFO_FORMAT = 'modelspec-build/1';
 export const BUILD_INFO_FILE = 'build-info.json';
 /** Written into every output directory the build creates: proof that it may delete it again. */
 export const BUILD_MARKER = '.modelspec-build-output';
-/** What is not uploaded: the marker, and build-info.json (the deploy guard reads it locally, nobody needs it on the site). */
-export const ASSETSIGNORE_TEXT = `${BUILD_MARKER}\n${BUILD_INFO_FILE}\n`;
+/**
+ * What is not uploaded: the marker. build-info.json IS uploaded: the deploy workflow compares the live one
+ * (its `commit` and `checksums`) with the current commit and indexes to decide whether a redeploy is due.
+ */
+export const ASSETSIGNORE_TEXT = `${BUILD_MARKER}\n`;
 const MARKER_TEXT = 'Created by the modelspec.org build (scripts/build.mjs). The next build may delete this directory and everything in it.\n';
 
 /** Names in public/ that the build writes itself; a clash would be silently overwritten. */
@@ -85,6 +88,8 @@ export function buildInfo(config, data, root, pages) {
     fixture: config.mode === 'fixture',
     fixtureSet: config.fixtureSet,
     outDir: config.outName,
+    // the commit of this repository (null for a local build); `checksums` below are those of the indexes read
+    commit: config.commit || null,
     sources: {
       modelspec: describeSource(root, config.sources.modelspec),
       meaninggraph: describeSource(root, config.sources.meaninggraph),
@@ -137,7 +142,7 @@ export async function buildSite({ root, config, data, readOptions = {}, log = ()
 
   await mkdir(out, { recursive: true });
   await writeFile(join(out, BUILD_MARKER), MARKER_TEXT);
-  // The marker and build-info.json are not pages: keep them out of what wrangler uploads.
+  // The marker is not a page: keep it out of what wrangler uploads (build-info.json is served on purpose).
   await writeFile(join(out, '.assetsignore'), ASSETSIGNORE_TEXT);
   await cp(publicDir, out, { recursive: true });
   await writeFile(join(out, 'index.html'), landing);

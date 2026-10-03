@@ -23,12 +23,26 @@ test('a build is public/ plus registry/ plus build-info.json, and the landing pa
     assert.ok(existsSync(join(dist, 'registry', 'index.html')));
     assert.ok(existsSync(join(dist, 'registry', 'models', 'chinook', 'index.html')));
     assert.equal(await read(dist, '.assetsignore'), ASSETSIGNORE_TEXT);
-    assert.equal(ASSETSIGNORE_TEXT, `${BUILD_MARKER}\nbuild-info.json\n`, 'the marker and build-info.json stay out of the upload');
+    assert.equal(ASSETSIGNORE_TEXT, `${BUILD_MARKER}\n`, 'only the marker stays out of the upload: build-info.json is served, the deploy workflow compares it');
     const info = JSON.parse(await read(dist, 'build-info.json'));
     assert.equal(info.production, true);
     assert.equal(info.outDir, 'dist');
     assert.equal(info.pages, 3);
     assert.deepEqual(info.models.map(m => m.id), ['chinook']);
+    assert.equal(info.commit, null, 'a build without BUILD_COMMIT has no commit');
+  } finally { await cleanup(); }
+});
+
+test('build-info.json records the commit of this repository and the checksum of each index it read', async () => {
+  const { root, cleanup } = await tempRoot();
+  try {
+    const commit = 'c0ffee'.padEnd(40, '1');
+    const data = sampleData();
+    await buildSite({ root, config: { ...productionConfig(root), commit }, data });
+    const info = JSON.parse(await read(join(root, 'dist'), 'build-info.json'));
+    assert.equal(info.commit, commit);
+    assert.deepEqual(info.checksums, { modelspec: data.modelspec.checksum, meaninggraph: data.meaninggraph.checksum, ovdbDirectory: data.directory.checksum });
+    for (const checksum of Object.values(info.checksums)) assert.match(checksum, /^sha256:[0-9a-f]{64}$/);
   } finally { await cleanup(); }
 });
 

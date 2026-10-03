@@ -269,9 +269,9 @@ time from three public indexes. It is served by one Cloudflare Worker
 ```text
 dist/  =  copy of public/            the landing page, style.css, script.js, favicon, registry.css
        +  registry/                  /registry/ and /registry/models/<id>/ (generated)
-       +  build-info.json            what the build was made from (read by the deploy guard)
+       +  build-info.json            what the build was made from (read by the deploy guard; served at /build-info.json)
        +  .modelspec-build-output    marker: this directory was created by the build
-       +  .assetsignore              keeps the marker and build-info.json out of the upload
+       +  .assetsignore              keeps the marker out of the upload
 ```
 
 The registry is new and a draft. `/registry/` lists every model of the
@@ -355,11 +355,11 @@ Everything else is a **non-production** build:
   link or anything else is refused. It never touches `public/`, `spec/`, `schema/`,
   the repository root or anything outside the repository.
 
-Deploying. Nothing in this repository deploys by itself: the checks in
-`.github/workflows/site.yml` (unit tests, fixture build, browser tests; read-only,
-no secret) have no deploy step.
+Deploying. The site deploys itself (see Deployment below);
+`.github/workflows/site.yml` stays a tests-only workflow (unit tests, fixture
+build, browser tests; read-only, no secret).
 
-`npm run deploy` is the one supported way. It takes no arguments and no index or
+`npm run deploy` is the one supported way, and what the deploy workflow runs. It takes no arguments and no index or
 base-URL override, refuses to run while a `wrangler.json`, a `wrangler.toml` or a
 `.wrangler/deploy/config.json` redirect exists (they could make wrangler read some
 other configuration, and git-ignored ones do not show in `git status`), runs
@@ -382,9 +382,39 @@ use `--assets` on purpose), a `--config <other file>`, and the configuration fil
 listed above bypass it. Only `npm run deploy` is protected against those flags and
 files; do not deploy with plain wrangler.
 
-`build-info.json` is kept out of the upload by `.assetsignore` (the guard reads it
-from `dist/` locally); it lists the source of each index and the pinned commits, and
-holds no local path.
+`build-info.json` is uploaded (only the build marker is kept out by `.assetsignore`):
+the deploy workflow compares the live one with the current commit and indexes. It
+lists the source and checksum of each index, the pinned commits and the commit of
+this repository, and holds no local path. The guard refuses a `.assetsignore` that
+would hide it.
+
+### Deployment
+
+`.github/workflows/deploy.yml` checks, builds and publishes the Worker, so nobody runs `npm run deploy` by hand.
+
+| Trigger | What runs |
+|---|---|
+| push to `main` | unit tests, `npm run check`, the production build and its guard, the browser tests, then `npm run deploy` and a smoke check |
+| manual run (Actions, "Deploy", on `main`) | the same |
+| every 15 minutes | first asks whether anything changed (below); only then the unit tests, `npm run check`, the production build and its guard, `npm run deploy` and the smoke check |
+| pull request | the same checks and the production build; never a deploy, never in a fork |
+
+Runs are serialised (one concurrency group), so a scheduled run and a push never deploy at the same time.
+
+**What the scheduled run compares.** Every build writes `build-info.json`, served at `https://modelspec.org/build-info.json`. It records `commit` (the commit of this repository, from `BUILD_COMMIT`, set by the workflow; `null` for a local build) and `checksums` (the `checksum` field of each of the three indexes the site is built from: the ModelSpec registry, the MeaningGraph registry and the OVDB Directory index). The scheduled run runs `scripts/check-fresh.mjs` before installing anything: it fetches the live marker and the three current indexes and compares them (`src/freshness.mjs`, unit-tested without a network). When the commit and all three checksums match, it logs that nothing changed and ends in seconds. Otherwise it logs which of them differs, then builds and deploys. A live marker that is missing, unreadable or from before these fields existed counts as a difference; an index that cannot be read, or carries no checksum, fails the run (the build would fail the same way). It refuses an overridden index or base URL, like `npm run deploy`. After a deploy `scripts/smoke-live.mjs` fetches the live marker again, retrying for about a minute, and fails unless it records the build just made; it also checks that `/` and `/registry/` answer 200.
+
+**Credentials.** The deploy needs the `CLOUDFLARE_API_TOKEN` secret and the `CLOUDFLARE_ACCOUNT_ID` variable (an identifier, not a secret) on this repository or on the `specscore` organisation shared with it. When either is missing the workflow still runs the checks and the production build, skips the deploy and the smoke check with a notice (a `::notice::` and a line in the job summary) and ends green; a scheduled run without them stops before building, as it has nothing to deploy to. The token is only ever passed to the deploy step's environment. It needs edit rights on the Worker and on the custom domain's zone (see the route in `wrangler.jsonc`): a token without DNS rights can upload the Worker and still fail at the domain step.
+
+**Scheduled runs stop** after 60 days without repository activity (GitHub disables them in public repositories); a push or enabling the workflow again restarts them.
+
+**Deploying by hand in an emergency.** From a clean checkout on the commit to publish, with `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` set in your shell:
+
+```sh
+npm ci
+npm run deploy     # checks, builds dist/ from the three production indexes, verifies it, runs wrangler deploy
+```
+
+Or run the "Deploy" workflow from the Actions tab. A local build has no `commit` in its marker, so the next scheduled run sees a difference and deploys the pipeline's version over it.
 
 Deploy order. The landing page and every registry page link to the Chinook pages on
 https://meaninggraph.io (`/graphs/chinook/`) and https://directory.openvaultdb.com

@@ -1,7 +1,7 @@
 # Checks for the modelspec.org site build: unit tests, the fixture build and the
 # browser tests. It reads nothing but this repository and the committed
-# fixtures, holds no secret and has no deploy step: nothing in this repository
-# deploys by itself (see "Website" in README.md).
+# fixtures, holds no secret and has no deploy step: the site is deployed by
+# .github/workflows/deploy.yml (see "Deployment" in README.md).
 name: Site
 
 on:

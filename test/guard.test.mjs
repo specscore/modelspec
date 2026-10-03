@@ -173,7 +173,9 @@ test('the real tree has none of those files, and the real wrangler binary is nam
 
 test('the guard refuses a dist/ whose .assetsignore is not the one the build writes, or is missing', async () => {
   for (const [change, expected] of [
-    [root => writeFile(join(root, 'dist', '.assetsignore'), `${BUILD_MARKER}\n`), /\.assetsignore is not the one the build writes/],
+    [root => writeFile(join(root, 'dist', '.assetsignore'), `${BUILD_MARKER}\n*.json\n`), /\.assetsignore is not the one the build writes/],
+    // build-info.json is what the deploy workflow compares: it must be uploaded
+    [root => writeFile(join(root, 'dist', '.assetsignore'), `${BUILD_MARKER}\nbuild-info.json\n`), /\.assetsignore is not the one the build writes/],
     [root => rm(join(root, 'dist', '.assetsignore')), /\.assetsignore is missing/],
   ]) {
     const { root, cleanup } = await prodRoot();

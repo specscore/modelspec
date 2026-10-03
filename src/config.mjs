@@ -22,6 +22,9 @@ export const DEFAULTS = Object.freeze({
   ovdbDirectoryBaseUrl: 'https://directory.openvaultdb.com',
 });
 
+/** The public address of this site: the build marker is served there, and the deploy workflow checks it. */
+export const SITE_URL = 'https://modelspec.org';
+
 /** The committed fixtures: marked copies of real indexes, relative to the repository root. */
 export const FIXTURE_SETS = Object.freeze({
   default: Object.freeze({
@@ -146,6 +149,12 @@ export function resolveBuildConfig(argv, env, { root = ROOT } = {}) {
     };
   }
 
+  // The commit of this repository being built, recorded in build-info.json (set by the deploy workflow).
+  const commit = env.BUILD_COMMIT?.trim() || '';
+  if (commit && !/^[0-9a-f]{40}$/i.test(commit)) {
+    throw new Error(`BUILD_COMMIT must be a full 40-digit commit id, got ${JSON.stringify(commit)}`);
+  }
+
   const meaningGraphBaseUrl = normaliseBaseUrl('MEANINGGRAPH_BASE_URL', env.MEANINGGRAPH_BASE_URL?.trim() || DEFAULTS.meaningGraphBaseUrl);
   const ovdbDirectoryBaseUrl = normaliseBaseUrl('OVDB_DIRECTORY_BASE_URL', env.OVDB_DIRECTORY_BASE_URL?.trim() || DEFAULTS.ovdbDirectoryBaseUrl);
 
@@ -174,6 +183,7 @@ export function resolveBuildConfig(argv, env, { root = ROOT } = {}) {
   return {
     mode,
     production,
+    commit: commit.toLowerCase(),
     fixtureSet,
     sources,
     meaningGraphBaseUrl,

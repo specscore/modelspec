@@ -178,13 +178,16 @@ test('every page of a fixture build carries the banner at the very top and the s
   }
 });
 
-test('build-info.json marks the build as a non-production fixture build, and is not uploaded', async ({ request }) => {
+test('build-info.json marks the build as a non-production fixture build, and is served', async ({ request }) => {
   const info = JSON.parse(readFileSync(new URL('../dist-e2e/build-info.json', import.meta.url), 'utf8'));
   expect(info.production).toBe(false);
   expect(info.fixture).toBe(true);
   expect(info.outDir).toBe('dist-e2e');
   expect(info.models.map(m => m.id)).toEqual(['chinook']);
-  expect((await request.get('/build-info.json')).status()).toBe(404);
+  // it is uploaded on purpose: the deploy workflow compares the live one with the current commit and indexes
+  const served = await request.get('/build-info.json');
+  expect(served.status()).toBe(200);
+  expect(await served.json()).toEqual(info);
 });
 
 test('the marker file of the build is not served', async ({ request }) => {

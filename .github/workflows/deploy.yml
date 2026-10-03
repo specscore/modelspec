@@ -1,0 +1,114 @@
+# Checks, builds and deploys modelspec.org (the Cloudflare Worker modelspec-org).
+#
+#   pull_request        checks and the production build only; never deploys
+#   push to main        checks, build, deploy, smoke check
+#   workflow_dispatch   the same, run from main
+#   schedule            asks first whether anything changed (the commit of this repository, or the
+#                       checksum of any of the three indexes the site is built from: the ModelSpec
+#                       registry, the MeaningGraph registry and the OVDB Directory index, compared with
+#                       the build marker the live site serves) and does nothing when not
+#
+# Deploying needs the CLOUDFLARE_API_TOKEN secret and the CLOUDFLARE_ACCOUNT_ID variable (an identifier,
+# not a secret). Without either, every step except the deploy and the smoke check still runs and the run
+# ends green with a notice. A scheduled run without them stops at once: it has nothing to deploy to.
+#
+# The build and the deploy are the ones `npm run build` and `npm run deploy` run by hand
+# (scripts/build.mjs, scripts/deploy.mjs); their guards stay in force. See "Deployment" in README.md.
+# site.yml (tests only, no secrets) keeps running beside this workflow.
+name: Deploy
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+  schedule:
+    # every 15 minutes
+    - cron: "4,19,34,49 * * * *"
+
+permissions:
+  contents: read
+
+# One deploy at a time: a scheduled run and a push never interleave. A queued run is replaced by a newer
+# one, which builds the newer main, so nothing is lost. Pull request runs only cancel each other.
+concurrency:
+  group: ${{ github.event_name == 'pull_request' && format('pr-{0}', github.ref) || 'deploy' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  deploy:
+    name: check · build · deploy
+    # never in a fork
+    if: github.repository == 'specscore/modelspec'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      WRANGLER_SEND_METRICS: "false"
+      BUILD_COMMIT: ${{ github.sha }}
+      # 'true' when this run may publish: a push to main, a manual run on main or a scheduled run
+      DEPLOY_EVENT: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/main' }}
+      # 'true' when the token and the account id exist (compared here, so the secret is not copied into a step)
+      HAS_CREDENTIALS: ${{ secrets.CLOUDFLARE_API_TOKEN != '' && vars.CLOUDFLARE_ACCOUNT_ID != '' }}
+    steps:
+      # Actions are pinned by full commit SHA (the tag is in the comment).
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: npm
+
+      # Scheduled runs: decide first, with nothing installed, so a run with nothing to do ends in seconds.
+      - name: Scheduled run without credentials
+        if: github.event_name == 'schedule' && env.HAS_CREDENTIALS != 'true'
+        run: |
+          echo "::notice::No CLOUDFLARE_API_TOKEN secret or CLOUDFLARE_ACCOUNT_ID variable: a scheduled run has nothing to deploy to, so it stops here."
+          echo "Scheduled run stopped: no CLOUDFLARE_API_TOKEN secret or CLOUDFLARE_ACCOUNT_ID variable, so there is nothing to deploy to." >> "$GITHUB_STEP_SUMMARY"
+          echo "BUILD_NEEDED=false" >> "$GITHUB_ENV"
+      - name: Is the live site current?
+        if: github.event_name == 'schedule' && env.HAS_CREDENTIALS == 'true'
+        run: node scripts/check-fresh.mjs
+
+      - name: Install
+        if: env.BUILD_NEEDED != 'false'
+        run: npm ci
+      - name: Unit tests
+        if: env.BUILD_NEEDED != 'false'
+        run: npm test
+      - name: Syntax checks and fixture build
+        if: env.BUILD_NEEDED != 'false'
+        run: npm run check
+      # The production build reads the three live indexes and fails when one is unreadable; the guard then
+      # refuses a dist/ that is not exactly the production site.
+      - name: Production build
+        if: env.BUILD_NEEDED != 'false'
+        run: npm run build
+      - name: Production build guard
+        if: env.BUILD_NEEDED != 'false'
+        run: node scripts/check-build.mjs
+
+      # The browser tests use the committed fixtures and never touch dist/. A scheduled run changes
+      # nothing in this repository, so it skips them.
+      - name: Install the browser
+        if: github.event_name != 'schedule' && env.BUILD_NEEDED != 'false'
+        run: npx playwright install --with-deps chromium
+      - name: Browser tests (desktop and 375px, against fixture builds served by wrangler dev)
+        if: github.event_name != 'schedule' && env.BUILD_NEEDED != 'false'
+        run: npm run test:e2e
+
+      - name: Deploy skipped, no credentials
+        if: env.BUILD_NEEDED != 'false' && env.DEPLOY_EVENT == 'true' && env.HAS_CREDENTIALS != 'true'
+        run: |
+          echo "::notice::Deploy and smoke check skipped: no CLOUDFLARE_API_TOKEN secret or CLOUDFLARE_ACCOUNT_ID variable. The checks and the production build passed."
+          echo "Deploy and smoke check skipped: no CLOUDFLARE_API_TOKEN secret or CLOUDFLARE_ACCOUNT_ID variable. The checks and the production build passed." >> "$GITHUB_STEP_SUMMARY"
+      # `npm run deploy` checks, builds dist/ again from the three production indexes, verifies it and runs wrangler.
+      - name: Deploy
+        if: env.BUILD_NEEDED != 'false' && env.DEPLOY_EVENT == 'true' && env.HAS_CREDENTIALS == 'true'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+        run: npm run deploy
+      - name: Smoke check (the live site serves this build)
+        if: env.BUILD_NEEDED != 'false' && env.DEPLOY_EVENT == 'true' && env.HAS_CREDENTIALS == 'true'
+        run: node scripts/smoke-live.mjs
