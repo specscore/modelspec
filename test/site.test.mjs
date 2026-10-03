@@ -189,6 +189,8 @@ test('the two-databases fixture build lists both databases on the model page', a
 test('CLI: an unreachable index fails with exit 1 and writes nothing', () => {
   const env = { ...process.env, MODELSPEC_REGISTRY_INDEX_URL: 'https://127.0.0.1:9/index.json' };
   delete env.MEANINGGRAPH_BASE_URL;
+  // the deploy workflow puts the resolved commits in the environment of every later step, the unit tests included
+  for (const name of Object.keys(env).filter(key => key.endsWith('_INDEX_COMMIT'))) delete env[name];
   const run = spawnSync(process.execPath, [join(REPO, 'scripts/build.mjs')], { env, encoding: 'utf8' });
   assert.equal(run.status, 1);
   assert.match(run.stderr, /Build failed: Cannot read the index at https:\/\/127\.0\.0\.1:9\/index\.json/);
