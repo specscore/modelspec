@@ -7,7 +7,7 @@
 import { cp, lstat, mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { dirname, join, relative, resolve, sep } from 'node:path';
 import { OUT_NAMES } from './config.mjs';
-import { assertAwaited } from './freshness.mjs';
+import { MANIFEST_FILE, writeManifest } from './build-manifest.mjs';
 import { loadIndex, validateDirectoryIndex, validateMeaningGraphIndex, validateModelspecIndex } from './indexes.mjs';
 import { assertChinookEverywhere, extractShell, renderLanding, renderRegistryPages } from './render.mjs';
 
@@ -16,14 +16,15 @@ export const BUILD_INFO_FILE = 'build-info.json';
 /** Written into every output directory the build creates: proof that it may delete it again. */
 export const BUILD_MARKER = '.modelspec-build-output';
 /**
- * What is not uploaded: the marker. build-info.json IS uploaded: the deploy workflow compares the live one
- * (its `commit` and `checksums`) with the current commit and indexes to decide whether a redeploy is due.
+ * What is not uploaded: the marker and the manifest of file hashes. build-info.json IS uploaded: the deploy
+ * workflow compares the live one (its `commit` and `indexCommits`) with the current commit and the data repositories'
+ * commits to decide whether a redeploy is due.
  */
-export const ASSETSIGNORE_TEXT = `${BUILD_MARKER}\n`;
+export const ASSETSIGNORE_TEXT = `${BUILD_MARKER}\n${MANIFEST_FILE}\n`;
 const MARKER_TEXT = 'Created by the modelspec.org build (scripts/build.mjs). The next build may delete this directory and everything in it.\n';
 
 /** Names in public/ that the build writes itself; a clash would be silently overwritten. */
-const RESERVED = ['registry', BUILD_INFO_FILE, BUILD_MARKER, '.assetsignore'];
+const RESERVED = ['registry', BUILD_INFO_FILE, BUILD_MARKER, MANIFEST_FILE, '.assetsignore'];
 
 /**
  * The output directory a build may delete and rewrite, or an error. It must be
@@ -89,8 +90,14 @@ export function buildInfo(config, data, root, pages) {
     fixture: config.mode === 'fixture',
     fixtureSet: config.fixtureSet,
     outDir: config.outName,
-    // the commit of this repository (null for a local build); `checksums` below are those of the indexes read
+    // the commit of this repository (null for a local build), the commit of each data repository the indexes were
+    // read at (null: read from `main`, a local file or a fixture), and the checksums of the indexes read
     commit: config.commit || null,
+    indexCommits: {
+      modelspec: config.indexCommits?.modelspec ?? null,
+      meaninggraph: config.indexCommits?.meaninggraph ?? null,
+      ovdbDirectory: config.indexCommits?.ovdbDirectory ?? null,
+    },
     sources: {
       modelspec: describeSource(root, config.sources.modelspec),
       meaninggraph: describeSource(root, config.sources.meaninggraph),
@@ -112,8 +119,8 @@ export function buildInfo(config, data, root, pages) {
  * Build the site.
  *
  * The old output is removed first, so a failed build leaves nothing that could
- * be deployed; build-info.json is written last, so an interrupted build is
- * refused by the deploy guard too.
+ * be deployed; build-info.json is written next to last and the manifest of file hashes
+ * last, so an interrupted build is refused by the deploy guard too.
  *
  * @param {object} options
  * @param {string} options.root repository root (public/ is read from it, the output is written inside it)
@@ -125,7 +132,6 @@ export async function buildSite({ root, config, data, readOptions = {}, log = ()
   const out = await prepareOutput(root, config.outName);
   const publicDir = join(resolve(root), 'public');
   const indexes = data ?? await loadData(config, readOptions);
-  assertAwaited(config.awaited, { modelspec: indexes.modelspec.checksum, meaninggraph: indexes.meaninggraph.checksum, ovdbDirectory: indexes.directory.checksum });
 
   const template = await readFile(join(publicDir, 'index.html'), 'utf8');
   for (const name of RESERVED) {
@@ -153,6 +159,8 @@ export async function buildSite({ root, config, data, readOptions = {}, log = ()
     await writeFile(join(out, path), html);
   }
   await writeFile(join(out, BUILD_INFO_FILE), `${JSON.stringify(info, null, 2)}\n`);
+  // Last: the hash of every file above, checked again right before the upload (scripts/check-build.mjs).
+  await writeManifest(out);
   log(`Built ${registryPages.size + 1} pages into ${out}`);
   return { outDir: out, pages: registryPages.size + 1, models: indexes.modelspec.models.map(m => m.id), info };
 }

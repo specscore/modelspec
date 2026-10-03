@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // After a deploy: confirms the live site serves the build just made. The live /build-info.json must
-// record this build's commit and index checksums, and the landing page and /registry/ must answer 200; each is
+// record this build's commit, index commits and index checksums, and the landing page and /registry/ must answer 200; each is
 // retried with growing waits (about two and a half minutes in all) while the new version spreads, then fails.
 //
 //   node scripts/smoke-live.mjs

@@ -11,7 +11,7 @@
     "build": "node scripts/build.mjs",
     "build:fixture": "node scripts/build.mjs --use-fixture",
     "dev": "node scripts/build.mjs --use-fixture && wrangler dev --local --assets dist-fixture",
-    "check": "node --check scripts/build.mjs && node --check scripts/check-build.mjs && node --check scripts/deploy.mjs && node --check scripts/check-fresh.mjs && node --check scripts/smoke-live.mjs && node --check tools/make-fixtures.mjs && node --check public/script.js && for f in src/*.mjs; do node --check $f || exit 1; done && node scripts/build.mjs --use-fixture --out dist-check",
+    "check": "node --check scripts/build.mjs && node --check scripts/check-build.mjs && node --check scripts/deploy.mjs && node --check scripts/check-fresh.mjs && node --check scripts/resolve-index-commits.mjs && node --check scripts/smoke-live.mjs && node --check tools/make-fixtures.mjs && node --check public/script.js && for f in src/*.mjs; do node --check $f || exit 1; done && node scripts/build.mjs --use-fixture --out dist-check",
     "fixtures": "node tools/make-fixtures.mjs",
     "test": "node --test \"test/*.test.mjs\"",
     "test:e2e": "playwright test",

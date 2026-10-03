@@ -3,7 +3,9 @@
 // tested.
 //
 // A build is PRODUCTION only when it reads all three indexes from their default
-// https addresses and links the real MeaningGraph and OVDB Directory sites. It is
+// https addresses (or, named by MODELSPEC_REGISTRY_INDEX_COMMIT,
+// MEANINGGRAPH_REGISTRY_INDEX_COMMIT and OVDB_DIRECTORY_INDEX_COMMIT, from the
+// same repositories at exact commits) and links the real MeaningGraph and OVDB Directory sites. It is
 // then written to dist/, the directory the Worker serves, and nowhere else.
 // Anything else (fixtures, another https index, a local file, a local base URL)
 // is a NON-production build: it goes to its own directory, never dist/, and says
@@ -11,6 +13,7 @@
 
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { INDEXES, pinnedCommitOf, pinnedIndexUrl, pinsFromEnv } from './index-commits.mjs';
 
 export const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -21,9 +24,6 @@ export const DEFAULTS = Object.freeze({
   meaningGraphBaseUrl: 'https://meaninggraph.io',
   ovdbDirectoryBaseUrl: 'https://directory.openvaultdb.com',
 });
-
-/** The indexes a notification can name (keys of the checksums the build records). */
-export const AWAITABLE = ['modelspec', 'meaninggraph', 'ovdbDirectory'];
 
 /** The public address of this site: the build marker is served there, and the deploy workflow checks it. */
 export const SITE_URL = 'https://modelspec.org';
@@ -100,10 +100,14 @@ export function normaliseBaseUrl(name, value) {
   return `${url.origin}${url.pathname.replace(/\/+$/, '')}`;
 }
 
-function indexSource({ envName, value, fallback, allowLocal, root }) {
+/**
+ * `repo` is the data repository the index belongs to: `fallback` (its `main` URL) or exactly its pinned URL
+ * (https://raw.githubusercontent.com/<repo>/<40 hex digits>/index.json) is production; any other https URL is `url-custom`.
+ */
+function indexSource({ envName, value, fallback, repo, allowLocal, root }) {
   const location = value?.trim() || fallback;
   if (/^https:\/\//i.test(location)) {
-    return { kind: location === fallback ? 'url' : 'url-custom', location };
+    return { kind: location === fallback || pinnedCommitOf(location, repo) !== null ? 'url' : 'url-custom', location };
   }
   if (/^http:\/\//i.test(location)) throw new Error(`${envName} must be an https URL, got ${location}`);
   if (!allowLocal) {
@@ -111,6 +115,9 @@ function indexSource({ envName, value, fallback, allowLocal, root }) {
   }
   return { kind: 'local', location: resolve(root, location) };
 }
+
+// INDEXES (src/index-commits.mjs) names the indexes as the build marker does; the sources are named as in ENV_NAMES.
+const SOURCE_KEYS = { modelspec: 'modelspec', meaninggraph: 'meaninggraph', ovdbDirectory: 'directory' };
 
 const ENV_NAMES = {
   modelspec: 'MODELSPEC_REGISTRY_INDEX_URL',
@@ -145,28 +152,30 @@ export function resolveBuildConfig(argv, env, { root = ROOT } = {}) {
     if (!files) throw new Error(`Unknown fixture set ${JSON.stringify(fixtureSet)}. Known: ${Object.keys(FIXTURE_SETS).join(', ')}`);
     sources = Object.fromEntries(Object.entries(files).map(([key, file]) => [key, { kind: 'fixture', location: resolve(root, file) }]));
   } else {
+    // The data repositories' commits to read the indexes at (all or none): the build reads
+    // https://raw.githubusercontent.com/<org>/<repo>/<commit>/index.json, which never changes.
+    const pins = pinsFromEnv(env);
+    const pinned = (key, fallback) => {
+      if (!pins) return fallback;
+      if (explicit[SOURCE_KEYS[key]]) throw new Error(`${ENV_NAMES[SOURCE_KEYS[key]]} and ${INDEXES[key].commitEnv} are mutually exclusive: the commit names the URL`);
+      return pinnedIndexUrl(INDEXES[key].repo, pins[key]);
+    };
     sources = {
-      modelspec: indexSource({ envName: ENV_NAMES.modelspec, value: explicit.modelspec, fallback: DEFAULTS.modelspecRegistryIndex, allowLocal, root }),
-      meaninggraph: indexSource({ envName: ENV_NAMES.meaninggraph, value: explicit.meaninggraph, fallback: DEFAULTS.meaningGraphRegistryIndex, allowLocal, root }),
-      directory: indexSource({ envName: ENV_NAMES.directory, value: explicit.directory, fallback: DEFAULTS.ovdbDirectoryIndex, allowLocal, root }),
+      modelspec: indexSource({ envName: ENV_NAMES.modelspec, value: explicit.modelspec, fallback: pinned('modelspec', DEFAULTS.modelspecRegistryIndex), repo: INDEXES.modelspec.repo, allowLocal, root }),
+      meaninggraph: indexSource({ envName: ENV_NAMES.meaninggraph, value: explicit.meaninggraph, fallback: pinned('meaninggraph', DEFAULTS.meaningGraphRegistryIndex), repo: INDEXES.meaninggraph.repo, allowLocal, root }),
+      directory: indexSource({ envName: ENV_NAMES.directory, value: explicit.directory, fallback: pinned('ovdbDirectory', DEFAULTS.ovdbDirectoryIndex), repo: INDEXES.ovdbDirectory.repo, allowLocal, root }),
     };
   }
+  // the commit each index is read at, named by the URL it is read from (null: `main`, a local file or a fixture)
+  const indexCommits = Object.fromEntries(Object.entries(INDEXES).map(([key, { repo }]) => {
+    const source = sources[SOURCE_KEYS[key]];
+    return [key, source.kind === 'url' ? pinnedCommitOf(source.location, repo) : null];
+  }));
 
   // The commit of this repository being built, recorded in build-info.json (set by the deploy workflow).
   const commit = env.BUILD_COMMIT?.trim() || '';
   if (commit && !/^[0-9a-f]{40}$/i.test(commit)) {
     throw new Error(`BUILD_COMMIT must be a full 40-digit commit id, got ${JSON.stringify(commit)}`);
-  }
-
-  // After a notification, check-fresh.mjs names the index that changed and its new checksum; the build refuses an
-  // index that does not carry it (a cached read of the old one must not be published). A fixture build reads no
-  // live index, so it awaits nothing.
-  const awaitIndex = env.AWAIT_INDEX?.trim() || '';
-  const awaitChecksum = env.AWAIT_CHECKSUM?.trim() || '';
-  if (awaitIndex || awaitChecksum) {
-    if (!AWAITABLE.includes(awaitIndex) || !/^sha256:[0-9a-f]{64}$/.test(awaitChecksum)) {
-      throw new Error(`AWAIT_INDEX must be one of ${AWAITABLE.join(', ')} and AWAIT_CHECKSUM sha256:<64 hex>, together`);
-    }
   }
 
   const meaningGraphBaseUrl = normaliseBaseUrl('MEANINGGRAPH_BASE_URL', env.MEANINGGRAPH_BASE_URL?.trim() || DEFAULTS.meaningGraphBaseUrl);
@@ -198,7 +207,7 @@ export function resolveBuildConfig(argv, env, { root = ROOT } = {}) {
     mode,
     production,
     commit: commit.toLowerCase(),
-    awaited: awaitIndex && !useFixture ? { key: awaitIndex, checksum: awaitChecksum } : null,
+    indexCommits,
     fixtureSet,
     sources,
     meaningGraphBaseUrl,

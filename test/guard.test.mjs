@@ -4,9 +4,11 @@ import { cp, mkdir, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { test } from 'node:test';
 import { DEFAULTS } from '../src/config.mjs';
+import { MANIFEST_FILE, manifestProblems } from '../src/build-manifest.mjs';
+import { pinnedIndexUrl } from '../src/index-commits.mjs';
 import { BUILD_MARKER, buildSite } from '../src/site.mjs';
 import { distProblems } from '../scripts/check-build.mjs';
-import { CLOUDFLARE_ENV, CONFIG_OVERRIDES, EXISTING_FLAG, configOverrides, deploy, planDeploy, withoutCloudflare } from '../scripts/deploy.mjs';
+import { CLOUDFLARE_ENV, CONFIG_OVERRIDES, EXISTING_FLAG, checkoutProblems, configOverrides, deploy, planDeploy, withoutCloudflare } from '../scripts/deploy.mjs';
 import { REPO, config, productionConfig, read, sampleData, tempRoot } from './helpers.mjs';
 
 const prodRoot = async () => {
@@ -155,23 +157,153 @@ test('only the wrangler call gets the Cloudflare credentials: not the check, not
   assert.equal(calls[2].env.CLOUDFLARE_ACCOUNT_ID, 'account');
 });
 
+const HEAD = 'a'.repeat(40);
+// a fake git: HEAD is `head`, the working tree has the `dirty` porcelain lines
+const fakeGit = ({ head = `${HEAD}\n`, dirty = '' } = {}) => args => {
+  if (args[0] === 'rev-parse') {
+    if (head instanceof Error) throw head;
+    return head;
+  }
+  assert.deepEqual(args, ['status', '--porcelain', '--untracked-files=all']);
+  if (dirty instanceof Error) throw dirty;
+  return dirty;
+};
+
 test('--use-existing-build uploads the dist/ already built, after the same verification, and builds nothing', async () => {
   const calls = [];
   const env = { PATH: '/bin', CLOUDFLARE_API_TOKEN: 'secret-token' };
-  await deploy({ argv: [EXISTING_FLAG], env, root: '/repo', run: (command, args, stepEnv) => { calls.push([command, args, stepEnv]); return 0; }, verify: async () => [], exists: () => false, log: () => {} });
+  const clean = { git: fakeGit(), recorded: () => HEAD };
+  await deploy({ argv: [EXISTING_FLAG], env, root: '/repo', run: (command, args, stepEnv) => { calls.push([command, args, stepEnv]); return 0; }, verify: async () => [], exists: () => false, log: () => {}, ...clean });
   assert.equal(calls.length, 1, 'wrangler only: no check, no build');
   assert.deepEqual(calls[0][1], ['deploy', '--config', '/repo/wrangler.jsonc', '--assets', '/repo/dist']);
   assert.equal(calls[0][2].CLOUDFLARE_API_TOKEN, 'secret-token');
   // the guard is not weakened: a dist/ that is not a production build is refused, and wrangler never runs
   let ran = 0;
-  await assert.rejects(deploy({ argv: [EXISTING_FLAG], env, root: '/repo', run: () => { ran++; return 0; }, verify: async () => ['dist/ is a fixture build'], exists: () => false, log: () => {} }), /dist\/ is a fixture build/);
+  await assert.rejects(deploy({ argv: [EXISTING_FLAG], env, root: '/repo', run: () => { ran++; return 0; }, verify: async () => ['dist/ is a fixture build'], exists: () => false, log: () => {}, ...clean }), /dist\/ is a fixture build/);
   assert.equal(ran, 0);
   // the other refusals still apply
   assert.throws(() => planDeploy([EXISTING_FLAG, '--assets', 'x'], {}), /takes no arguments/);
   assert.throws(() => planDeploy([EXISTING_FLAG], { OVDB_DIRECTORY_INDEX_URL: 'https://example.test/x.json' }), /Refusing to deploy while OVDB_DIRECTORY_INDEX_URL/);
   assert.equal(planDeploy([EXISTING_FLAG], {}).useExisting, true);
   assert.equal(planDeploy([], {}).useExisting, false);
-  await assert.rejects(deploy({ argv: [EXISTING_FLAG], env: {}, root: '/repo', run: () => 0, verify: async () => [], exists: file => file.endsWith('wrangler.toml'), log: () => {} }), /wrangler\.toml/);
+  await assert.rejects(deploy({ argv: [EXISTING_FLAG], env: {}, root: '/repo', run: () => 0, verify: async () => [], exists: file => file.endsWith('wrangler.toml'), log: () => {}, ...clean }), /wrangler\.toml/);
+});
+
+test('--use-existing-build refuses a build whose marker commit is not HEAD, and a tree that is not clean, before anything is uploaded', async () => {
+  const attempt = async options => {
+    let ran = 0;
+    const outcome = await deploy({ argv: [EXISTING_FLAG], env: {}, root: '/repo', run: () => { ran++; return 0; }, verify: async () => [], exists: () => false, log: () => {}, git: fakeGit(options), recorded: () => options.recorded ?? HEAD }).then(() => null, error => error.message);
+    assert.equal(ran, outcome === null ? 1 : 0, 'wrangler runs only when nothing was refused');
+    return outcome;
+  };
+  assert.equal(await attempt({}), null);
+  assert.match(await attempt({ recorded: 'b'.repeat(40) }), /the build was made from bbbbbbbbbbbb, but HEAD is aaaaaaaaaaaa: build again/);
+  assert.match(await attempt({ recorded: '' }), /made from no recorded commit/);
+  assert.match(await attempt({ recorded: 'A'.repeat(40) }), /no recorded commit/, 'only a lower-case full commit counts');
+  assert.match(await attempt({ dirty: ' M src/site.mjs\n' }), /the working tree is not clean \(1 changed or untracked file, for example " M src\/site\.mjs"\)/);
+  assert.match(await attempt({ dirty: '?? stray.txt\n?? other.txt\n' }), /2 changed or untracked files/);
+  assert.match(await attempt({ head: new Error('not a git repository') }), /git cannot tell which commit HEAD is/);
+  assert.match(await attempt({ head: 'HEAD\n' }), /not a commit id for HEAD/);
+  assert.match(await attempt({ dirty: new Error('boom') }), /cannot tell whether the working tree is clean/);
+  assert.deepEqual(checkoutProblems(HEAD, fakeGit()), []);
+  // without the flag the build is made in this very step: git is not asked
+  let ran = 0;
+  await deploy({ argv: [], env: {}, root: '/repo', run: () => { ran++; return 0; }, verify: async () => [], exists: () => false, log: () => {}, git: () => { throw new Error('git must not be asked'); }, recorded: () => 'b'.repeat(40) });
+  assert.equal(ran, 3);
+});
+
+const PIN = { MODELSPEC_REGISTRY_INDEX_COMMIT: 'd'.repeat(40), MEANINGGRAPH_REGISTRY_INDEX_COMMIT: 'e'.repeat(40), OVDB_DIRECTORY_INDEX_COMMIT: 'f'.repeat(40) };
+
+test('the deploy plan accepts, per index, the production URL or exactly the pinned URL of the same repository, and nothing else', () => {
+  const plan = planDeploy([], { ...PIN, CLOUDFLARE_API_TOKEN: 't' });
+  assert.deepEqual(plan.buildEnv, PIN, 'the commits reach the build; the token does not');
+  const pinnedModelspec = pinnedIndexUrl('modelspec-org/registry', 'd'.repeat(40));
+  assert.deepEqual(planDeploy([], { MODELSPEC_REGISTRY_INDEX_URL: pinnedModelspec }).buildEnv, { MODELSPEC_REGISTRY_INDEX_URL: pinnedModelspec }, 'a pinned URL is passed to the build');
+  assert.deepEqual(planDeploy([], { OVDB_DIRECTORY_INDEX_URL: DEFAULTS.ovdbDirectoryIndex }).buildEnv, {}, 'the default is dropped');
+  const refused = [
+    pinnedIndexUrl('someone/registry', 'd'.repeat(40)), pinnedIndexUrl('meaninggraph/registry', 'd'.repeat(40)), 'https://raw.githubusercontent.com/modelspec-org/registry/some-branch/index.json',
+    pinnedModelspec.replace('d'.repeat(40), 'd'.repeat(39)), pinnedModelspec.replace('d'.repeat(40), 'D'.repeat(40)), `${pinnedModelspec}?x=1`, pinnedModelspec.replace('raw.githubusercontent.com', 'raw.example.test'),
+  ];
+  for (const form of refused) assert.throws(() => planDeploy([], { MODELSPEC_REGISTRY_INDEX_URL: form }), /Refusing to deploy while MODELSPEC_REGISTRY_INDEX_URL is set to/, form);
+  assert.throws(() => planDeploy([], { ...PIN, OVDB_DIRECTORY_INDEX_URL: DEFAULTS.ovdbDirectoryIndex }), /are both set; the commit names the URL/);
+  assert.throws(() => planDeploy([], { MODELSPEC_REGISTRY_INDEX_COMMIT: 'd'.repeat(40) }), /without the commits of the other indexes/);
+  assert.throws(() => planDeploy([], { ...PIN, OVDB_DIRECTORY_INDEX_COMMIT: 'F'.repeat(40) }), /must be 40 lower-case hex digits/);
+});
+
+const pinnedConfig = root => {
+  const base = productionConfig(root);
+  const sources = {
+    modelspec: { kind: 'url', location: pinnedIndexUrl('modelspec-org/registry', 'd'.repeat(40)) },
+    meaninggraph: { kind: 'url', location: pinnedIndexUrl('meaninggraph/registry', 'e'.repeat(40)) },
+    directory: { kind: 'url', location: pinnedIndexUrl('openvaultdb/directory', 'f'.repeat(40)) },
+  };
+  return { ...base, sources, indexCommits: { modelspec: 'd'.repeat(40), meaninggraph: 'e'.repeat(40), ovdbDirectory: 'f'.repeat(40) } };
+};
+
+test('the guard accepts a production build that read the pinned URLs, and records their commits', async () => {
+  const { root, cleanup } = await tempRoot();
+  try {
+    await buildSite({ root, config: pinnedConfig(root), data: sampleData() });
+    assert.deepEqual(await distProblems(root), []);
+    assert.deepEqual(JSON.parse(await read(root, 'dist', 'build-info.json')).indexCommits, { modelspec: 'd'.repeat(40), meaninggraph: 'e'.repeat(40), ovdbDirectory: 'f'.repeat(40) });
+  } finally { await cleanup(); }
+});
+
+test('the guard refuses a build that read, for any index, a URL that is neither production nor the pinned URL of the same repository', async () => {
+  for (const [key, bad] of [
+    ['modelspec', pinnedIndexUrl('meaninggraph/registry', 'd'.repeat(40))],
+    ['meaninggraph', 'https://raw.githubusercontent.com/meaninggraph/registry/some-branch/index.json'],
+    ['ovdbDirectory', `${pinnedIndexUrl('openvaultdb/directory', 'f'.repeat(40))}?x=1`],
+    ['ovdbDirectory', pinnedIndexUrl('fork/directory', 'f'.repeat(40))],
+  ]) {
+    const { root, cleanup } = await prodRoot();
+    try {
+      await rewriteInfo(root, info => { info.sources[key] = { kind: 'url', location: bad }; });
+      assert.match((await distProblems(root)).join('\n'), new RegExp(`it read the ${key} index from`), `${key}: ${bad}`);
+    } finally { await cleanup(); }
+  }
+});
+
+test('a build writes the manifest last, and the guard checks it: an extra, a changed or a missing file stops the upload', async () => {
+  const { root, cleanup } = await prodRoot();
+  try {
+    assert.deepEqual(await manifestProblems(join(root, 'dist')), []);
+    assert.deepEqual(await distProblems(root), []);
+    await writeFile(join(root, 'dist', 'registry', 'stray.html'), '<html></html>');
+    assert.match((await distProblems(root)).join('\n'), /registry\/stray\.html is not in the build manifest: a file was added after the build/);
+    await rm(join(root, 'dist', 'registry', 'stray.html'));
+    const home = await read(root, 'dist', 'registry', 'index.html');
+    await writeFile(join(root, 'dist', 'registry', 'index.html'), home.replace('</body>', '<script>evil()</script></body>'));
+    assert.match((await distProblems(root)).join('\n'), /registry\/index\.html differs from the build manifest: it was changed after the build/);
+    await writeFile(join(root, 'dist', 'registry', 'index.html'), home);
+    await rm(join(root, 'dist', 'favicon.svg'));
+    assert.match((await distProblems(root)).join('\n'), /favicon\.svg is in the build manifest but missing/);
+  } finally { await cleanup(); }
+});
+
+test('a missing, malformed or foreign manifest is refused', async () => {
+  for (const change of [
+    root => rm(join(root, 'dist', MANIFEST_FILE)),
+    root => writeFile(join(root, 'dist', MANIFEST_FILE), '{broken'),
+    root => writeFile(join(root, 'dist', MANIFEST_FILE), JSON.stringify({ format: 'other', files: {} })),
+  ]) {
+    const { root, cleanup } = await prodRoot();
+    try {
+      await change(root);
+      assert.match((await distProblems(root)).join('\n'), /build manifest|no readable|is not a modelspec-build-manifest\/1 manifest/);
+    } finally { await cleanup(); }
+  }
+});
+
+test('the build removes everything that was in its output directory before it wrote the new site', async () => {
+  const { root, cleanup } = await prodRoot();
+  try {
+    await writeFile(join(root, 'dist', 'left-over.html'), 'from an earlier step');
+    await mkdir(join(root, 'dist', 'old-dir'));
+    await buildSite({ root, config: productionConfig(root), data: sampleData() });
+    assert.deepEqual(await distProblems(root), []);
+    assert.ok(!JSON.parse(await read(root, 'dist', MANIFEST_FILE)).files['left-over.html']);
+  } finally { await cleanup(); }
 });
 
 test('deploy refuses a wrangler.json, wrangler.toml or .wrangler/deploy/config.json redirect before it builds or runs anything', async () => {
@@ -204,9 +336,9 @@ test('the real tree has none of those files, and the real wrangler binary is nam
 
 test('the guard refuses a dist/ whose .assetsignore is not the one the build writes, or is missing', async () => {
   for (const [change, expected] of [
-    [root => writeFile(join(root, 'dist', '.assetsignore'), `${BUILD_MARKER}\n*.json\n`), /\.assetsignore is not the one the build writes/],
+    [root => writeFile(join(root, 'dist', '.assetsignore'), `${BUILD_MARKER}\n${MANIFEST_FILE}\n*.json\n`), /\.assetsignore is not the one the build writes/],
     // build-info.json is what the deploy workflow compares: it must be uploaded
-    [root => writeFile(join(root, 'dist', '.assetsignore'), `${BUILD_MARKER}\nbuild-info.json\n`), /\.assetsignore is not the one the build writes/],
+    [root => writeFile(join(root, 'dist', '.assetsignore'), `${BUILD_MARKER}\n${MANIFEST_FILE}\nbuild-info.json\n`), /\.assetsignore is not the one the build writes/],
     [root => rm(join(root, 'dist', '.assetsignore')), /\.assetsignore is missing/],
   ]) {
     const { root, cleanup } = await prodRoot();

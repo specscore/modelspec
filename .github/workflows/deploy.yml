@@ -3,13 +3,15 @@
 #   pull_request        every check and the production build; never deploys
 #   push to main        every check, the build, the deploy, a smoke check
 #   workflow_dispatch   the same, run from main only (any other ref is refused). This is how a change in a
-#                       data repository arrives: its notify-sites workflow starts this one, naming the
-#                       index that changed (`index`) and its new checksum (`checksum`). The index is read
-#                       until it carries that checksum (a cached read must not be published); then the
-#                       live site is compared with the current commit and indexes, and the run ends at
+#                       data repository arrives: its notify-sites workflow starts this one. The run resolves
+#                       the current `main` of each data repository to a commit (`git ls-remote`, never
+#                       cached) and compares the live site with this commit and those commits; it ends at
 #                       once, green, when nothing differs. `force` (boolean) skips only that comparison:
-#                       never the check of the ref, never a check. `reason` (text) is shown in the run
-#                       summary.
+#                       never the check of the ref, never a check. `reason` (text) is shown, HTML-escaped,
+#                       in the run summary.
+#
+# The indexes are read at those commits (https://raw.githubusercontent.com/<org>/<repo>/<commit>/index.json), which
+# never change, so no cached read can be built and no wait is needed. The commits are in the build marker.
 #
 # One rule for every trigger: a run that can deploy runs EVERY check, the browser tests included. No check
 # step is conditional on the event (test/deploy-workflow.test.mjs fails if one is). There is no timer.
@@ -39,14 +41,6 @@ on:
         description: Why this run was started (shown in the run summary; free text)
         type: string
         default: ""
-      index:
-        description: "A notification: the index that changed (modelspec-registry, meaninggraph-registry or ovdb-directory)"
-        type: string
-        default: ""
-      checksum:
-        description: "A notification: the new checksum of that index (sha256: and 64 hex digits)"
-        type: string
-        default: ""
 
 permissions:
   contents: read
@@ -70,11 +64,9 @@ jobs:
       WRANGLER_SEND_METRICS: "false"
       BUILD_COMMIT: ${{ github.sha }}
       # inputs of a manual run, as data: they reach scripts through env only, never a command or an expression;
-      # `reason` goes nowhere but the cleaned line of the run summary, the others are checked by check-fresh.mjs
+      # `reason` goes nowhere but the cleaned, escaped line of the run summary
       FORCE: ${{ inputs.force }}
       REASON: ${{ inputs.reason }}
-      IN_INDEX: ${{ inputs.index }}
-      IN_CHECKSUM: ${{ inputs.checksum }}
       # 'true' when this run may publish: a push to main or a manual run on main
       DEPLOY_EVENT: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/main' }}
       # 'true' when the token and the account id exist (compared here, so the secret is not copied into a step)
@@ -98,8 +90,9 @@ jobs:
       - name: Run summary
         if: github.event_name == 'workflow_dispatch'
         run: |
-          # untrusted text: control characters, colons (so no line can start a workflow command) and backticks are dropped
-          reason="$(printf '%s' "$REASON" | tr -d '\000-\037\177' | tr ':`' '  ' | cut -c1-200)"
+          # untrusted text: control characters, colons (so no line can start a workflow command) and backticks are
+          # dropped, then it is HTML-escaped (the summary is rendered as Markdown, which passes HTML through)
+          reason="$(printf '%s' "$REASON" | tr -d '\000-\037\177' | tr ':`' '  ' | cut -c1-200 | sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g' -e 's/"/\&quot;/g' -e "s/'/\&#39;/g")"
           echo "Manual run on ${GITHUB_REF_NAME} (force: ${FORCE}). Reason: \"${reason}\"" | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Manual run without credentials
         if: github.event_name == 'workflow_dispatch' && env.FORCE != 'true' && env.HAS_CREDENTIALS != 'true'
@@ -107,6 +100,11 @@ jobs:
           echo "::notice::No CLOUDFLARE_API_TOKEN secret or CLOUDFLARE_ACCOUNT_ID variable: there is nothing to deploy to, so this run stops here (run it with force to check and build anyway)."
           echo "Run stopped: no CLOUDFLARE_API_TOKEN secret or CLOUDFLARE_ACCOUNT_ID variable, so there is nothing to deploy to." >> "$GITHUB_STEP_SUMMARY"
           echo "BUILD_NEEDED=false" >> "$GITHUB_ENV"
+      # Every run reads the indexes at the commits resolved here: the current main of each data repository.
+      # No token and no install: git runs with a cleaned environment (scripts/lib/index-commits.mjs).
+      - name: Resolve the data repositories' commits
+        if: env.BUILD_NEEDED != 'false'
+        run: node scripts/resolve-index-commits.mjs
       - name: Is the live site current?
         if: github.event_name == 'workflow_dispatch' && env.BUILD_NEEDED != 'false'
         run: node scripts/check-fresh.mjs
@@ -120,9 +118,9 @@ jobs:
       - name: Syntax checks and fixture build
         if: env.BUILD_NEEDED != 'false'
         run: npm run check
-      # The production build reads the three live indexes and fails when one is unreadable, or (after a
-      # notification) when the index it read does not carry the announced checksum; the guard then refuses a
-      # dist/ that is not exactly the production site.
+      # The production build reads the three registries at the resolved commits and fails when one is
+      # unreadable; the guard then refuses a dist/ that is not exactly the production site (every page marked
+      # as built from production, every file as the build wrote it: its manifest of hashes).
       - name: Production build
         if: env.BUILD_NEEDED != 'false'
         run: npm run build

@@ -5,6 +5,7 @@ import { lstat, mkdir, readdir, readFile, symlink, writeFile } from 'node:fs/pro
 import { join } from 'node:path';
 import { test } from 'node:test';
 import { OUT_NAMES } from '../src/config.mjs';
+import { MANIFEST_FILE } from '../src/build-manifest.mjs';
 import { ASSETSIGNORE_TEXT, BUILD_MARKER, buildSite, loadData, prepareOutput } from '../src/site.mjs';
 import { REPO, config, directoryJson, graphsJson, modelspecJson, productionConfig, read, sampleData, tempRoot } from './helpers.mjs';
 
@@ -17,13 +18,13 @@ test('a build is public/ plus registry/ plus build-info.json, and the landing pa
     const result = await buildSite({ root, config: productionConfig(root), data });
     assert.equal(result.pages, 3);
     const dist = join(root, 'dist');
-    assert.deepEqual((await readdir(dist)).sort(), ['.assetsignore', BUILD_MARKER, 'build-info.json', 'favicon.svg', 'index.html', 'registry', 'registry.css', 'script.js', 'style.css']);
+    assert.deepEqual((await readdir(dist)).sort(), ['.assetsignore', MANIFEST_FILE, BUILD_MARKER, 'build-info.json', 'favicon.svg', 'index.html', 'registry', 'registry.css', 'script.js', 'style.css']);
     assert.equal(await read(dist, 'index.html'), await read(root, 'public', 'index.html'));
     for (const file of ['style.css', 'script.js', 'favicon.svg', 'registry.css']) assert.equal(await read(dist, file), await read(root, 'public', file));
     assert.ok(existsSync(join(dist, 'registry', 'index.html')));
     assert.ok(existsSync(join(dist, 'registry', 'models', 'chinook', 'index.html')));
     assert.equal(await read(dist, '.assetsignore'), ASSETSIGNORE_TEXT);
-    assert.equal(ASSETSIGNORE_TEXT, `${BUILD_MARKER}\n`, 'only the marker stays out of the upload: build-info.json is served, the deploy workflow compares it');
+    assert.equal(ASSETSIGNORE_TEXT, `${BUILD_MARKER}\n${MANIFEST_FILE}\n`, 'only the marker and the manifest stay out of the upload: build-info.json is served, the deploy workflow compares it');
     const info = JSON.parse(await read(dist, 'build-info.json'));
     assert.equal(info.production, true);
     assert.equal(info.outDir, 'dist');
@@ -43,6 +44,7 @@ test('build-info.json records the commit of this repository and the checksum of 
     assert.equal(info.commit, commit);
     assert.deepEqual(info.checksums, { modelspec: data.modelspec.checksum, meaninggraph: data.meaninggraph.checksum, ovdbDirectory: data.directory.checksum });
     for (const checksum of Object.values(info.checksums)) assert.match(checksum, /^sha256:[0-9a-f]{64}$/);
+    assert.deepEqual(info.indexCommits, { modelspec: null, meaninggraph: null, ovdbDirectory: null }, 'read from main: no commit to record');
   } finally { await cleanup(); }
 });
 

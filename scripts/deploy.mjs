@@ -15,16 +15,20 @@
 // `wrangler deploy --assets <dir>` is not.
 
 import { spawnSync } from 'node:child_process';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { DEFAULTS, ROOT } from '../src/config.mjs';
+import { COMMIT_RE, INDEXES, gitCommand, isProductionIndexUrl, pinsFromEnv } from '../src/index-commits.mjs';
 import { distProblems } from './check-build.mjs';
 
 /**
  * `--use-existing-build`: upload the dist/ that a production build (npm run build) already made, after the same
  * verification, instead of checking and building again. The deploy workflow uses it so that the check and the
- * build, which parse the public indexes, run in earlier steps without the Cloudflare token.
+ * build, which parse the public indexes, run in earlier steps without the Cloudflare token. Because nothing is
+ * built here, three more things are required first: the build marker's commit is HEAD, the working tree is clean
+ * (no tracked change, no untracked file), and dist/ matches the manifest of file hashes the build wrote (an extra,
+ * a missing or a changed file is refused; scripts/check-build.mjs, which wrangler runs again as its build command).
  */
 export const EXISTING_FLAG = '--use-existing-build';
 
@@ -38,10 +42,15 @@ export function withoutCloudflare(env) {
   return rest;
 }
 
+// The index URL variables: the production `main` URL, or (not together with the commit variables) exactly the
+// pinned URL of the same repository.
+const INDEX_URLS = {
+  MODELSPEC_REGISTRY_INDEX_URL: [DEFAULTS.modelspecRegistryIndex, 'modelspec'],
+  MEANINGGRAPH_REGISTRY_INDEX_URL: [DEFAULTS.meaningGraphRegistryIndex, 'meaninggraph'],
+  OVDB_DIRECTORY_INDEX_URL: [DEFAULTS.ovdbDirectoryIndex, 'ovdbDirectory'],
+};
+
 const ENV_DEFAULTS = {
-  MODELSPEC_REGISTRY_INDEX_URL: DEFAULTS.modelspecRegistryIndex,
-  MEANINGGRAPH_REGISTRY_INDEX_URL: DEFAULTS.meaningGraphRegistryIndex,
-  OVDB_DIRECTORY_INDEX_URL: DEFAULTS.ovdbDirectoryIndex,
   MEANINGGRAPH_BASE_URL: DEFAULTS.meaningGraphBaseUrl,
   OVDB_DIRECTORY_BASE_URL: DEFAULTS.ovdbDirectoryBaseUrl,
 };
@@ -56,8 +65,19 @@ export function planDeploy(argv, env) {
   if (unknown.length > 0) {
     throw new Error(`Refusing to deploy: npm run deploy takes no arguments (got ${unknown.join(' ')}). It deploys exactly the dist/ it builds from the production indexes; use plain wrangler yourself for anything else`);
   }
+  // The data repository commits to read the indexes at (all or none, shape-checked); the build is told them, or resolves them itself.
+  const pins = pinsFromEnv(env);
   // The check and the build parse public indexes: they never get the Cloudflare credentials.
   const buildEnv = withoutCloudflare(env);
+  for (const [name, [fallback, key]] of Object.entries(INDEX_URLS)) {
+    const value = (env[name] ?? '').trim();
+    if (value !== '' && pins) throw new Error(`Refusing to deploy: ${name} and ${INDEXES[key].commitEnv} are both set; the commit names the URL`);
+    if (value !== '' && value !== fallback && !isProductionIndexUrl(value, fallback, INDEXES[key].repo)) {
+      throw new Error(`Refusing to deploy while ${name} is set to ${value}: a deploy always uses ${fallback} or its pinned commit URL`);
+    }
+    // the production default applies anyway; a pinned URL is passed on to the build
+    if (value === '' || value === fallback) delete buildEnv[name];
+  }
   for (const [name, fallback] of Object.entries(ENV_DEFAULTS)) {
     const value = (env[name] ?? '').trim();
     if (value !== '' && value.replace(/\/+$/, '') !== fallback) {
@@ -81,11 +101,51 @@ function runCommand(command, args, env) {
   return spawnSync(command, args, { cwd: ROOT, env, stdio: 'inherit' }).status ?? 1;
 }
 
+/** Run git (a fixed argument list, no shell, a cleaned environment, a time limit) in the repository and return its output. */
+function runGit(args) {
+  return gitCommand(args, ROOT);
+}
+
 /**
- * Check, build, verify, upload. `run` and `verify` are injectable for tests.
+ * What stops a build that was not made in this step from being uploaded: the marker's commit is not HEAD, or the
+ * working tree is not clean. `git(args)` returns the output of git (injectable for tests).
+ */
+export function checkoutProblems(markerCommit, git = runGit) {
+  const problems = [];
+  let head = '';
+  try {
+    head = git(['rev-parse', 'HEAD']).trim();
+  } catch {
+    problems.push('git cannot tell which commit HEAD is, so the build cannot be tied to it');
+  }
+  if (head && !COMMIT_RE.test(head)) problems.push('git printed something that is not a commit id for HEAD');
+  else if (head && markerCommit !== head) {
+    problems.push(`the build was made from ${typeof markerCommit === 'string' && COMMIT_RE.test(markerCommit) ? markerCommit.slice(0, 12) : 'no recorded commit'}, but HEAD is ${head.slice(0, 12)}: build again (npm run build) at this commit`);
+  }
+  try {
+    const dirty = git(['status', '--porcelain', '--untracked-files=all']).split('\n').filter(Boolean);
+    if (dirty.length > 0) problems.push(`the working tree is not clean (${dirty.length} changed or untracked file${dirty.length === 1 ? '' : 's'}, for example ${JSON.stringify(dirty[0].replace(/[^ -~]/g, '?').slice(0, 80))}): the upload would not be what was reviewed`);
+  } catch {
+    problems.push('git cannot tell whether the working tree is clean');
+  }
+  return problems;
+}
+
+/** The commit a build recorded in its build-info.json ('' when unreadable). */
+function recordedCommit(root) {
+  try {
+    const commit = JSON.parse(readFileSync(join(root, 'dist', 'build-info.json'), 'utf8')).commit;
+    return typeof commit === 'string' ? commit : '';
+  } catch {
+    return '';
+  }
+}
+
+/**
+ * Check, build, verify, upload. `run`, `verify` and `git` are injectable for tests.
  * Resolves only when wrangler ran; every other outcome throws.
  */
-export async function deploy({ argv, env, root = ROOT, run = runCommand, verify = () => distProblems(root), exists = existsSync, log = console.log }) {
+export async function deploy({ argv, env, root = ROOT, run = runCommand, verify = () => distProblems(root), exists = existsSync, log = console.log, git = runGit, recorded = () => recordedCommit(root) }) {
   const { buildEnv, useExisting } = planDeploy(argv, env);
   const overrides = configOverrides(root, exists);
   if (overrides.length > 0) {
@@ -98,6 +158,10 @@ export async function deploy({ argv, env, root = ROOT, run = runCommand, verify 
   for (const [name, command, args, stepEnv] of steps) {
     const status = run(command, args, stepEnv);
     if (status !== 0) throw new Error(`Refusing to deploy: the ${name} step failed (exit ${status})`);
+  }
+  if (useExisting) {
+    const refused = checkoutProblems(recorded(), git);
+    if (refused.length > 0) throw new Error(`Refusing to deploy the existing build:\n  ${refused.join('\n  ')}`);
   }
   const problems = await verify();
   if (problems.length > 0) throw new Error(`Refusing to deploy:\n  ${problems.join('\n  ')}`);

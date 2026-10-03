@@ -119,3 +119,44 @@ test('a fixture build is never production, whatever it reads', () => {
   assert.equal(c.production, false);
   assert.equal(Object.keys(c.sources).length, 3);
 });
+
+const PIN = { MODELSPEC_REGISTRY_INDEX_COMMIT: 'd'.repeat(40), MEANINGGRAPH_REGISTRY_INDEX_COMMIT: 'e'.repeat(40), OVDB_DIRECTORY_INDEX_COMMIT: 'f'.repeat(40) };
+const PINNED = {
+  modelspec: `https://raw.githubusercontent.com/modelspec-org/registry/${'d'.repeat(40)}/index.json`,
+  meaninggraph: `https://raw.githubusercontent.com/meaninggraph/registry/${'e'.repeat(40)}/index.json`,
+  directory: `https://raw.githubusercontent.com/openvaultdb/directory/${'f'.repeat(40)}/index.json`,
+};
+
+test('the three index commits are all-or-none and name the URLs the build reads; the build is still production, written to dist/', () => {
+  const none = resolveWith();
+  assert.deepEqual(none.indexCommits, { modelspec: null, meaninggraph: null, ovdbDirectory: null });
+  const c = resolveWith([], PIN);
+  assert.deepEqual(Object.fromEntries(Object.entries(c.sources).map(([key, source]) => [key, [source.kind, source.location]])), {
+    modelspec: ['url', PINNED.modelspec], meaninggraph: ['url', PINNED.meaninggraph], directory: ['url', PINNED.directory],
+  });
+  assert.deepEqual(c.indexCommits, { modelspec: 'd'.repeat(40), meaninggraph: 'e'.repeat(40), ovdbDirectory: 'f'.repeat(40) });
+  assert.equal(c.mode, 'production');
+  assert.equal(c.production, true);
+  assert.equal(c.outName, 'dist');
+  assert.throws(() => resolveWith([], { MODELSPEC_REGISTRY_INDEX_COMMIT: 'd'.repeat(40) }), /is set without the commits of the other indexes/);
+  assert.throws(() => resolveWith([], { ...PIN, OVDB_DIRECTORY_INDEX_COMMIT: 'main' }), /OVDB_DIRECTORY_INDEX_COMMIT must be 40 lower-case hex digits/);
+  assert.throws(() => resolveWith([], { ...PIN, MEANINGGRAPH_REGISTRY_INDEX_URL: 'https://example.test/i.json' }), /MEANINGGRAPH_REGISTRY_INDEX_URL and MEANINGGRAPH_REGISTRY_INDEX_COMMIT are mutually exclusive/);
+});
+
+test('an index URL that is the pinned URL of its repository is still production and records that commit; any other repository or form is not', () => {
+  const c = resolveWith([], { OVDB_DIRECTORY_INDEX_URL: PINNED.directory });
+  assert.equal(c.production, true);
+  assert.deepEqual(c.indexCommits, { modelspec: null, meaninggraph: null, ovdbDirectory: 'f'.repeat(40) });
+  for (const url of [PINNED.modelspec, PINNED.directory.replace('openvaultdb', 'fork'), PINNED.directory.replace('f'.repeat(40), 'some-branch'), `${PINNED.directory}?x=1`, 'https://raw.githubusercontent.com/openvaultdb/directory/main/other.json']) {
+    const other = resolveWith(['--allow-local-index'], { OVDB_DIRECTORY_INDEX_URL: url });
+    assert.equal(other.production, false, url);
+    assert.equal(other.mode, 'nonproduction', url);
+    assert.equal(other.outName, 'dist-nonprod');
+  }
+});
+
+test('a fixture build ignores the index commits and stays a fixture build', () => {
+  const c = resolveWith(['--use-fixture'], PIN);
+  assert.equal(c.mode, 'fixture');
+  assert.deepEqual(c.indexCommits, { modelspec: null, meaninggraph: null, ovdbDirectory: null });
+});
