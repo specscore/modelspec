@@ -22,6 +22,9 @@ export const DEFAULTS = Object.freeze({
   ovdbDirectoryBaseUrl: 'https://directory.openvaultdb.com',
 });
 
+/** The indexes a notification can name (keys of the checksums the build records). */
+export const AWAITABLE = ['modelspec', 'meaninggraph', 'ovdbDirectory'];
+
 /** The public address of this site: the build marker is served there, and the deploy workflow checks it. */
 export const SITE_URL = 'https://modelspec.org';
 
@@ -155,6 +158,17 @@ export function resolveBuildConfig(argv, env, { root = ROOT } = {}) {
     throw new Error(`BUILD_COMMIT must be a full 40-digit commit id, got ${JSON.stringify(commit)}`);
   }
 
+  // After a notification, check-fresh.mjs names the index that changed and its new checksum; the build refuses an
+  // index that does not carry it (a cached read of the old one must not be published). A fixture build reads no
+  // live index, so it awaits nothing.
+  const awaitIndex = env.AWAIT_INDEX?.trim() || '';
+  const awaitChecksum = env.AWAIT_CHECKSUM?.trim() || '';
+  if (awaitIndex || awaitChecksum) {
+    if (!AWAITABLE.includes(awaitIndex) || !/^sha256:[0-9a-f]{64}$/.test(awaitChecksum)) {
+      throw new Error(`AWAIT_INDEX must be one of ${AWAITABLE.join(', ')} and AWAIT_CHECKSUM sha256:<64 hex>, together`);
+    }
+  }
+
   const meaningGraphBaseUrl = normaliseBaseUrl('MEANINGGRAPH_BASE_URL', env.MEANINGGRAPH_BASE_URL?.trim() || DEFAULTS.meaningGraphBaseUrl);
   const ovdbDirectoryBaseUrl = normaliseBaseUrl('OVDB_DIRECTORY_BASE_URL', env.OVDB_DIRECTORY_BASE_URL?.trim() || DEFAULTS.ovdbDirectoryBaseUrl);
 
@@ -184,6 +198,7 @@ export function resolveBuildConfig(argv, env, { root = ROOT } = {}) {
     mode,
     production,
     commit: commit.toLowerCase(),
+    awaited: awaitIndex && !useFixture ? { key: awaitIndex, checksum: awaitChecksum } : null,
     fixtureSet,
     sources,
     meaningGraphBaseUrl,

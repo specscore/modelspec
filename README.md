@@ -392,27 +392,40 @@ would hide it.
 
 ### Deployment
 
-`.github/workflows/deploy.yml` checks, builds and publishes the Worker, so nobody runs `npm run deploy` by hand.
-
-| Trigger | What runs |
-|---|---|
-| push to `main` | unit tests, `npm run check`, the production build and its guard, the browser tests, then `npm run deploy` and a smoke check |
-| manual run (Actions, "Deploy", on `main` only; also how a data repository notifies this site) | first asks whether anything changed (below) and ends at once, green, when not; otherwise the unit tests, `npm run check`, the production build and its guard, `npm run deploy` and the smoke check. With `force` it skips the question and always deploys |
-| pull request | the same checks and the production build; never a deploy, never in a fork |
+The site deploys itself: `.github/workflows/deploy.yml` checks, builds and publishes the Worker, so nobody runs `npm run deploy` by hand.
 
 **What triggers a deploy.** Three things, and nothing runs on a timer:
 
 1. a push to `main`;
-2. a notification from a data repository: when `index.json` changes in a repository this site is built from (the ModelSpec, MeaningGraph or OVDB Directory index), that repository's `notify-sites` workflow starts the "Deploy" workflow here on `main`;
-3. a manual run of "Deploy" on `main` (Actions tab). Any other branch is refused. The boolean input `force` (default off) skips the freshness question below and deploys regardless; the text input `reason` is shown in the run summary and is treated as untrusted text.
+2. a notification from a data repository: when `index.json` changes in a repository this site is built from (the ModelSpec registry, the MeaningGraph registry or the OVDB Directory index), that repository's `notify-sites` workflow starts the "Deploy" workflow here on `main`, naming the index that changed and its new checksum;
+3. a manual run of "Deploy" on `main` (Actions tab). Any other branch is refused. Inputs: `force` (boolean, default off) skips the freshness comparison below and nothing else; `reason` (text) is shown in the run summary and is treated as untrusted text (control characters and colons are dropped, it is never put in a command).
 
-A notification that arrives twice, or late, costs seconds: the run compares first and ends green when the live site already matches.
+| Trigger | What runs |
+|---|---|
+| push to `main` | unit tests, `npm run check`, the production build and its guard, the browser tests, then the deploy and a smoke check |
+| manual run or notification | the freshness step first (below), then the same as a push |
+| pull request | the same checks and the production build; never a deploy, never in a fork |
 
-Runs are serialised (one concurrency group), so a notified run and a push never deploy at the same time.
+**Every run that can deploy runs every check.** No check is conditional on the event: a manual or notified run runs the unit tests, `npm run check`, the build and its guard and the browser tests exactly as a push does. (`test/deploy-workflow.test.mjs` fails if a check step gets a condition on the event, on `force` or on the ref, and if `deploy.yml` runs fewer steps than `site.yml`, in another order, with a condition or `continue-on-error`, or after the deploy.) The only run that skips them is one that ends before building because the live site is already current.
 
-**What a manual or notified run compares.** Every build writes `build-info.json`, served at `https://modelspec.org/build-info.json`. It records `commit` (the commit of this repository, from `BUILD_COMMIT`, set by the workflow; `null` for a local build) and `checksums` (the `checksum` field of each of the three indexes the site is built from: the ModelSpec registry, the MeaningGraph registry and the OVDB Directory index). A manual run without `force` runs `scripts/check-fresh.mjs` before installing anything: it fetches the live marker and the three current indexes and compares them (`src/freshness.mjs`, unit-tested without a network). When the commit and all three checksums match, it logs that nothing changed and ends in seconds. Otherwise it logs which of them differs, then builds and deploys. A live marker that is missing, unreadable or from before these fields existed counts as a difference; an index that cannot be read, or carries no checksum, fails the run (the build would fail the same way). It refuses an overridden index or base URL, like `npm run deploy`. After a deploy `scripts/smoke-live.mjs` fetches the live marker again, retrying for about a minute, and fails unless it records the build just made; it also checks that `/` and `/registry/` answer 200.
+**The freshness step.** Every build writes `build-info.json`, served at `https://modelspec.org/build-info.json`. It records `commit` (the commit of this repository, from `BUILD_COMMIT`, set by the workflow; `null` for a local build) and `checksums` (the `checksum` field of each of the three indexes the site is built from: the ModelSpec registry, the MeaningGraph registry and the OVDB Directory index). A manual or notified run runs `scripts/check-fresh.mjs` before installing anything:
 
-**Credentials.** The deploy needs the `CLOUDFLARE_API_TOKEN` secret and the `CLOUDFLARE_ACCOUNT_ID` variable (an identifier, not a secret) on this repository or on the `specscore` organisation shared with it. When either is missing the workflow still runs the checks and the production build, skips the deploy and the smoke check with a notice (a `::notice::` and a line in the job summary) and ends green; a manual run without `force` and without them stops before building, as it has nothing to deploy to. The token is only ever passed to the deploy step's environment. It needs edit rights on the Worker and on the custom domain's zone (see the route in `wrangler.jsonc`): a token without DNS rights can upload the Worker and still fail at the domain step.
+1. If it was notified, it first reads the announced index until that index carries the announced checksum. `raw.githubusercontent.com` answers from a cache that can be five minutes old, so a notification sent right after a push can otherwise read the old index and conclude that nothing changed; with no timer nothing would repair that. It waits up to about ten minutes (every 30 seconds) and then fails the run red with a message. (A notification superseded by a newer change fails that way too; the newer change has its own notification.) The announcement is checked strictly (`sha256:` and 64 hex digits, a known index name) before anything is done with it.
+2. Unless `force`, it fetches the live marker and the three current indexes and compares them (`src/freshness.mjs`, unit-tested without a network). When the commit and all three checksums match, it logs that nothing changed and the run ends green in seconds. Otherwise it logs which of them differs, then builds and deploys. A live marker that is missing, unreadable or from before these fields existed counts as a difference; an index that cannot be read, or carries no checksum, fails the run (the build would fail the same way). It refuses an overridden index or base URL, like `npm run deploy`.
+
+Values fetched from public URLs are shape-checked before they are printed (a commit is 40 hex digits, a checksum `sha256:` and 64 hex digits, anything else prints as "invalid"), and other fetched text loses control characters and colon runs.
+
+**The build reads the index that was awaited.** After a notification the workflow passes the announced index and checksum to the build (`AWAIT_INDEX`, `AWAIT_CHECKSUM`, written by `check-fresh.mjs` after it checked their shape). The build re-reads the indexes itself and fails, leaving no `build/`, if the one it read does not carry that checksum, so a stale cached read can never be published.
+
+**After the deploy,** `scripts/smoke-live.mjs` fetches the live marker and the pages (`/` and `/registry/`) again, each retried with growing waits (5 to 30 seconds, about two and a half minutes in all), and fails the run red unless the marker records the build just made and the pages answer 200.
+
+**There is no automatic rollback.** A red smoke check, or a deploy that fails part-way, leaves whatever Cloudflare has made live, live. To go back by hand: `npx wrangler rollback` (it makes the previously deployed version of the `modelspec-org` Worker the active deployment at once; `npx wrangler rollback <VERSION_ID>` picks another of the last 100 versions, and `npx wrangler deployments list` shows them), or revert the commit and push, which redeploys. Cloudflare documents rollback for Workers versions; it has not been tried on this Worker with static assets, so check the live site afterwards.
+
+**Transient failures.** A run that fails on a transient error (a network error in a check or the build, or a Cloudflare API error) is not retried: run "Deploy" again.
+
+**Credentials.** The deploy needs the `CLOUDFLARE_API_TOKEN` secret and the `CLOUDFLARE_ACCOUNT_ID` variable (an identifier, not a secret). Neither exists for this repository today (set them on the repository or on the `specscore` organisation shared with it). When either is missing the workflow still runs the checks and the production build, skips the deploy and the smoke check with a notice (a `::notice::` and a line in the job summary) and ends green; a manual run without `force` and without them stops before building, as it has nothing to deploy to. **The token is in the environment of one step, "Deploy", and nowhere else**: not of an install, the check, the build or the browser tests, which parse the public indexes. "Deploy" runs `npm run deploy -- --use-existing-build`: no check, no build, nothing installed; it verifies the `dist/` the earlier steps made and guarded, then runs `wrangler deploy --config <repository>/wrangler.jsonc --assets <repository>/dist`, which runs this repository's `scripts/check-build.mjs` once more. Inside `npm run deploy` (by hand, without the flag) the credentials are likewise removed from the environment of the check and the build and given to the wrangler call only. Nothing fetched from a public URL is read or executed in that step. The account id (`vars.CLOUDFLARE_ACCOUNT_ID`) is not masked in this public repository's logs; wrangler error messages can include it. It is an identifier, not a credential; keep it as a secret if it should not be public.
+
+**Custom domain.** `wrangler.jsonc` declares the custom domain `modelspec.org`. A token without the rights to change the zone's custom domains and DNS (Cloudflare: the Worker's Editor role plus Workers Routes Write on the zone) can fail at the domain step even when the domain is already attached. Cloudflare's documentation says `wrangler deploy` changes routes and custom domains as part of the deployment but not in what order it uploads the version and updates them; so after such a failure the run is red and the smoke check is skipped, and whether the new version is already live is not documented. Look at the live marker (`/build-info.json`), and use the rollback above if you want the previous version back.
 
 **Deploying by hand in an emergency.** From a clean checkout on the commit to publish, with `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` set in your shell:
 
@@ -421,7 +434,7 @@ npm ci
 npm run deploy     # checks, builds dist/ from the three production indexes, verifies it, runs wrangler deploy
 ```
 
-Or run the "Deploy" workflow from the Actions tab. A local build has no `commit` in its marker, so the next manual or notified run (without `force`) sees a difference and deploys the pipeline's version over it.
+Or run the "Deploy" workflow from the Actions tab (with `force` to skip the comparison). A local build has no `commit` in its marker, so the next manual or notified run (without `force`) sees a difference and deploys the pipeline's version over it.
 
 Deploy order. The landing page and every registry page link to the Chinook pages on
 https://meaninggraph.io (`/graphs/chinook/`) and https://directory.openvaultdb.com

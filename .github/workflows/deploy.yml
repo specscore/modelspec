@@ -1,24 +1,28 @@
 # Checks, builds and deploys modelspec.org (the Cloudflare Worker modelspec-org).
 #
-#   pull_request        checks and the production build only; never deploys
-#   push to main        checks, build, deploy, smoke check
-#   workflow_dispatch   run from main only (any other ref is refused). This is how a change in a data
-#                       repository arrives: its notify-sites workflow starts this one. It first asks
-#                       whether anything changed (the commit of this repository, or the checksum of an
-#                       index the site is built from, compared with the build marker the live site
-#                       serves) and ends at once, green, when not; the boolean input `force` skips that
-#                       question; the string input `reason` is shown in the run summary.
+#   pull_request        every check and the production build; never deploys
+#   push to main        every check, the build, the deploy, a smoke check
+#   workflow_dispatch   the same, run from main only (any other ref is refused). This is how a change in a
+#                       data repository arrives: its notify-sites workflow starts this one, naming the
+#                       index that changed (`index`) and its new checksum (`checksum`). The index is read
+#                       until it carries that checksum (a cached read must not be published); then the
+#                       live site is compared with the current commit and indexes, and the run ends at
+#                       once, green, when nothing differs. `force` (boolean) skips only that comparison:
+#                       never the check of the ref, never a check. `reason` (text) is shown in the run
+#                       summary.
 #
-# There is no timer: nothing here runs on a schedule.
+# One rule for every trigger: a run that can deploy runs EVERY check, the browser tests included. No check
+# step is conditional on the event (test/deploy-workflow.test.mjs fails if one is). There is no timer.
 #
 # Deploying needs the CLOUDFLARE_API_TOKEN secret and the CLOUDFLARE_ACCOUNT_ID variable (an identifier,
-# not a secret). Without either, every step except the deploy and the smoke check still runs and the run
-# ends green with a notice. A manual run without them (and without `force`) stops at once:
-# it has nothing to deploy to.
+# not a secret). Without either, every step except the deploy
+# and the smoke check still runs and the run ends green with a notice. A manual run without them
+# (and without `force`) stops at once: it has nothing to deploy to.
 #
-# The build and the deploy are the ones `npm run build` and `npm run deploy` run by hand
-# (scripts/build.mjs, scripts/deploy.mjs); their guards stay in force. See "Deployment" in README.md.
-# site.yml (tests only, no secrets) keeps running beside this workflow.
+# The token is in the environment of the Deploy step only, never of an install, a check or the build.
+# The build and the deploy are `npm run build` and `npm run deploy -- --use-existing-build` (scripts/build.mjs,
+# scripts/deploy.mjs); their guards stay in force. site.yml (tests only, no secrets) runs beside this workflow
+# and test/deploy-workflow.test.mjs fails if this one runs fewer checks than it. There is no automatic rollback. See "Deployment" in README.md.
 name: Deploy
 
 on:
@@ -35,14 +39,24 @@ on:
         description: Why this run was started (shown in the run summary; free text)
         type: string
         default: ""
+      index:
+        description: "A notification: the index that changed (modelspec-registry, meaninggraph-registry or ovdb-directory)"
+        type: string
+        default: ""
+      checksum:
+        description: "A notification: the new checksum of that index (sha256: and 64 hex digits)"
+        type: string
+        default: ""
 
 permissions:
   contents: read
 
-# One deploy at a time: a notified run and a push never interleave. A queued run is replaced by a newer
-# one, which builds the newer main, so nothing is lost. Pull request runs only cancel each other.
+# One deploy at a time, and every run that can deploy is in the same group: a notified run and a push never
+# interleave. A queued run is replaced by a newer one, which builds the newer main, so nothing is lost. A
+# pull request run, or a manual run on another ref (which cannot deploy), has a group of its own and so can
+# never replace a pending run on main.
 concurrency:
-  group: ${{ github.event_name == 'pull_request' && format('pr-{0}', github.ref) || 'deploy' }}
+  group: ${{ (github.event_name == 'pull_request' || github.ref != 'refs/heads/main') && format('check-{0}', github.ref) || 'deploy' }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
@@ -51,15 +65,16 @@ jobs:
     # never in a fork
     if: github.repository == 'specscore/modelspec'
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     env:
       WRANGLER_SEND_METRICS: "false"
       BUILD_COMMIT: ${{ github.sha }}
-      # inputs of a manual run, as data: never interpolated into a command or an expression
+      # inputs of a manual run, as data: they reach scripts through env only, never a command or an expression;
+      # `reason` goes nowhere but the cleaned line of the run summary, the others are checked by check-fresh.mjs
       FORCE: ${{ inputs.force }}
       REASON: ${{ inputs.reason }}
-      # 'false' for a manual run without `force`: it changes nothing in this repository, so it skips the browser tests
-      FULL_CHECKS: ${{ github.event_name != 'workflow_dispatch' || inputs.force }}
+      IN_INDEX: ${{ inputs.index }}
+      IN_CHECKSUM: ${{ inputs.checksum }}
       # 'true' when this run may publish: a push to main or a manual run on main
       DEPLOY_EVENT: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/main' }}
       # 'true' when the token and the account id exist (compared here, so the secret is not copied into a step)
@@ -83,8 +98,8 @@ jobs:
       - name: Run summary
         if: github.event_name == 'workflow_dispatch'
         run: |
-          # untrusted text: control characters (so no line can start a workflow command) and backticks are dropped
-          reason="$(printf '%s' "$REASON" | tr -d '\000-\037\140' | cut -c1-200)"
+          # untrusted text: control characters, colons (so no line can start a workflow command) and backticks are dropped
+          reason="$(printf '%s' "$REASON" | tr -d '\000-\037\177' | tr ':`' '  ' | cut -c1-200)"
           echo "Manual run on ${GITHUB_REF_NAME} (force: ${FORCE}). Reason: \"${reason}\"" | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Manual run without credentials
         if: github.event_name == 'workflow_dispatch' && env.FORCE != 'true' && env.HAS_CREDENTIALS != 'true'
@@ -93,7 +108,7 @@ jobs:
           echo "Run stopped: no CLOUDFLARE_API_TOKEN secret or CLOUDFLARE_ACCOUNT_ID variable, so there is nothing to deploy to." >> "$GITHUB_STEP_SUMMARY"
           echo "BUILD_NEEDED=false" >> "$GITHUB_ENV"
       - name: Is the live site current?
-        if: github.event_name == 'workflow_dispatch' && env.FORCE != 'true' && env.HAS_CREDENTIALS == 'true'
+        if: github.event_name == 'workflow_dispatch' && env.BUILD_NEEDED != 'false'
         run: node scripts/check-fresh.mjs
 
       - name: Install
@@ -105,22 +120,21 @@ jobs:
       - name: Syntax checks and fixture build
         if: env.BUILD_NEEDED != 'false'
         run: npm run check
-      # The production build reads the three live indexes and fails when one is unreadable; the guard then
-      # refuses a dist/ that is not exactly the production site.
+      # The production build reads the three live indexes and fails when one is unreadable, or (after a
+      # notification) when the index it read does not carry the announced checksum; the guard then refuses a
+      # dist/ that is not exactly the production site.
       - name: Production build
         if: env.BUILD_NEEDED != 'false'
         run: npm run build
       - name: Production build guard
         if: env.BUILD_NEEDED != 'false'
         run: node scripts/check-build.mjs
-
-      # The browser tests use the committed fixtures and never touch dist/. A manual run without `force`
-      # changes nothing in this repository, so it skips them.
+      # The browser tests use the committed fixtures and never touch dist/.
       - name: Install the browser
-        if: env.FULL_CHECKS == 'true' && env.BUILD_NEEDED != 'false'
+        if: env.BUILD_NEEDED != 'false'
         run: npx playwright install --with-deps chromium
       - name: Browser tests (desktop and 375px, against fixture builds served by wrangler dev)
-        if: env.FULL_CHECKS == 'true' && env.BUILD_NEEDED != 'false'
+        if: env.BUILD_NEEDED != 'false'
         run: npm run test:e2e
 
       - name: Deploy skipped, no credentials
@@ -128,13 +142,15 @@ jobs:
         run: |
           echo "::notice::Deploy and smoke check skipped: no CLOUDFLARE_API_TOKEN secret or CLOUDFLARE_ACCOUNT_ID variable. The checks and the production build passed."
           echo "Deploy and smoke check skipped: no CLOUDFLARE_API_TOKEN secret or CLOUDFLARE_ACCOUNT_ID variable. The checks and the production build passed." >> "$GITHUB_STEP_SUMMARY"
-      # `npm run deploy` checks, builds dist/ again from the three production indexes, verifies it and runs wrangler.
+      # The only step with the Cloudflare token: it uploads the dist/ made and guarded above (`--use-existing-build`:
+      # no check, no build, nothing installed), after the same verification, and `wrangler deploy` runs this
+      # repository's scripts/check-build.mjs.
       - name: Deploy
         if: env.BUILD_NEEDED != 'false' && env.DEPLOY_EVENT == 'true' && env.HAS_CREDENTIALS == 'true'
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
-        run: npm run deploy
+        run: npm run deploy -- --use-existing-build
       - name: Smoke check (the live site serves this build)
         if: env.BUILD_NEEDED != 'false' && env.DEPLOY_EVENT == 'true' && env.HAS_CREDENTIALS == 'true'
         run: node scripts/smoke-live.mjs

@@ -7,6 +7,7 @@
 import { cp, lstat, mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { dirname, join, relative, resolve, sep } from 'node:path';
 import { OUT_NAMES } from './config.mjs';
+import { assertAwaited } from './freshness.mjs';
 import { loadIndex, validateDirectoryIndex, validateMeaningGraphIndex, validateModelspecIndex } from './indexes.mjs';
 import { assertChinookEverywhere, extractShell, renderLanding, renderRegistryPages } from './render.mjs';
 
@@ -124,6 +125,7 @@ export async function buildSite({ root, config, data, readOptions = {}, log = ()
   const out = await prepareOutput(root, config.outName);
   const publicDir = join(resolve(root), 'public');
   const indexes = data ?? await loadData(config, readOptions);
+  assertAwaited(config.awaited, { modelspec: indexes.modelspec.checksum, meaninggraph: indexes.meaninggraph.checksum, ovdbDirectory: indexes.directory.checksum });
 
   const template = await readFile(join(publicDir, 'index.html'), 'utf8');
   for (const name of RESERVED) {

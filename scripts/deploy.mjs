@@ -21,6 +21,23 @@ import { fileURLToPath } from 'node:url';
 import { DEFAULTS, ROOT } from '../src/config.mjs';
 import { distProblems } from './check-build.mjs';
 
+/**
+ * `--use-existing-build`: upload the dist/ that a production build (npm run build) already made, after the same
+ * verification, instead of checking and building again. The deploy workflow uses it so that the check and the
+ * build, which parse the public indexes, run in earlier steps without the Cloudflare token.
+ */
+export const EXISTING_FLAG = '--use-existing-build';
+
+/** The variables that give access to the Cloudflare account: only the wrangler call gets them. */
+export const CLOUDFLARE_ENV = ['CLOUDFLARE_API_TOKEN', 'CLOUDFLARE_ACCOUNT_ID'];
+
+/** `env` without the Cloudflare credentials. */
+export function withoutCloudflare(env) {
+  const rest = { ...env };
+  for (const name of CLOUDFLARE_ENV) delete rest[name];
+  return rest;
+}
+
 const ENV_DEFAULTS = {
   MODELSPEC_REGISTRY_INDEX_URL: DEFAULTS.modelspecRegistryIndex,
   MEANINGGRAPH_REGISTRY_INDEX_URL: DEFAULTS.meaningGraphRegistryIndex,
@@ -35,10 +52,12 @@ const ENV_DEFAULTS = {
  * variables that select a source or a destination).
  */
 export function planDeploy(argv, env) {
-  if (argv.length > 0) {
-    throw new Error(`Refusing to deploy: npm run deploy takes no arguments (got ${argv.join(' ')}). It deploys exactly the dist/ it builds from the production indexes; use plain wrangler yourself for anything else`);
+  const unknown = argv.filter(arg => arg !== EXISTING_FLAG);
+  if (unknown.length > 0) {
+    throw new Error(`Refusing to deploy: npm run deploy takes no arguments (got ${unknown.join(' ')}). It deploys exactly the dist/ it builds from the production indexes; use plain wrangler yourself for anything else`);
   }
-  const buildEnv = { ...env };
+  // The check and the build parse public indexes: they never get the Cloudflare credentials.
+  const buildEnv = withoutCloudflare(env);
   for (const [name, fallback] of Object.entries(ENV_DEFAULTS)) {
     const value = (env[name] ?? '').trim();
     if (value !== '' && value.replace(/\/+$/, '') !== fallback) {
@@ -46,7 +65,7 @@ export function planDeploy(argv, env) {
     }
     delete buildEnv[name];
   }
-  return { buildEnv };
+  return { buildEnv, useExisting: argv.includes(EXISTING_FLAG) };
 }
 
 /** Files that would make wrangler read some other configuration than wrangler.jsonc. */
@@ -67,12 +86,12 @@ function runCommand(command, args, env) {
  * Resolves only when wrangler ran; every other outcome throws.
  */
 export async function deploy({ argv, env, root = ROOT, run = runCommand, verify = () => distProblems(root), exists = existsSync, log = console.log }) {
-  const { buildEnv } = planDeploy(argv, env);
+  const { buildEnv, useExisting } = planDeploy(argv, env);
   const overrides = configOverrides(root, exists);
   if (overrides.length > 0) {
     throw new Error(`Refusing to deploy: ${overrides.join(', ')} exists beside wrangler.jsonc and could make wrangler read another configuration (it is git-ignored or untracked, so git status may not show it). Remove it: rm ${overrides.join(' ')}`);
   }
-  const steps = [
+  const steps = useExisting ? [] : [
     ['check', 'npm', ['run', '--silent', 'check'], buildEnv],
     ['build', process.execPath, [join(root, 'scripts/build.mjs'), '--out', 'dist'], buildEnv],
   ];

@@ -6,7 +6,7 @@ import { test } from 'node:test';
 import { DEFAULTS } from '../src/config.mjs';
 import { BUILD_MARKER, buildSite } from '../src/site.mjs';
 import { distProblems } from '../scripts/check-build.mjs';
-import { CONFIG_OVERRIDES, configOverrides, deploy, planDeploy } from '../scripts/deploy.mjs';
+import { CLOUDFLARE_ENV, CONFIG_OVERRIDES, EXISTING_FLAG, configOverrides, deploy, planDeploy, withoutCloudflare } from '../scripts/deploy.mjs';
 import { REPO, config, productionConfig, read, sampleData, tempRoot } from './helpers.mjs';
 
 const prodRoot = async () => {
@@ -141,6 +141,37 @@ test('deploy runs check, build, verification, then wrangler deploy with an absol
   const seen = [];
   await assert.rejects(deploy({ argv: [], env: {}, root: '/repo', run: (c, a) => { seen.push(a); return a.includes('--out') ? 1 : 0; }, verify: async () => [], exists: () => false, log: () => {} }), /build step failed/);
   assert.ok(!seen.some(a => a.includes('deploy')), 'wrangler never ran');
+});
+
+test('only the wrangler call gets the Cloudflare credentials: not the check, not the build', async () => {
+  assert.deepEqual(CLOUDFLARE_ENV, ['CLOUDFLARE_API_TOKEN', 'CLOUDFLARE_ACCOUNT_ID']);
+  assert.deepEqual(withoutCloudflare({ PATH: '/bin', CLOUDFLARE_API_TOKEN: 't', CLOUDFLARE_ACCOUNT_ID: 'a' }), { PATH: '/bin' });
+  const calls = [];
+  const env = { PATH: '/bin', CLOUDFLARE_API_TOKEN: 'secret-token', CLOUDFLARE_ACCOUNT_ID: 'account' };
+  await deploy({ argv: [], env, root: '/repo', run: (command, args, stepEnv) => { calls.push({ args, env: stepEnv }); return 0; }, verify: async () => [], exists: () => false, log: () => {} });
+  assert.equal(calls.length, 3);
+  for (const call of calls.slice(0, 2)) assert.ok(!('CLOUDFLARE_API_TOKEN' in call.env) && !('CLOUDFLARE_ACCOUNT_ID' in call.env), `${call.args.join(' ')} has no credentials`);
+  assert.equal(calls[2].env.CLOUDFLARE_API_TOKEN, 'secret-token');
+  assert.equal(calls[2].env.CLOUDFLARE_ACCOUNT_ID, 'account');
+});
+
+test('--use-existing-build uploads the dist/ already built, after the same verification, and builds nothing', async () => {
+  const calls = [];
+  const env = { PATH: '/bin', CLOUDFLARE_API_TOKEN: 'secret-token' };
+  await deploy({ argv: [EXISTING_FLAG], env, root: '/repo', run: (command, args, stepEnv) => { calls.push([command, args, stepEnv]); return 0; }, verify: async () => [], exists: () => false, log: () => {} });
+  assert.equal(calls.length, 1, 'wrangler only: no check, no build');
+  assert.deepEqual(calls[0][1], ['deploy', '--config', '/repo/wrangler.jsonc', '--assets', '/repo/dist']);
+  assert.equal(calls[0][2].CLOUDFLARE_API_TOKEN, 'secret-token');
+  // the guard is not weakened: a dist/ that is not a production build is refused, and wrangler never runs
+  let ran = 0;
+  await assert.rejects(deploy({ argv: [EXISTING_FLAG], env, root: '/repo', run: () => { ran++; return 0; }, verify: async () => ['dist/ is a fixture build'], exists: () => false, log: () => {} }), /dist\/ is a fixture build/);
+  assert.equal(ran, 0);
+  // the other refusals still apply
+  assert.throws(() => planDeploy([EXISTING_FLAG, '--assets', 'x'], {}), /takes no arguments/);
+  assert.throws(() => planDeploy([EXISTING_FLAG], { OVDB_DIRECTORY_INDEX_URL: 'https://example.test/x.json' }), /Refusing to deploy while OVDB_DIRECTORY_INDEX_URL/);
+  assert.equal(planDeploy([EXISTING_FLAG], {}).useExisting, true);
+  assert.equal(planDeploy([], {}).useExisting, false);
+  await assert.rejects(deploy({ argv: [EXISTING_FLAG], env: {}, root: '/repo', run: () => 0, verify: async () => [], exists: file => file.endsWith('wrangler.toml'), log: () => {} }), /wrangler\.toml/);
 });
 
 test('deploy refuses a wrangler.json, wrangler.toml or .wrangler/deploy/config.json redirect before it builds or runs anything', async () => {
