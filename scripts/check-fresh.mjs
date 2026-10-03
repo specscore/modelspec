@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Scheduled deploy, step one: is the live site current? Fetches the live /build-info.json and the three
+// Manual or notified deploy, step one: is the live site current? Fetches the live /build-info.json and the three
 // indexes the site is built from (the ModelSpec registry, the MeaningGraph registry and the OVDB Directory
 // index), compares the commit of this repository and each index checksum with what the live build
 // recorded (src/freshness.mjs), and prints why when they differ.

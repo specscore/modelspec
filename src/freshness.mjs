@@ -1,7 +1,7 @@
 // Decides whether the live site is still current, and whether a deploy reached it.
 //
 // A build records, in its build marker (served at MARKER_PATH), the commit of this repository and the
-// `checksum` of each index it was built from (`commit` and `checksums`). The scheduled deploy fetches the
+// `checksum` of each index it was built from (`commit` and `checksums`). A manual or notified deploy fetches the
 // live marker and the current indexes and compares them here; it builds and deploys only on a
 // difference. After a deploy the same comparison, against the build just made, proves the live site
 // serves it. Everything takes `fetch` as a parameter, so the tests never touch the network.

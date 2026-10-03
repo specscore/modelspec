@@ -4,7 +4,6 @@ import test from 'node:test';
 import { REPO } from './helpers.mjs';
 
 const REPOSITORY = 'specscore/modelspec';
-const CRON = '4,19,34,49 * * * *';
 
 const workflow = readFileSync(`${REPO}/.github/workflows/deploy.yml`, 'utf8');
 const code = workflow.replace(/^[ \t]*#.*$/gm, '').replace(/[ \t]+#.*$/gm, '').replace(/\n{2,}/g, '\n');
@@ -18,10 +17,31 @@ function step(name) {
 }
 const at = name => code.indexOf(`- name: ${name}\n`);
 
-test('the deploy workflow runs on pull requests, pushes to main, by hand and on a schedule', () => {
-  assert.match(code, /^on:\n {2}pull_request:\n {2}push:\n {4}branches: \[main\]\n {2}workflow_dispatch:\n {2}schedule:\n {4}- cron: "[^"]+"$/m);
-  assert.ok(code.includes(`cron: "${CRON}"`));
+test('the deploy workflow runs on pull requests, pushes to main and by hand, and never on a timer', () => {
+  assert.match(code, /^on:\n {2}pull_request:\n {2}push:\n {4}branches: \[main\]\n {2}workflow_dispatch:\n {4}inputs:\n/m);
+  assert.ok(!/schedule/i.test(code) && !/cron/i.test(code), 'nothing runs on a timer: a data change arrives as a manual run started by the data repository');
   assert.ok(!/pull_request_target/.test(code));
+  assert.deepEqual([...code.matchAll(/^ {2}([a-z_]+):$/gm)].map(match => match[1]).slice(0, 3), ['pull_request', 'push', 'workflow_dispatch']);
+});
+
+test('a manual run takes `force` (boolean, off) and `reason` (text), deploys main only, and treats the reason as untrusted text', () => {
+  assert.match(code, /force:\n {8}description: [^\n]+\n {8}type: boolean\n {8}default: false\n/);
+  assert.match(code, /reason:\n {8}description: [^\n]+\n {8}type: string\n {8}default: ""\n/);
+  const refuse = step('Refuse to deploy from another ref');
+  assert.match(refuse, /if: github\.event_name == 'workflow_dispatch' && github\.ref != 'refs\/heads\/main'/);
+  assert.match(refuse, /exit 1/);
+  assert.ok(at('Refuse to deploy from another ref') < code.indexOf('- uses: actions/checkout'), 'refused before anything else runs');
+  // the reason reaches the run only through env, and no run: block interpolates an expression at all
+  assert.equal([...code.matchAll(/inputs\.reason/g)].length, 1);
+  assert.ok(code.includes('REASON: ${{ inputs.reason }}'));
+  assert.ok(!/github\.event\.inputs/.test(code));
+  for (const text of code.split('\n      - ')) {
+    const run = text.indexOf('run:');
+    if (run !== -1) assert.ok(!text.slice(run).includes('${{'), `an expression inside run: of "${text.split('\n')[0]}"`);
+  }
+  const summary = step('Run summary');
+  assert.match(summary, /tr -d '\\000-\\037\\140'/, 'control characters and backticks are dropped');
+  assert.match(summary, /Reason: \\"\$\{reason\}\\"/, 'printed quoted');
 });
 
 test('the deploy workflow can only read the repository and every action is pinned by full commit SHA', () => {
@@ -41,7 +61,7 @@ test('the job runs only in this repository, one deploy at a time', () => {
   assert.match(code, /cancel-in-progress: \$\{\{ github\.event_name == 'pull_request' \}\}/, 'only pull request runs are cancelled');
 });
 
-test('the deploy and the smoke check run only for a push to main, a manual run or a schedule, and only with credentials', () => {
+test('the deploy and the smoke check run only for a push to main or a manual run, and only with credentials', () => {
   assert.ok(code.includes("DEPLOY_EVENT: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/main' }}"));
   assert.ok(code.includes("HAS_CREDENTIALS: ${{ secrets.CLOUDFLARE_API_TOKEN != '' && vars.CLOUDFLARE_ACCOUNT_ID != '' }}"));
   for (const name of ['Deploy', 'Smoke check (the live site serves this build)']) {
@@ -64,13 +84,13 @@ test('the token is read in two places only: the comparison that gives HAS_CREDEN
   assert.ok(!/echo[^\n]*\$\{?CLOUDFLARE_API_TOKEN/.test(code));
 });
 
-test('a scheduled run decides before anything is installed, and without credentials it stops', () => {
+test('a manual run decides before anything is installed (unless forced), and without credentials it stops', () => {
   const check = at('Is the live site current?');
   assert.ok(check !== -1 && check < at('Install'), 'the comparison comes before npm ci');
-  assert.ok(at('Scheduled run without credentials') < check);
-  assert.match(step('Is the live site current?'), /if: github\.event_name == 'schedule' && env\.HAS_CREDENTIALS == 'true'/);
+  assert.ok(at('Manual run without credentials') < check);
+  assert.match(step('Is the live site current?'), /if: github\.event_name == 'workflow_dispatch' && env\.FORCE != 'true' && env\.HAS_CREDENTIALS == 'true'/);
   assert.match(step('Is the live site current?'), /run: node scripts\/check-fresh\.mjs$/m);
-  assert.match(step('Scheduled run without credentials'), /BUILD_NEEDED=false/);
+  assert.match(step('Manual run without credentials'), /BUILD_NEEDED=false/);
   // every later step honours BUILD_NEEDED
   for (const text of code.slice(at('Install')).split('\n      - ').slice(1)) {
     assert.match(text, /env\.BUILD_NEEDED != 'false'/, text.split('\n')[0]);
