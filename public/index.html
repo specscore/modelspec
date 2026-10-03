@@ -41,6 +41,7 @@
       <a href="#consumers">Consumers</a>
       <a href="#scope">Scope</a>
       <a href="#status">Status</a>
+      <a href="/registry/">Registry</a>
       <a class="nav-cta" href="https://github.com/specscore/modelspec" rel="noopener">GitHub ↗</a>
     </nav>
   </header>
@@ -435,6 +436,61 @@
       </div>
     </section>
 
+    <!-- REGISTRY: where ModelSpec sits next to the OVDB Directory and MeaningGraph -->
+    <section id="layers" class="band band--alt band--tight">
+      <div class="band-head reveal">
+        <p class="section-label">Registry — new, draft</p>
+        <h2>Where it is, what shape it has, what it means.</h2>
+        <p class="section-sub">
+          One database can be described by three layers, each answering one question.
+          ModelSpec is the middle one, and the <a href="/registry/">model registry</a> is
+          its public list of published models. The registry is new and still a draft.
+        </p>
+      </div>
+
+      <div class="layers-grid">
+        <article class="card reveal">
+          <h3>ModelSpec</h3>
+          <p>
+            The shape of the data (entities, fields, types and links), written once,
+            whatever stores it.
+            <a href="/registry/">Browse the models</a>
+          </p>
+        </article>
+
+        <article class="card reveal">
+          <h3>OVDB Directory</h3>
+          <p>
+            Where the data is, who publishes it and how to reach it.
+            <a href="https://directory.openvaultdb.com" rel="noopener">directory.openvaultdb.com&nbsp;↗</a>
+          </p>
+        </article>
+
+        <article class="card reveal">
+          <h3>MeaningGraph</h3>
+          <p>
+            What the data means. Meanings are attached to ModelSpec fields, so one
+            description serves every copy of the same model.
+            <a href="https://meaninggraph.io" rel="noopener">meaninggraph.io&nbsp;↗</a>
+          </p>
+        </article>
+      </div>
+
+      <p class="layers-note reveal">
+        Chinook is in all three:
+        <a href="https://directory.openvaultdb.com/databases/chinook/" rel="noopener">listed in the OVDB Directory</a>,
+        <a href="/registry/models/chinook/">modelled in ModelSpec</a>,
+        <a href="https://meaninggraph.io/graphs/chinook/" rel="noopener">explained in MeaningGraph</a>.
+      </p>
+
+      <h3 class="layers-why-title reveal">Why a shared model helps</h3>
+      <ul class="layers-why reveal">
+        <li><strong>Start from a published model.</strong> A new project can reuse a model someone has already written and checked, instead of designing its tables again.</li>
+        <li><strong>Recognise the same data in different places.</strong> When several hosters serve databases built on the same model, tools can tell they share one shape and treat them alike.</li>
+        <li><strong>Run many databases of one model.</strong> A service that gives every customer an isolated database can declare one model for all of them.</li>
+      </ul>
+    </section>
+
     <!-- CTA -->
     <section class="cta">
       <div class="reveal">
@@ -463,6 +519,7 @@
       <span class="brand-name">ModelSpec</span>
     </div>
     <nav aria-label="Footer">
+      <a href="/registry/">Registry</a>
       <a href="https://github.com/specscore/modelspec" rel="noopener">GitHub ↗</a>
       <a href="https://openvaultdb.com/" rel="noopener">OpenVaultDB ↗</a>
       <a href="https://specscore.md/" rel="noopener">SpecScore ↗</a>
