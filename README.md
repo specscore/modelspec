@@ -269,9 +269,9 @@ time from three public indexes. It is served by one Cloudflare Worker
 ```text
 dist/  =  copy of public/            the landing page, style.css, script.js, favicon, registry.css
        +  registry/                  /registry/ and /registry/models/<id>/ (generated)
-       +  build-info.json            what the build was made from (read by the deploy guard)
+       +  build-info.json            what the build was made from (read by the deploy guard; served at /build-info.json)
        +  .modelspec-build-output    marker: this directory was created by the build
-       +  .assetsignore              keeps the marker and build-info.json out of the upload
+       +  .assetsignore              keeps the marker out of the upload
 ```
 
 The registry is new and a draft. `/registry/` lists every model of the
@@ -357,11 +357,11 @@ Everything else is a **non-production** build:
   link or anything else is refused. It never touches `public/`, `spec/`, `schema/`,
   the repository root or anything outside the repository.
 
-Deploying. Nothing in this repository deploys by itself: the checks in
-`.github/workflows/site.yml` (unit tests, fixture build, browser tests; read-only,
-no secret) have no deploy step.
+Deploying. The site deploys itself (see Deployment below);
+`.github/workflows/site.yml` stays a tests-only workflow (unit tests, fixture
+build, browser tests; read-only, no secret).
 
-`npm run deploy` is the one supported way. It takes no arguments and no index or
+`npm run deploy` is the one supported way, and what the deploy workflow runs. It takes no arguments and no index or
 base-URL override, refuses to run while a `wrangler.json`, a `wrangler.toml` or a
 `.wrangler/deploy/config.json` redirect exists (they could make wrangler read some
 other configuration, and git-ignored ones do not show in `git status`), runs
@@ -384,9 +384,60 @@ use `--assets` on purpose), a `--config <other file>`, and the configuration fil
 listed above bypass it. Only `npm run deploy` is protected against those flags and
 files; do not deploy with plain wrangler.
 
-`build-info.json` is kept out of the upload by `.assetsignore` (the guard reads it
-from `dist/` locally); it lists the source of each index and the pinned commits, and
-holds no local path.
+`build-info.json` is uploaded (only the build marker is kept out by `.assetsignore`):
+the deploy workflow compares the live one with the current commit and indexes. It
+lists the source and checksum of each index, the pinned commits and the commit of
+this repository, and holds no local path. The guard refuses a `.assetsignore` that
+would hide it.
+
+### Deployment
+
+The site deploys itself: `.github/workflows/deploy.yml` checks, builds and publishes the Worker, so nobody runs `npm run deploy` by hand.
+
+**What triggers a deploy.** Three things, and nothing runs on a timer:
+
+1. a push to `main`;
+2. a notification from a data repository: when `index.json` changes in a repository this site is built from (the ModelSpec registry, the MeaningGraph registry or the OVDB Directory index), that repository's `notify-sites` workflow starts the "Deploy" workflow here on `main`. The notification carries no data but a reason; the run finds out for itself what changed;
+3. a manual run of "Deploy" on `main` (Actions tab). Any other branch is refused. Inputs: `force` (boolean, default off) skips the freshness comparison below and nothing else; `reason` (text) is shown in the run summary and is treated as untrusted text (control characters, colons and backticks are dropped, the rest is HTML-escaped, and it is never put in a command).
+
+| Trigger | What runs |
+|---|---|
+| push to `main` | resolve the data repository commits, unit tests, `npm run check`, the production build and its guard, the browser tests, then the deploy and a smoke check |
+| manual run or notification | resolve, then the freshness step (below), then the same as a push |
+| pull request | the same checks and the production build; never a deploy, never in a fork |
+
+**Every run that can deploy runs every check.** No check is conditional on the event: a manual or notified run runs the unit tests, `npm run check`, the build and its guard and the browser tests exactly as a push does. (`test/deploy-workflow.test.mjs` fails if a check step gets a condition on the event, on `force` or on the ref, and if `deploy.yml` runs fewer steps than `site.yml`, in another order, with a condition or `continue-on-error`, or after the deploy.) The only run that skips them is one that ends before building because the live site is already current.
+
+**The indexes are read at an exact commit.** `raw.githubusercontent.com` answers from a cache that can be five minutes old, so a build that reads `.../main/index.json` can miss a change made minutes ago. Every run therefore first resolves the current `main` of each data repository to a commit with `git ls-remote` (not cached, no token, a cleaned git environment, a time limit and retries; `scripts/resolve-index-commits.mjs`) and reads each index from `https://raw.githubusercontent.com/<org>/<repo>/<commit>/index.json`, which never changes. Nothing waits for a checksum, so a notification that is superseded by a newer change simply builds the newer state. The commits are passed to the later steps through `GITHUB_ENV` after they were checked to be 40 lower-case hex digits (`MODELSPEC_REGISTRY_INDEX_COMMIT`, `MEANINGGRAPH_REGISTRY_INDEX_COMMIT`, `OVDB_DIRECTORY_INDEX_COMMIT`).
+
+**The freshness step.** Every build writes `build-info.json`, served at `https://modelspec.org/build-info.json`. It records `commit` (the commit of this repository, from `BUILD_COMMIT`, set by the workflow; `null` for a local build), `indexCommits` (the commit of each data repository the index was read at) and `checksums` (the `checksum` field of each of the three indexes the site is built from). A manual or notified run runs `scripts/check-fresh.mjs` before installing anything. Unless `force`, it fetches the live marker and compares its `commit` and `indexCommits` with this commit and the resolved ones (`src/freshness.mjs`, unit-tested without a network). When they all match, it logs that nothing changed and the run ends green in seconds. Otherwise it logs which of them differs, then builds and deploys. A live marker that is missing, unreadable or from before these fields existed counts as a difference. It refuses an overridden index or base URL, like `npm run deploy`.
+
+Values fetched from public URLs are shape-checked before they are printed (a commit is 40 hex digits, a checksum `sha256:` and 64 hex digits, anything else prints as "invalid"), and other fetched text loses control characters and colon runs.
+
+**What the production guard accepts.** For each index, the build must read either its production URL (`.../<org>/<repo>/main/index.json`) or exactly `https://raw.githubusercontent.com/<same org>/<same repo>/<40 lower-case hex digits>/index.json`, and nothing else: no other host, repository, branch, path or query (`src/index-commits.mjs`, used by `src/config.mjs` and `scripts/check-build.mjs`). `npm run deploy` takes the commits from the three `*_INDEX_COMMIT` variables (all or none; not together with the URL variable of the same index) or, when none are set, the build resolves the current `main` of each data repository itself (`npm run build` by hand does the same). A build that names an index by URL reads exactly that URL and resolves nothing.
+
+**What is uploaded is what was built.** At the end of every build, `dist/` gets a manifest of the SHA-256 of every file the build wrote (`.modelspec-build-manifest.json`, kept out of the upload by `.assetsignore`, like the build marker). `scripts/check-build.mjs`, which `wrangler deploy` runs as its build command, verifies `dist/` against it (an extra, a missing or a changed file is refused, by name). `npm run deploy -- --use-existing-build`, which the workflow runs, uploads a `dist/` it did not build, so before `wrangler` starts it also requires that the marker's `commit` is the commit of `HEAD` and that `git status` shows a clean tree (no tracked change, no untracked file). The build empties its output directory first.
+
+**After the deploy,** `scripts/smoke-live.mjs` fetches the live marker and the pages (`/` and `/registry/`) again, each retried with growing waits (5 to 30 seconds, about two and a half minutes in all), and fails the run red unless the marker records the build just made and the pages answer 200.
+
+**There is no automatic rollback.** A red smoke check, or a deploy that fails part-way, leaves whatever Cloudflare has made live, live. To go back by hand: `npx wrangler rollback` (it makes the previously deployed version of the `modelspec-org` Worker the active deployment at once; `npx wrangler rollback <VERSION_ID>` picks another of the last 100 versions, and `npx wrangler deployments list` shows them), or revert the commit and push, which redeploys. Cloudflare documents rollback for Workers versions; it has not been tried on this Worker with static assets, so check the live site afterwards.
+
+**Transient failures.** A run that fails on a transient error (a network error in a check or the build, or a Cloudflare API error) is not retried: run "Deploy" again.
+
+**Credentials.** The deploy needs the `CLOUDFLARE_API_TOKEN` secret and the `CLOUDFLARE_ACCOUNT_ID` variable (an identifier, not a secret). Neither exists for this repository today (set them on the repository or on the `specscore` organisation shared with it). When either is missing the workflow still runs the checks and the production build, skips the deploy and the smoke check with a notice (a `::notice::` and a line in the job summary) and ends green; a manual run without `force` and without them stops before building, as it has nothing to deploy to. **The token is in the environment of one step, "Deploy", and nowhere else**: not of an install, the check, the build or the browser tests, which parse the public indexes. "Deploy" runs `npm run deploy -- --use-existing-build`: no check, no build, nothing installed; it verifies that the build was made at `HEAD` with a clean tree and that the `dist/` the earlier steps made and guarded matches the build manifest, then runs `wrangler deploy --config <repository>/wrangler.jsonc --assets <repository>/dist`, which runs this repository's `scripts/check-build.mjs` once more. Inside `npm run deploy` (by hand, without the flag) the credentials are likewise removed from the environment of the check and the build and given to the wrangler call only. Nothing fetched from a public URL is read or executed in that step. The account id (`vars.CLOUDFLARE_ACCOUNT_ID`) is not masked in this public repository's logs; wrangler error messages can include it. It is an identifier, not a credential; keep it as a secret if it should not be public.
+
+**Not done, on purpose.** The Cloudflare token is a repository or organisation secret, so any workflow that can run on `main` can read it. Keeping it in a GitHub environment limited to `main` would narrow that to the one "Deploy" job; that is a setting in the repository, not a change to this workflow, and it is left to the owner.
+
+**Custom domain.** `wrangler.jsonc` declares the custom domain `modelspec.org`. A token without the rights to change the zone's custom domains and DNS (Cloudflare: the Worker's Editor role plus Workers Routes Write on the zone) can fail at the domain step even when the domain is already attached. Cloudflare's documentation says `wrangler deploy` changes routes and custom domains as part of the deployment but not in what order it uploads the version and updates them; so after such a failure the run is red and the smoke check is skipped, and whether the new version is already live is not documented. Look at the live marker (`/build-info.json`), and use the rollback above if you want the previous version back.
+
+**Deploying by hand in an emergency.** From a clean checkout on the commit to publish, with `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` set in your shell:
+
+```sh
+npm ci
+npm run deploy     # checks, builds dist/ from the three production indexes, verifies it, runs wrangler deploy
+```
+
+Or run the "Deploy" workflow from the Actions tab (with `force` to skip the comparison). A by-hand `npm run deploy` resolves the data repository commits itself (the build step does it when none are given) and records them in the marker. A local build has no `commit` in its marker, so the next manual or notified run (without `force`) sees a difference and deploys the pipeline's version over it.
 
 Deploy order. The landing page and every registry page link to the Chinook pages on
 https://meaninggraph.io (`/graphs/chinook/`) and https://directory.openvaultdb.com

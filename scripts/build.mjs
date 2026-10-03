@@ -6,10 +6,15 @@
 //   node scripts/build.mjs [--use-fixture [--fixture-set two-databases]] [--allow-local-index] [--out <name>]
 
 import { resolveBuildConfig, ROOT } from '../src/config.mjs';
+import { INDEXES, envWithPins } from '../src/index-commits.mjs';
 import { buildSite } from '../src/site.mjs';
 
 async function main() {
-  const config = resolveBuildConfig(process.argv.slice(2), process.env);
+  const argv = process.argv.slice(2);
+  // Without commits, URLs or a fixture (a build by hand) the current main of each data repository is resolved first.
+  const { env, heads } = await envWithPins({ env: process.env, argv });
+  if (heads) console.log(`Reading the indexes at the current commits: ${Object.entries(INDEXES).map(([key, { repo }]) => `${repo}@${heads[key].slice(0, 12)}`).join(', ')}.`);
+  const config = resolveBuildConfig(argv, env);
   if (config.mode !== 'production') {
     console.warn(`WARNING: ${config.mode} build, not made from the three production indexes. It is written to ${config.outName}/ and can not be deployed.`);
   }

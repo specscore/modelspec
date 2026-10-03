@@ -6,9 +6,12 @@
 //   - dist/ must exist, be a real directory and carry the marker file and a
 //     build-info.json written by a finished build;
 //   - build-info.json must say production: all three indexes read from their
-//     default https addresses, the real MeaningGraph and OVDB Directory links,
+//     default https addresses or exactly the pinned URL (an exact commit) of the same
+//     repository, the real MeaningGraph and OVDB Directory links,
 //     not a fixture, not a local file, written to dist/;
 //   - every generated page must say it was built from production;
+//   - dist/ must match the manifest of file hashes the build wrote last: a file added,
+//     removed or changed after the build is refused;
 //   - dist/ must be public/ plus the generated registry/ pages and nothing else
 //     (no second build, no staging directory, no stale file): the landing page and
 //     every static asset must be byte-identical to public/.
@@ -19,6 +22,8 @@ import { lstat, readdir, readFile } from 'node:fs/promises';
 import { join, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { DEFAULTS, DEPLOY_DIR_NAME, ROOT } from '../src/config.mjs';
+import { MANIFEST_FILE, manifestProblems } from '../src/build-manifest.mjs';
+import { INDEXES, isProductionIndexUrl } from '../src/index-commits.mjs';
 import { ASSETSIGNORE_TEXT, BUILD_INFO_FILE, BUILD_INFO_FORMAT, BUILD_MARKER } from '../src/site.mjs';
 import { SOURCE_META } from '../src/render.mjs';
 
@@ -58,9 +63,10 @@ export async function distProblems(root = ROOT) {
     expect(info.production === true && info.mode === 'production', `it is not a production build (mode: ${info.mode})`);
     expect(info.fixture === false && info.fixtureSet === null, 'it was built from fixtures');
     expect(info.outDir === DEPLOY_DIR_NAME, `it was written to ${info.outDir}/, not ${DEPLOY_DIR_NAME}/`);
+    // per index: its production `main` URL, or exactly the pinned URL of the same repository, nothing else
     for (const [key, fallback] of [['modelspec', DEFAULTS.modelspecRegistryIndex], ['meaninggraph', DEFAULTS.meaningGraphRegistryIndex], ['ovdbDirectory', DEFAULTS.ovdbDirectoryIndex]]) {
       const source = info.sources?.[key];
-      expect(source?.kind === 'url' && source.location === fallback, `it read the ${key} index from ${source?.location ?? 'nowhere'}, not ${fallback}`);
+      expect(source?.kind === 'url' && isProductionIndexUrl(source.location, fallback, INDEXES[key].repo), `it read the ${key} index from ${source?.location ?? 'nowhere'}, not ${fallback} or its pinned commit URL`);
     }
     expect(info.meaningGraphBaseUrl === DEFAULTS.meaningGraphBaseUrl, `its MeaningGraph links go to ${info.meaningGraphBaseUrl}, not ${DEFAULTS.meaningGraphBaseUrl}`);
     expect(info.ovdbDirectoryBaseUrl === DEFAULTS.ovdbDirectoryBaseUrl, `its OVDB Directory links go to ${info.ovdbDirectoryBaseUrl}, not ${DEFAULTS.ovdbDirectoryBaseUrl}`);
@@ -74,14 +80,14 @@ export async function distProblems(root = ROOT) {
   }
   if (!files.includes(BUILD_MARKER)) problems.push(`${BUILD_MARKER} is missing: ${dist} was not created by this build`);
 
-  // dist/ is public/ plus registry/ plus the three files the build writes, and nothing else.
+  // dist/ is public/ plus registry/ plus the four files the build writes, and nothing else.
   let publicFiles = [];
   try {
     publicFiles = await walk(join(root, 'public'));
   } catch {
     problems.push('public/ cannot be read');
   }
-  const expected = new Set([...publicFiles, BUILD_INFO_FILE, BUILD_MARKER, '.assetsignore']);
+  const expected = new Set([...publicFiles, BUILD_INFO_FILE, BUILD_MARKER, MANIFEST_FILE, '.assetsignore']);
   const stray = files.filter(file => !expected.has(file) && !file.startsWith('registry/'));
   if (stray.length > 0) problems.push(`it contains files that are not part of the site and would be deployed: ${stray.slice(0, 8).join(', ')}`);
   for (const file of publicFiles) {
@@ -94,7 +100,7 @@ export async function distProblems(root = ROOT) {
   }
 
   try {
-    if (await readFile(join(dist, '.assetsignore'), 'utf8') !== ASSETSIGNORE_TEXT) problems.push('.assetsignore is not the one the build writes: the marker and build-info.json must stay out of the upload');
+    if (await readFile(join(dist, '.assetsignore'), 'utf8') !== ASSETSIGNORE_TEXT) problems.push('.assetsignore is not the one the build writes: the marker and the manifest must stay out of the upload, build-info.json must not');
   } catch {
     problems.push('.assetsignore is missing');
   }
@@ -109,6 +115,8 @@ export async function distProblems(root = ROOT) {
   }
   const otherFiles = files.filter(file => file.startsWith('registry/') && !file.endsWith('.html'));
   if (otherFiles.length > 0) problems.push(`registry/ holds files that are not pages: ${otherFiles.slice(0, 5).join(', ')}`);
+  // what is uploaded is what the build wrote: the hash of every file, recorded last by the build
+  problems.push(...await manifestProblems(dist));
   return problems;
 }
 

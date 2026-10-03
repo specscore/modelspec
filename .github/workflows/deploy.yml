@@ -1,0 +1,154 @@
+# Checks, builds and deploys modelspec.org (the Cloudflare Worker modelspec-org).
+#
+#   pull_request        every check and the production build; never deploys
+#   push to main        every check, the build, the deploy, a smoke check
+#   workflow_dispatch   the same, run from main only (any other ref is refused). This is how a change in a
+#                       data repository arrives: its notify-sites workflow starts this one. The run resolves
+#                       the current `main` of each data repository to a commit (`git ls-remote`, never
+#                       cached) and compares the live site with this commit and those commits; it ends at
+#                       once, green, when nothing differs. `force` (boolean) skips only that comparison:
+#                       never the check of the ref, never a check. `reason` (text) is shown, HTML-escaped,
+#                       in the run summary.
+#
+# The indexes are read at those commits (https://raw.githubusercontent.com/<org>/<repo>/<commit>/index.json), which
+# never change, so no cached read can be built and no wait is needed. The commits are in the build marker.
+#
+# One rule for every trigger: a run that can deploy runs EVERY check, the browser tests included. No check
+# step is conditional on the event (test/deploy-workflow.test.mjs fails if one is). There is no timer.
+#
+# Deploying needs the CLOUDFLARE_API_TOKEN secret and the CLOUDFLARE_ACCOUNT_ID variable (an identifier,
+# not a secret). Without either, every step except the deploy
+# and the smoke check still runs and the run ends green with a notice. A manual run without them
+# (and without `force`) stops at once: it has nothing to deploy to.
+#
+# The token is in the environment of the Deploy step only, never of an install, a check or the build.
+# The build and the deploy are `npm run build` and `npm run deploy -- --use-existing-build` (scripts/build.mjs,
+# scripts/deploy.mjs); their guards stay in force. site.yml (tests only, no secrets) runs beside this workflow
+# and test/deploy-workflow.test.mjs fails if this one runs fewer checks than it. There is no automatic rollback. See "Deployment" in README.md.
+name: Deploy
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      force:
+        description: Skip the check that the live site is out of date and deploy main anyway
+        type: boolean
+        default: false
+      reason:
+        description: Why this run was started (shown in the run summary; free text)
+        type: string
+        default: ""
+
+permissions:
+  contents: read
+
+# One deploy at a time, and every run that can deploy is in the same group: a notified run and a push never
+# interleave. A queued run is replaced by a newer one, which builds the newer main, so nothing is lost. A
+# pull request run, or a manual run on another ref (which cannot deploy), has a group of its own and so can
+# never replace a pending run on main.
+concurrency:
+  group: ${{ (github.event_name == 'pull_request' || github.ref != 'refs/heads/main') && format('check-{0}', github.ref) || 'deploy' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  deploy:
+    name: check · build · deploy
+    # never in a fork
+    if: github.repository == 'specscore/modelspec'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      WRANGLER_SEND_METRICS: "false"
+      BUILD_COMMIT: ${{ github.sha }}
+      # inputs of a manual run, as data: they reach scripts through env only, never a command or an expression;
+      # `reason` goes nowhere but the cleaned, escaped line of the run summary
+      FORCE: ${{ inputs.force }}
+      REASON: ${{ inputs.reason }}
+      # 'true' when this run may publish: a push to main or a manual run on main
+      DEPLOY_EVENT: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/main' }}
+      # 'true' when the token and the account id exist (compared here, so the secret is not copied into a step)
+      HAS_CREDENTIALS: ${{ secrets.CLOUDFLARE_API_TOKEN != '' && vars.CLOUDFLARE_ACCOUNT_ID != '' }}
+    steps:
+      - name: Refuse to deploy from another ref
+        if: github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/main'
+        run: |
+          echo "::error::A manual run deploys main only: start it on main, not on ${GITHUB_REF_NAME}."
+          exit 1
+      # Actions are pinned by full commit SHA (the tag is in the comment).
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: npm
+
+      # Manual runs: decide first, with nothing installed, so a run with nothing to do ends in seconds.
+      - name: Run summary
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          # untrusted text: control characters, colons (so no line can start a workflow command) and backticks are
+          # dropped, then it is HTML-escaped (the summary is rendered as Markdown, which passes HTML through)
+          reason="$(printf '%s' "$REASON" | tr -d '\000-\037\177' | tr ':`' '  ' | cut -c1-200 | sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g' -e 's/"/\&quot;/g' -e "s/'/\&#39;/g")"
+          echo "Manual run on ${GITHUB_REF_NAME} (force: ${FORCE}). Reason: \"${reason}\"" | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Manual run without credentials
+        if: github.event_name == 'workflow_dispatch' && env.FORCE != 'true' && env.HAS_CREDENTIALS != 'true'
+        run: |
+          echo "::notice::No CLOUDFLARE_API_TOKEN secret or CLOUDFLARE_ACCOUNT_ID variable: there is nothing to deploy to, so this run stops here (run it with force to check and build anyway)."
+          echo "Run stopped: no CLOUDFLARE_API_TOKEN secret or CLOUDFLARE_ACCOUNT_ID variable, so there is nothing to deploy to." >> "$GITHUB_STEP_SUMMARY"
+          echo "BUILD_NEEDED=false" >> "$GITHUB_ENV"
+      # Every run reads the indexes at the commits resolved here: the current main of each data repository.
+      # No token and no install: git runs with a cleaned environment (scripts/lib/index-commits.mjs).
+      - name: Resolve the data repositories' commits
+        if: env.BUILD_NEEDED != 'false'
+        run: node scripts/resolve-index-commits.mjs
+      - name: Is the live site current?
+        if: github.event_name == 'workflow_dispatch' && env.BUILD_NEEDED != 'false'
+        run: node scripts/check-fresh.mjs
+
+      - name: Install
+        if: env.BUILD_NEEDED != 'false'
+        run: npm ci
+      - name: Unit tests
+        if: env.BUILD_NEEDED != 'false'
+        run: npm test
+      - name: Syntax checks and fixture build
+        if: env.BUILD_NEEDED != 'false'
+        run: npm run check
+      # The production build reads the three registries at the resolved commits and fails when one is
+      # unreadable; the guard then refuses a dist/ that is not exactly the production site (every page marked
+      # as built from production, every file as the build wrote it: its manifest of hashes).
+      - name: Production build
+        if: env.BUILD_NEEDED != 'false'
+        run: npm run build
+      - name: Production build guard
+        if: env.BUILD_NEEDED != 'false'
+        run: node scripts/check-build.mjs
+      # The browser tests use the committed fixtures and never touch dist/.
+      - name: Install the browser
+        if: env.BUILD_NEEDED != 'false'
+        run: npx playwright install --with-deps chromium
+      - name: Browser tests (desktop and 375px, against fixture builds served by wrangler dev)
+        if: env.BUILD_NEEDED != 'false'
+        run: npm run test:e2e
+
+      - name: Deploy skipped, no credentials
+        if: env.BUILD_NEEDED != 'false' && env.DEPLOY_EVENT == 'true' && env.HAS_CREDENTIALS != 'true'
+        run: |
+          echo "::notice::Deploy and smoke check skipped: no CLOUDFLARE_API_TOKEN secret or CLOUDFLARE_ACCOUNT_ID variable. The checks and the production build passed."
+          echo "Deploy and smoke check skipped: no CLOUDFLARE_API_TOKEN secret or CLOUDFLARE_ACCOUNT_ID variable. The checks and the production build passed." >> "$GITHUB_STEP_SUMMARY"
+      # The only step with the Cloudflare token: it uploads the dist/ made and guarded above (`--use-existing-build`:
+      # no check, no build, nothing installed), after the same verification, and `wrangler deploy` runs this
+      # repository's scripts/check-build.mjs.
+      - name: Deploy
+        if: env.BUILD_NEEDED != 'false' && env.DEPLOY_EVENT == 'true' && env.HAS_CREDENTIALS == 'true'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+        run: npm run deploy -- --use-existing-build
+      - name: Smoke check (the live site serves this build)
+        if: env.BUILD_NEEDED != 'false' && env.DEPLOY_EVENT == 'true' && env.HAS_CREDENTIALS == 'true'
+        run: node scripts/smoke-live.mjs
