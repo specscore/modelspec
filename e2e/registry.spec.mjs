@@ -67,6 +67,22 @@ test('the model page shows identity, provenance, licence and the model files at 
   await noHorizontalScroll(page);
 });
 
+test('the model page links the model\'s Website, shown as the URL without scheme and trailing slash', async ({ page }) => {
+  expect(model.homepage).toBe('https://chinookdb.com/model/');
+  await page.goto(MODEL_PAGE);
+  const row = page.locator('.reg-facts > div').filter({ has: page.locator('dt', { hasText: 'Website' }) });
+  await expect(row).toHaveCount(1);
+  const link = row.getByRole('link', { name: 'chinookdb.com/model', exact: true });
+  await expect(link).toHaveAttribute('href', model.homepage);
+  await expect(link).toHaveAttribute('target', '_blank');
+  await expect(link).toHaveAttribute('rel', 'noreferrer');
+  await expect(page.locator('.reg-facts > div').nth(2)).toContainText('Repository');
+  await expect(page.locator('.reg-facts > div').nth(3)).toContainText('Website');
+  await noHorizontalScroll(page);
+  await page.goto('/registry/');
+  await expect(page.getByRole('link', { name: 'chinookdb.com/model' })).toHaveCount(0);
+});
+
 test('every entity and property of the model is on the page', async ({ page }) => {
   await page.goto(MODEL_PAGE);
   await expect(page.locator('.reg-entity')).toHaveCount(model.entities.length);

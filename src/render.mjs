@@ -54,6 +54,11 @@ export function repositoryLabel(repository) {
   return url.hostname === 'github.com' ? path : `${url.hostname}/${path}`;
 }
 
+/** A homepage as people read it: no scheme, no trailing slash (`https://chinookdb.com/model/` is `chinookdb.com/model`). */
+export function homepageLabel(url) {
+  return url.replace(/^https:\/\//i, '').replace(/\/+$/, '');
+}
+
 function externalLink(url, label, className = '') {
   const cls = className ? ` class="${className}"` : '';
   return `<a${cls} href="${safeUrl(url)}" target="_blank" rel="noreferrer">${esc(label)}</a>`;
@@ -377,6 +382,7 @@ export function renderModelPage(model, data, ctx, shell) {
     .map(([kind, path]) => `<li>${externalLink(fileUrl(model, path), path, 'reg-file')} <span class="reg-file-kind">${esc(kind)}</span></li>`)
     .join('');
   const maintainers = model.maintainers.length === 0 ? '' : `<div><dt>Maintainers</dt><dd>${model.maintainers.map(h => externalLink(`https://github.com/${h}`, h)).join(', ')}</dd></div>`;
+  const website = model.homepage === undefined ? '' : `\n        <div><dt>Website</dt><dd>${externalLink(model.homepage, homepageLabel(model.homepage), 'reg-homepage')}</dd></div>`;
   const versions = [model.moduleVersion && `module ${model.moduleVersion}`, model.modelspecVersion && `ModelSpec ${model.modelspecVersion}`].filter(Boolean);
   const entityIndex = model.entities.map(e => `<li><a href="#${esc(anchorId('entity', e.name))}">${esc(e.name)}</a></li>`).join('');
   const entities = model.entities.map(e => renderEntity(e, localEntities, localComponents)).join('\n      ');
@@ -417,7 +423,7 @@ export function renderModelPage(model, data, ctx, shell) {
       <dl class="reg-facts">
         <div><dt>Status</dt><dd>${esc(model.status)} <span class="reg-hint">(the registry is a draft)</span></dd></div>
         <div><dt>Address</dt><dd><code class="reg-address">${esc(model.address)}</code></dd></div>
-        <div><dt>Repository</dt><dd>${externalLink(model.repository, repositoryLabel(model.repository), 'reg-repo')}</dd></div>
+        <div><dt>Repository</dt><dd>${externalLink(model.repository, repositoryLabel(model.repository), 'reg-repo')}</dd></div>${website}
         <div><dt>Pinned commit</dt><dd>${externalLink(commitUrl(model), model.commit, 'reg-commit')}</dd></div>
         <div><dt>Model files</dt><dd><ul class="reg-files">${files}</ul></dd></div>
         <div><dt>Licence</dt><dd>${esc(model.licence)}</dd></div>

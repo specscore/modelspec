@@ -280,7 +280,8 @@ shows its entities and properties (anchors `#entity-<Name>`,
 `#property-<Entity>-<Property>`), the components it declares with their fields
 (`#component-<Name>`, `#field-<Component>-<Field>`) and the components each entity
 embeds (`use`), the MeaningGraph graphs that bind it and the OVDB
-Directory databases that use it. Every page is static HTML and works without
+Directory databases that use it. When the registry entry has the optional `homepage`,
+the model page also links it as **Website**. Every page is static HTML and works without
 JavaScript.
 
 Requires Node.js 22 or newer.
@@ -334,7 +335,8 @@ an `index.json` on `main`, a production build fails; that is expected.
 Everything else is a **non-production** build:
 
 - `--use-fixture` reads `fixtures/*.fixture.json`: verbatim copies of real indexes
-  with a top-level `_fixture` marker naming where each was copied from.
+  with a top-level `_fixture` marker naming where each was copied from (the ModelSpec
+  one has `homepage` added by hand to Chinook, noted in its marker).
   `--use-fixture --fixture-set two-databases` swaps the Directory fixture for a
   derived one in which a second database names the same model by address, and
   `--fixture-set two-by-address` for one in which both databases do. An index carrying
