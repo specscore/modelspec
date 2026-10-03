@@ -58,3 +58,22 @@ test('no match gives empty lists', () => {
   assert.deepEqual(graphsForModel(model(data), data.meaninggraph.graphs), []);
   assert.deepEqual(databasesForModel(model(data), data.directory.databases), []);
 });
+
+test('journey step 9, by address: two databases that both name model.address are both found', () => {
+  const dbs = directoryJson().databases;
+  const data = sampleData({ directory: directoryJson({ databases: [
+    { ...dbs[0], id: 'first', model: { name: 'shop', path: 'model/shop.modelspec.hcl', address: ADDRESS } },
+    { ...dbs[1], id: 'second' },
+  ] }) });
+  const found = databasesForModel(model(data), data.directory.databases);
+  assert.deepEqual(found.map(f => [f.database.id, f.via]), [['first', 'address'], ['second', 'address']]);
+});
+
+test('the owner and repository of an address are compared without case, the module with case', () => {
+  const dbs = directoryJson().databases;
+  const data = sampleData({ directory: directoryJson({ databases: [
+    { ...dbs[1], id: 'upper', model: { address: `modelspec://github.com/ACME/Shop/shop?ref=${COMMIT}` } },
+    { ...dbs[1], id: 'other-module-case', model: { address: 'modelspec://github.com/acme/shop/Shop' } },
+  ] }) });
+  assert.deepEqual(databasesForModel(model(data), data.directory.databases).map(f => f.database.id), ['upper']);
+});

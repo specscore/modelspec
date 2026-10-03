@@ -29,11 +29,18 @@ export const FIXTURE_SETS = Object.freeze({
     meaninggraph: 'fixtures/meaninggraph-registry-index.fixture.json',
     directory: 'fixtures/ovdb-directory-index.fixture.json',
   }),
-  // The same indexes, but the Directory lists a second database of the Chinook model.
+  // The same indexes, but the Directory lists a second database of the Chinook model
+  // (found by its model.address; the first is still found by repository and model path).
   'two-databases': Object.freeze({
     modelspec: 'fixtures/modelspec-registry-index.fixture.json',
     meaninggraph: 'fixtures/meaninggraph-registry-index.fixture.json',
     directory: 'fixtures/ovdb-directory-index.two-databases.fixture.json',
+  }),
+  // Both databases name the model by `model.address`, as Directory entries will once their manifests do.
+  'two-by-address': Object.freeze({
+    modelspec: 'fixtures/modelspec-registry-index.fixture.json',
+    meaninggraph: 'fixtures/meaninggraph-registry-index.fixture.json',
+    directory: 'fixtures/ovdb-directory-index.two-by-address.fixture.json',
   }),
 });
 
@@ -41,7 +48,7 @@ export const FIXTURE_SETS = Object.freeze({
 export const DEPLOY_DIR_NAME = 'dist';
 
 /** The only names `--out` accepts: one directory beside public/, fixed, so nothing else can be deleted. */
-export const OUT_NAMES = Object.freeze([DEPLOY_DIR_NAME, 'dist-fixture', 'dist-nonprod', 'dist-check', 'dist-e2e', 'dist-e2e-two']);
+export const OUT_NAMES = Object.freeze([DEPLOY_DIR_NAME, 'dist-fixture', 'dist-nonprod', 'dist-check', 'dist-e2e', 'dist-e2e-two', 'dist-e2e-address']);
 
 export const BUILD_MODES = Object.freeze(['production', 'nonproduction', 'local', 'fixture']);
 
@@ -127,7 +134,8 @@ export function resolveBuildConfig(argv, env, { root = ROOT } = {}) {
       throw new Error(`--use-fixture and ${setNames.join(', ')} are both set: choose one data source`);
     }
     fixtureSet = fixtureSetName ?? 'default';
-    const files = FIXTURE_SETS[fixtureSet];
+    // An own-property lookup: `__proto__`, `constructor` and the like are not fixture sets.
+    const files = Object.hasOwn(FIXTURE_SETS, fixtureSet) ? FIXTURE_SETS[fixtureSet] : undefined;
     if (!files) throw new Error(`Unknown fixture set ${JSON.stringify(fixtureSet)}. Known: ${Object.keys(FIXTURE_SETS).join(', ')}`);
     sources = Object.fromEntries(Object.entries(files).map(([key, file]) => [key, { kind: 'fixture', location: resolve(root, file) }]));
   } else {
@@ -142,7 +150,9 @@ export function resolveBuildConfig(argv, env, { root = ROOT } = {}) {
   const ovdbDirectoryBaseUrl = normaliseBaseUrl('OVDB_DIRECTORY_BASE_URL', env.OVDB_DIRECTORY_BASE_URL?.trim() || DEFAULTS.ovdbDirectoryBaseUrl);
 
   const kinds = Object.values(sources).map(source => source.kind);
-  const production = kinds.every(kind => kind === 'url')
+  const production = !useFixture
+    && kinds.length === 3
+    && kinds.every(kind => kind === 'url')
     && meaningGraphBaseUrl === DEFAULTS.meaningGraphBaseUrl
     && ovdbDirectoryBaseUrl === DEFAULTS.ovdbDirectoryBaseUrl;
   let mode;

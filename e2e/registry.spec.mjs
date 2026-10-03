@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { readFileSync } from 'node:fs';
+import { renderBanner } from '../src/render.mjs';
 import { DIRECTORY_BASE_URL, MEANINGGRAPH_BASE_URL } from '../playwright.config.mjs';
 
 // Expected values come from the fixtures the site was built from, not from the test.
@@ -177,12 +178,13 @@ test('every page of a fixture build carries the banner at the very top and the s
   }
 });
 
-test('build-info.json marks the build as a non-production fixture build', async ({ request }) => {
-  const info = await (await request.get('/build-info.json')).json();
+test('build-info.json marks the build as a non-production fixture build, and is not uploaded', async ({ request }) => {
+  const info = JSON.parse(readFileSync(new URL('../dist-e2e/build-info.json', import.meta.url), 'utf8'));
   expect(info.production).toBe(false);
   expect(info.fixture).toBe(true);
   expect(info.outDir).toBe('dist-e2e');
   expect(info.models.map(m => m.id)).toEqual(['chinook']);
+  expect((await request.get('/build-info.json')).status()).toBe(404);
 });
 
 test('the marker file of the build is not served', async ({ request }) => {
@@ -193,8 +195,47 @@ test('unknown models are not found', async ({ request }) => {
   expect((await request.get('/registry/models/nope/')).status()).toBe(404);
 });
 
+test('the header keeps the height it has on the original landing page from 861px to 1300px, the Registry link included', async ({ page }) => {
+  await page.goto('/registry/');
+  const tooTall = [];
+  for (let width = 861; width <= 1300; width += 8) {
+    await page.setViewportSize({ width, height: 700 });
+    const height = await page.locator('.site-head').evaluate(el => el.getBoundingClientRect().height);
+    if (height > 65) tooTall.push(`${width}px: ${height}`);
+  }
+  expect(tooTall).toEqual([]);
+});
+
+test('the non-production banner wraps long URLs: no sideways scroll from 320px to 1280px', async ({ page }) => {
+  const banner = renderBanner({ mode: 'nonproduction', sources: {
+    a: { location: `https://raw.githubusercontent.com/modelspec-org/registry/${'branch-'.repeat(20)}/index.json` },
+    b: { location: 'https://raw.githubusercontent.com/meaninggraph/registry/main/index.json' },
+    c: { location: `https://raw.githubusercontent.com/openvaultdb/directory/${'x'.repeat(120)}/index.json` },
+  } });
+  expect(banner).toContain('Non-production build');
+  await page.setContent(`<!doctype html><html><body style="margin:0">${banner}</body></html>`);
+  for (const width of [320, 375, 414, 768, 1024, 1280]) {
+    await page.setViewportSize({ width, height: 700 });
+    await noHorizontalScroll(page);
+  }
+});
+
 test.describe('without JavaScript', () => {
   test.use({ javaScriptEnabled: false });
+
+  test('the new landing section is visible: nothing in it waits for a script to be shown', async ({ page }) => {
+    await page.goto('/');
+    const layers = page.locator('#layers');
+    await expect(layers).toHaveCSS('opacity', '1');
+    for (const selector of ['.band-head', '.layers-grid .card', '.layers-note', '.layers-why-title', '.layers-why']) {
+      const items = layers.locator(selector);
+      expect(await items.count(), selector).toBeGreaterThan(0);
+      for (const item of await items.all()) await expect(item, selector).toHaveCSS('opacity', '1');
+    }
+    await expect(layers.locator('.layers-note')).toBeVisible();
+    await expect(layers.locator('.layers-why li')).toHaveCount(3);
+    await expect(layers.getByRole('link', { name: 'modelled in ModelSpec' })).toBeVisible();
+  });
 
   test('the registry pages are static HTML', async ({ page }) => {
     await page.goto('/registry/');

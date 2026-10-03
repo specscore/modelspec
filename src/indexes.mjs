@@ -29,7 +29,9 @@ const HANDLE = /^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})$/;
 const COMMIT = /^[0-9a-f]{40}$/;
 const CHECKSUM = /^sha256:[0-9a-f]{64}$/;
 const SEGMENT = '[A-Za-z0-9_.-]+';
-const MODEL_ADDRESS = new RegExp(`^modelspec://github\\.com/${SEGMENT}/${SEGMENT}/${SEGMENT}(\\?ref=[0-9a-f]{40})?$`);
+// A registered model's address is unpinned; a database may pin the model it uses with ?ref=<commit>.
+const MODEL_ADDRESS = new RegExp(`^modelspec://github\\.com/${SEGMENT}/${SEGMENT}/${SEGMENT}$`);
+const PINNED_MODEL_ADDRESS = new RegExp(`^modelspec://github\\.com/${SEGMENT}/${SEGMENT}/${SEGMENT}(\\?ref=[0-9a-f]{40})?$`);
 const GITHUB_REPOSITORY = /^https:\/\/github\.com\/[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/;
 
 // ---------------------------------------------------------------- reading
@@ -173,6 +175,16 @@ export function baseAddress(address) {
   return address.replace(/\?ref=[0-9a-f]{40}$/, '');
 }
 
+/**
+ * The comparison form of a model address: no `?ref=` pin, and the GitHub owner
+ * and repository lowercased (GitHub ignores their case, as repositoryKey does).
+ * The module name stays case-sensitive.
+ */
+export function normaliseModelAddress(address) {
+  const [host, owner, repository, ...module] = baseAddress(address).slice('modelspec://'.length).split('/');
+  return `modelspec://${host.toLowerCase()}/${owner.toLowerCase()}/${repository.toLowerCase()}/${module.join('/')}`;
+}
+
 // ------------------------------------------------------------ ModelSpec registry
 
 function property(value, path, entityName, seen) {
@@ -181,10 +193,11 @@ function property(value, path, entityName, seen) {
   if (seen.has(name)) fail(`${path}.name`, `duplicates property ${entityName}.${name}`);
   seen.add(name);
   const references = value.references === undefined ? undefined : pattern(value.references, `${path}.references`, REFERENCE, 'an entity name');
+  const component = value.component === undefined ? undefined : pattern(value.component, `${path}.component`, REFERENCE, 'a component name');
   for (const flag of ['required', 'key']) {
     if (value[flag] !== undefined && typeof value[flag] !== 'boolean') fail(`${path}.${flag}`, 'must be true or false');
   }
-  return { name, type: text(value.type, `${path}.type`), references, required: value.required === true, key: value.key === true };
+  return { name, type: text(value.type, `${path}.type`), references, component, required: value.required === true, key: value.key === true };
 }
 
 function entity(value, path, seen) {
@@ -195,7 +208,19 @@ function entity(value, path, seen) {
   const names = new Set();
   const properties = list(value.properties, `${path}.properties`).map((p, i) => property(p, `${path}.properties[${i}]`, name, names));
   const key = value.key === undefined ? [] : list(value.key, `${path}.key`).map((k, i) => text(k, `${path}.key[${i}]`));
-  return { name, key, properties };
+  // The components the entity embeds (`use`).
+  const use = value.use === undefined ? [] : list(value.use, `${path}.use`).map((u, i) => pattern(u, `${path}.use[${i}]`, REFERENCE, 'a component name'));
+  return { name, key, use, properties };
+}
+
+function component(value, path, seen) {
+  object(value, path);
+  const name = pattern(value.name, `${path}.name`, NAME, 'letters, digits and underscores');
+  if (seen.has(name)) fail(`${path}.name`, `duplicates component ${name}`);
+  seen.add(name);
+  const names = new Set();
+  const fields = list(value.fields, `${path}.fields`).map((f, i) => property(f, `${path}.fields[${i}]`, name, names));
+  return { name, fields };
 }
 
 /** Validate an already parsed ModelSpec registry index and return the normalised form. */
@@ -207,11 +232,12 @@ export function validateModelspecIndex(json, options = {}) {
     const at = `models[${i}]`;
     object(m, at);
     const id = uniqueId(m.id, `${at}.id`, ids);
-    const address = pattern(m.address, `${at}.address`, MODEL_ADDRESS, 'modelspec://github.com/<org>/<repo>/<module>');
-    if (addresses.has(address)) fail(`${at}.address`, `duplicates ${address}`);
-    addresses.add(address);
+    const address = pattern(m.address, `${at}.address`, MODEL_ADDRESS, 'an unpinned modelspec://github.com/<org>/<repo>/<module> (no ?ref=)');
+    if (addresses.has(normaliseModelAddress(address))) fail(`${at}.address`, `duplicates ${address}`);
+    addresses.add(normaliseModelAddress(address));
     object(m.files, `${at}.files`);
     const names = new Set();
+    const componentNames = new Set();
     return {
       id,
       title: text(m.title, `${at}.title`),
@@ -229,6 +255,7 @@ export function validateModelspecIndex(json, options = {}) {
       moduleVersion: optionalText(m.module_version, `${at}.module_version`),
       modelspecVersion: optionalText(m.modelspec, `${at}.modelspec`),
       entities: list(m.entities, `${at}.entities`).map((e, j) => entity(e, `${at}.entities[${j}]`, names)),
+      components: m.components === undefined ? [] : list(m.components, `${at}.components`).map((c, j) => component(c, `${at}.components[${j}]`, componentNames)),
     };
   });
   return { ...head, models };
@@ -271,7 +298,7 @@ export function validateDirectoryIndex(json, options = {}) {
       model = {
         name: optionalText(d.model.name, `${at}.model.name`),
         path: d.model.path === undefined ? undefined : repoPath(d.model.path, `${at}.model.path`),
-        address: d.model.address === undefined ? undefined : pattern(d.model.address, `${at}.model.address`, MODEL_ADDRESS, 'modelspec://github.com/<org>/<repo>/<module>'),
+        address: d.model.address === undefined ? undefined : pattern(d.model.address, `${at}.model.address`, PINNED_MODEL_ADDRESS, 'modelspec://github.com/<org>/<repo>/<module>, optionally with ?ref=<commit>'),
       };
       if (model.path === undefined && model.address === undefined) fail(`${at}.model`, 'must carry an address or a path');
     }

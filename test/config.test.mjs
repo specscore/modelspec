@@ -104,3 +104,18 @@ test('unknown arguments and missing values are refused', () => {
   assert.throws(() => resolveWith(['--out']), /needs a value/);
   assert.throws(() => resolveWith(['--out', '--use-fixture']), /needs a value/);
 });
+
+test('a fixture set is looked up as an own property: __proto__, constructor and the like are refused, and never production', () => {
+  for (const name of ['__proto__', 'constructor', 'toString', 'hasOwnProperty', 'valueOf']) {
+    assert.throws(() => resolveWith(['--use-fixture', '--fixture-set', name, '--out', 'dist']), /Unknown fixture set/, name);
+    assert.throws(() => resolveWith(['--use-fixture', '--fixture-set', name]), /Unknown fixture set/, name);
+  }
+  assert.equal(resolveWith(['--use-fixture', '--fixture-set', 'two-by-address']).fixtureSet, 'two-by-address');
+  assert.match(resolveWith(['--use-fixture', '--fixture-set', 'two-by-address']).sources.directory.location, /two-by-address/);
+});
+
+test('a fixture build is never production, whatever it reads', () => {
+  const c = resolveWith(['--use-fixture']);
+  assert.equal(c.production, false);
+  assert.equal(Object.keys(c.sources).length, 3);
+});

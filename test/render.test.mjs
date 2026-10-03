@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { test } from 'node:test';
 import { assertChinookEverywhere, anchorId, esc, extractShell, renderBanner, renderLanding, renderModelPage, renderRegistryPage, safeUrl } from '../src/render.mjs';
-import { ADDRESS, REPO, COMMIT, config, directoryJson, graphsJson, modelspecJson, sampleData } from './helpers.mjs';
+import { REPO, COMMIT, config, directoryJson, graphsJson, modelspecJson, modelspecWithComponents, sampleData } from './helpers.mjs';
 
 const template = await readFile(`${REPO}/public/index.html`, 'utf8');
 const shell = extractShell(template);
@@ -160,7 +160,7 @@ test('two entities whose names render to one anchor fail the build', () => {
   // Both are valid names, but the model page must still stop on a duplicated id.
   ms.models[0].entities[0].properties.push({ name: 'x', type: 'int' });
   const data = sampleData({ modelspec: ms });
-  data.modelspec.models[0].entities.push({ name: 'Artist', key: [], properties: [] });
+  data.modelspec.models[0].entities.push({ name: 'Artist', key: [], use: [], properties: [] });
   assert.throws(() => renderModelPage(data.modelspec.models[0], data, ctx, shell), /duplicate element id "entity-Artist"/);
 });
 
@@ -206,4 +206,46 @@ test('the landing claim "Chinook is in all three" is checked against the data', 
 test('extractShell fails loudly when the landing page loses a part it reuses', () => {
   assert.throws(() => extractShell(template.replace('<header class="site-head">', '<header>')), /site header/);
   assert.throws(() => extractShell(template.replace('<a href="/registry/">Registry</a>\n      <a class="nav-cta"', '<a class="nav-cta"')), /Registry link/);
+});
+
+test('components: the section, every field, the entity use lists and the component-typed properties', () => {
+  const data = sampleData({ modelspec: modelspecWithComponents() });
+  const html = renderModelPage(data.modelspec.models[0], data, ctx, shell);
+  assert.match(html, /<section class="reg-section" id="components"/);
+  assert.match(html, /Components <span class="reg-count">2<\/span>/);
+  assert.match(html, /<section class="reg-entity reg-component" id="component-Auditable"/);
+  assert.match(html, /<tr id="field-Auditable-createdAt">/);
+  assert.match(html, /<tr id="field-Auditable-createdBy">/);
+  assert.match(html, /<a href="#entity-Artist">Artist<\/a>/);
+  assert.match(html, /<section class="reg-entity reg-component" id="component-Empty"[\s\S]*No fields\./);
+  assert.match(html, /<a href="#components">Components<\/a>/);
+  // use: a declared component links to its section, one of another module is shown but not linked
+  assert.match(html, /<p class="reg-entity-use">Uses components: <a href="#component-Auditable"><code>Auditable<\/code><\/a>, <code>Elsewhere\.Tagged<\/code><\/p>/);
+  assert.doesNotMatch(html, /href="#component-Elsewhere/);
+  // a property embedding a component
+  assert.match(html, /<tr id="property-Artist-Audit">[\s\S]*?component <span class="reg-arrow" aria-label="to">→<\/span> <a href="#component-Auditable">Auditable<\/a>/);
+  assert.match(renderRegistryPage(data, ctx, shell), /2 entities, 5 properties, 2 components/);
+});
+
+test('a model without components has no Components section and no use lines', () => {
+  const { model } = render();
+  assert.doesNotMatch(model, /id="components"|reg-entity-use|href="#components"/);
+});
+
+test('the claim "Chinook is in all three" also needs the Chinook graph and database to belong to the Chinook model', () => {
+  const unbound = graphsJson({ graphs: [{ ...graphsJson().graphs[0], model_files: ['model/other.hcl'] }] });
+  assert.throws(() => assertChinookEverywhere(sampleData({ graphs: unbound })), /graph chinook does not bind the Chinook model/);
+  const other = directoryJson({ databases: [{ ...directoryJson().databases[0], model: { path: 'model/other.hcl' } }] });
+  assert.throws(() => assertChinookEverywhere(sampleData({ directory: other })), /database chinook does not name the Chinook model/);
+});
+
+test('the non-production banner wraps long URLs', () => {
+  const banner = renderBanner(config([], { MODELSPEC_REGISTRY_INDEX_URL: `https://raw.githubusercontent.com/x/y/${'b'.repeat(200)}/index.json` }));
+  assert.match(banner, /overflow-wrap:anywhere/);
+  assert.match(banner, /b{200}/);
+});
+
+test('the new landing section has no .reveal: it must be readable without JavaScript', () => {
+  const section = /<section id="layers"[\s\S]*?<\/section>/.exec(template)[0];
+  assert.doesNotMatch(section.replace(/<!--[\s\S]*?-->/g, ''), /reveal/);
 });

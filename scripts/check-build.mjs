@@ -19,7 +19,7 @@ import { lstat, readdir, readFile } from 'node:fs/promises';
 import { join, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { DEFAULTS, DEPLOY_DIR_NAME, ROOT } from '../src/config.mjs';
-import { BUILD_INFO_FILE, BUILD_INFO_FORMAT, BUILD_MARKER } from '../src/site.mjs';
+import { ASSETSIGNORE_TEXT, BUILD_INFO_FILE, BUILD_INFO_FORMAT, BUILD_MARKER } from '../src/site.mjs';
 import { SOURCE_META } from '../src/render.mjs';
 
 async function walk(dir, base = dir) {
@@ -91,6 +91,12 @@ export async function distProblems(root = ROOT) {
     }
     const [built, source] = await Promise.all([readFile(join(dist, file)), readFile(join(root, 'public', file))]);
     if (!same(built, source)) problems.push(`${file} differs from public/${file}: rebuild (the landing page and assets must be exactly public/)`);
+  }
+
+  try {
+    if (await readFile(join(dist, '.assetsignore'), 'utf8') !== ASSETSIGNORE_TEXT) problems.push('.assetsignore is not the one the build writes: the marker and build-info.json must stay out of the upload');
+  } catch {
+    problems.push('.assetsignore is missing');
   }
 
   const pages = files.filter(file => file.startsWith('registry/') && file.endsWith('.html'));

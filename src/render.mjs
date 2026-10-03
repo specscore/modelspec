@@ -74,7 +74,7 @@ const SOURCE_LABELS = {
   fixture: 'fixture',
 };
 
-const BANNER_STYLE = 'position:relative;z-index:60;margin:0;padding:.65rem 1rem;background:#b3261e;color:#fff;font:600 .9rem/1.4 system-ui,sans-serif;text-align:center';
+const BANNER_STYLE = 'position:relative;z-index:60;margin:0;padding:.65rem 1rem;background:#b3261e;color:#fff;font:600 .9rem/1.4 system-ui,sans-serif;text-align:center;overflow-wrap:anywhere';
 
 /** What the build says it was made from, as a meta tag (every generated page carries it). */
 export function sourceMeta(ctx) {
@@ -199,12 +199,20 @@ export function chinookNote(ctx) {
  * That must be true of the data the site is built from, or the build fails.
  */
 export function assertChinookEverywhere(data) {
+  const model = data.modelspec.models.find(m => m.id === 'chinook');
   const missing = [];
-  if (!data.modelspec.models.some(m => m.id === 'chinook')) missing.push('model chinook in the ModelSpec registry');
+  if (!model) missing.push('model chinook in the ModelSpec registry');
   if (!data.meaninggraph.graphs.some(g => g.id === 'chinook')) missing.push('graph chinook in the MeaningGraph registry');
   if (!data.directory.databases.some(d => d.id === 'chinook')) missing.push('database chinook in the OVDB Directory');
   if (missing.length > 0) {
     throw new Error(`The landing page says Chinook is in all three layers, but the indexes have no ${missing.join(' and no ')}. Fix the data or the landing page; the build does not publish a false claim.`);
+  }
+  // They must also be the Chinook model's graph and database, or the model page would contradict the claim.
+  const unmatched = [];
+  if (!graphsForModel(model, data.meaninggraph.graphs).some(g => g.id === 'chinook')) unmatched.push('graph chinook does not bind the Chinook model');
+  if (!databasesForModel(model, data.directory.databases).some(({ database }) => database.id === 'chinook')) unmatched.push('database chinook does not name the Chinook model');
+  if (unmatched.length > 0) {
+    throw new Error(`The landing page says Chinook is in all three layers, but ${unmatched.join(' and ')} (see "Meaning graphs for this model" and "Databases using this model"). Fix the data or the landing page.`);
   }
 }
 
@@ -219,13 +227,14 @@ function modelCounts(model, data) {
 function renderModelCard(model, data) {
   const { graphs, databases } = modelCounts(model, data);
   const properties = model.entities.reduce((n, e) => n + e.properties.length, 0);
+  const components = model.components.length > 0 ? `, ${plural(model.components.length, 'component')}` : '';
   return `<li class="reg-model">
           <div class="reg-model-head"><h3><a href="${esc(modelPath(model.id))}">${esc(model.title)}</a></h3>${statusPill(model.status)}</div>
           <p class="reg-model-desc">${esc(excerpt(model.description, 260))}</p>
           <dl class="reg-mini">
             <div><dt>Address</dt><dd><code>${esc(model.address)}</code></dd></div>
             <div><dt>Repository</dt><dd>${externalLink(`${model.repository}/tree/${model.commit}`, `${repositoryLabel(model.repository)}@${model.commit.slice(0, 7)}`)}</dd></div>
-            <div><dt>Shape</dt><dd>${plural(model.entities.length, 'entity', 'entities')}, ${plural(properties, 'property', 'properties')}</dd></div>
+            <div><dt>Shape</dt><dd>${plural(model.entities.length, 'entity', 'entities')}, ${plural(properties, 'property', 'properties')}${components}</dd></div>
             <div><dt>Used by</dt><dd>${plural(graphs.length, 'meaning graph')}, ${plural(databases.length, 'database')}</dd></div>
           </dl>
         </li>`;
@@ -264,27 +273,37 @@ export function renderRegistryPage(data, ctx, shell) {
 
 // ------------------------------------------------------------ /registry/models/<id>/
 
-function renderProperty(entity, prop, localEntities) {
-  const id = anchorId('property', entity.name, prop.name);
-  let type = esc(prop.type);
+/** The type cell of a property or field: a scalar, a reference to an entity, or an embedded component. */
+function typeCell(prop, localEntities, localComponents) {
+  const arrow = '<span class="reg-arrow" aria-label="to">→</span>';
   if (prop.references) {
-    const target = localEntities.has(prop.references)
-      ? `<a href="#${esc(anchorId('entity', prop.references))}">${esc(prop.references)}</a>`
-      : esc(prop.references);
-    type = `${esc(prop.type)} <span class="reg-arrow" aria-label="to">→</span> ${target}`;
+    const target = localEntities.has(prop.references) ? `<a href="#${esc(anchorId('entity', prop.references))}">${esc(prop.references)}</a>` : esc(prop.references);
+    return `${esc(prop.type)} ${arrow} ${target}`;
   }
+  if (prop.component) {
+    const target = localComponents.has(prop.component) ? `<a href="#${esc(anchorId('component', prop.component))}">${esc(prop.component)}</a>` : esc(prop.component);
+    return `${esc(prop.type)} ${arrow} ${target}`;
+  }
+  return esc(prop.type);
+}
+
+function renderProperty(entity, prop, localEntities, localComponents) {
+  const id = anchorId('property', entity.name, prop.name);
   return `<tr id="${esc(id)}">
               <th scope="row" data-label="Property"><a class="reg-prop-name" href="#${esc(id)}"><code>${esc(prop.name)}</code></a></th>
-              <td data-label="Type">${type}</td>
+              <td data-label="Type">${typeCell(prop, localEntities, localComponents)}</td>
               <td data-label="Required">${prop.required ? 'yes' : 'no'}</td>
               <td data-label="Key">${prop.key ? '<span class="reg-pill reg-pill--key">key</span>' : 'no'}</td>
             </tr>`;
 }
 
-function renderEntity(entity, localEntities) {
+function renderEntity(entity, localEntities, localComponents) {
   const id = anchorId('entity', entity.name);
-  const rows = entity.properties.map(prop => renderProperty(entity, prop, localEntities)).join('\n            ');
+  const rows = entity.properties.map(prop => renderProperty(entity, prop, localEntities, localComponents)).join('\n            ');
   const key = entity.key.length > 0 ? `<p class="reg-entity-key">Key: ${entity.key.map(k => `<code>${esc(k)}</code>`).join(', ')}</p>` : '';
+  const use = entity.use.length > 0
+    ? `<p class="reg-entity-use">Uses components: ${entity.use.map(u => (localComponents.has(u) ? `<a href="#${esc(anchorId('component', u))}"><code>${esc(u)}</code></a>` : `<code>${esc(u)}</code>`)).join(', ')}</p>`
+    : '';
   const table = entity.properties.length === 0
     ? '<p class="reg-none">No properties.</p>'
     : `<table class="reg-props">
@@ -297,6 +316,32 @@ function renderEntity(entity, localEntities) {
   return `<section class="reg-entity" id="${esc(id)}" aria-labelledby="heading-${esc(id)}">
         <h3 id="heading-${esc(id)}"><a href="#${esc(id)}">${esc(entity.name)}</a> <span class="reg-count">${entity.properties.length}</span></h3>
         ${key}
+        ${use}
+        ${table}
+      </section>`;
+}
+
+function renderComponent(component, localEntities, localComponents) {
+  const id = anchorId('component', component.name);
+  const rows = component.fields.map(field => {
+    const fieldId = anchorId('field', component.name, field.name);
+    return `<tr id="${esc(fieldId)}">
+              <th scope="row" data-label="Field"><a class="reg-prop-name" href="#${esc(fieldId)}"><code>${esc(field.name)}</code></a></th>
+              <td data-label="Type">${typeCell(field, localEntities, localComponents)}</td>
+              <td data-label="Required">${field.required ? 'yes' : 'no'}</td>
+            </tr>`;
+  }).join('\n            ');
+  const table = component.fields.length === 0
+    ? '<p class="reg-none">No fields.</p>'
+    : `<table class="reg-props reg-fields">
+          <caption class="reg-sr">Fields of ${esc(component.name)}</caption>
+          <thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Required</th></tr></thead>
+          <tbody>
+            ${rows}
+          </tbody>
+        </table>`;
+  return `<section class="reg-entity reg-component" id="${esc(id)}" aria-labelledby="heading-${esc(id)}">
+        <h3 id="heading-${esc(id)}"><a href="#${esc(id)}">${esc(component.name)}</a> <span class="reg-count">${component.fields.length}</span></h3>
         ${table}
       </section>`;
 }
@@ -325,6 +370,7 @@ function renderDatabaseRow({ database, via }, ctx) {
 export function renderModelPage(model, data, ctx, shell) {
   const { graphs, databases } = modelCounts(model, data);
   const localEntities = new Set(model.entities.map(e => e.name));
+  const localComponents = new Set(model.components.map(c => c.name));
   const propertyCount = model.entities.reduce((n, e) => n + e.properties.length, 0);
   const files = [['source', model.files.source], ['JSON', model.files.json]]
     .filter(([, path]) => path)
@@ -333,7 +379,15 @@ export function renderModelPage(model, data, ctx, shell) {
   const maintainers = model.maintainers.length === 0 ? '' : `<div><dt>Maintainers</dt><dd>${model.maintainers.map(h => externalLink(`https://github.com/${h}`, h)).join(', ')}</dd></div>`;
   const versions = [model.moduleVersion && `module ${model.moduleVersion}`, model.modelspecVersion && `ModelSpec ${model.modelspecVersion}`].filter(Boolean);
   const entityIndex = model.entities.map(e => `<li><a href="#${esc(anchorId('entity', e.name))}">${esc(e.name)}</a></li>`).join('');
-  const entities = model.entities.map(e => renderEntity(e, localEntities)).join('\n      ');
+  const entities = model.entities.map(e => renderEntity(e, localEntities, localComponents)).join('\n      ');
+  const fieldCount = model.components.reduce((n, c) => n + c.fields.length, 0);
+  const componentsSection = model.components.length === 0 ? '' : `<section class="reg-section" id="components" aria-labelledby="components-heading">
+      <h2 id="components-heading">Components <span class="reg-count">${model.components.length}</span></h2>
+      <p class="reg-section-note">${plural(model.components.length, 'component')} and ${plural(fieldCount, 'field')}: reusable groups of fields that entities embed with <code>use</code>.</p>
+      <ul class="reg-entity-index" aria-label="Components">${model.components.map(c => `<li><a href="#${esc(anchorId('component', c.name))}">${esc(c.name)}</a></li>`).join('')}</ul>
+      ${model.components.map(c => renderComponent(c, localEntities, localComponents)).join('\n      ')}
+    </section>
+    `;
   const graphRows = graphs.length === 0
     ? '<p class="reg-none">No graph in the MeaningGraph registry binds meanings to this model yet.</p>'
     : `<ul class="reg-rows">
@@ -352,7 +406,7 @@ export function renderModelPage(model, data, ctx, shell) {
       <h1>${esc(model.title)} ${statusPill(model.status)}</h1>
       <p class="reg-lede">${esc(model.description)}</p>
       <ul class="reg-jump" aria-label="On this page">
-        <li><a href="#entities">Entities</a></li>
+        <li><a href="#entities">Entities</a></li>${model.components.length > 0 ? '\n        <li><a href="#components">Components</a></li>' : ''}
         <li><a href="#meaning-graphs">Meaning graphs</a></li>
         <li><a href="#databases">Databases</a></li>
       </ul>
@@ -377,7 +431,7 @@ export function renderModelPage(model, data, ctx, shell) {
       <ul class="reg-entity-index" aria-label="Entities">${entityIndex}</ul>
       ${entities}
     </section>
-    <section class="reg-section" id="meaning-graphs" aria-labelledby="meaning-graphs-heading">
+    ${componentsSection}<section class="reg-section" id="meaning-graphs" aria-labelledby="meaning-graphs-heading">
       <h2 id="meaning-graphs-heading">Meaning graphs for this model <span class="reg-count">${graphs.length}</span></h2>
       <p class="reg-section-note">From the MeaningGraph registry: graphs whose meaning files bind concepts to this model's entities and properties.</p>
       ${graphRows}

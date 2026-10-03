@@ -812,3 +812,9 @@ pre code {
 @media (max-width: 860px) {
   .layers-grid, .layers-why { grid-template-columns: 1fr; }
 }
+
+/* The header gained a Registry link: between the hamburger breakpoint and about
+   900px the eight links need a little less room between them to stay on one line. */
+@media (min-width: 861px) and (max-width: 900px) {
+  .site-nav { gap: 1.2rem; }
+}

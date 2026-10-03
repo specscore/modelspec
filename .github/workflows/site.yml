@@ -1,0 +1,41 @@
+# Checks for the modelspec.org site build: unit tests, the fixture build and the
+# browser tests. It reads nothing but this repository and the committed
+# fixtures, holds no secret and has no deploy step: nothing in this repository
+# deploys by itself (see "Website" in README.md).
+name: Site
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: site-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      WRANGLER_SEND_METRICS: "false"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Unit tests
+        run: npm test
+      - name: Syntax checks and fixture build
+        run: npm run check
+      - name: Install the browser
+        run: npx playwright install --with-deps chromium
+      - name: Browser tests (desktop and 375px, against fixture builds served by wrangler dev)
+        run: npm run test:e2e

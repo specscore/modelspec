@@ -107,3 +107,21 @@ export async function tempRoot() {
 }
 
 export const read = (...parts) => readFile(join(...parts), 'utf8');
+
+/** The sample ModelSpec index with a component and an entity that embeds it, as the registry's `use` and `components` list them. */
+export function modelspecWithComponents() {
+  const json = modelspecJson();
+  const [artist, album] = json.models[0].entities;
+  artist.use = ['Auditable', 'Elsewhere.Tagged'];
+  artist.properties.push({ name: 'Audit', type: 'component', component: 'Auditable', required: false, key: false });
+  album.use = [];
+  json.models[0].components = [
+    { name: 'Auditable', fields: [
+      { name: 'createdAt', type: 'datetime', required: true },
+      { name: 'createdBy', type: 'reference', references: 'Artist', required: false },
+      { name: 'meta', type: 'component', component: 'Auditable', required: false },
+    ] },
+    { name: 'Empty', fields: [] },
+  ];
+  return json;
+}

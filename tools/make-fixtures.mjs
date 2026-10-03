@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Writes the committed fixtures: verbatim copies of real indexes plus a
-// top-level `_fixture` marker naming where each was copied from, and one derived
-// Directory index in which a second database names the same model.
+// top-level `_fixture` marker naming where each was copied from, and two derived
+// Directory indexes in which a second database names the same model.
 //
 //   node tools/make-fixtures.mjs [--modelspec <https URL or path>] [--meaninggraph <...>] [--directory <...>]
 //
@@ -21,6 +21,7 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
 export const FIXTURE_NOTE = 'FIXTURE, not a live index. A copy of the index named in `copied_from`, kept for offline builds and tests. Only a build run with --use-fixture accepts this file; it must never be deployed.';
 export const DERIVED_NOTE = 'FIXTURE, not a live index. The Directory index named in `derived_from` with a second database added that names the same ModelSpec model by its address, to test that every database of a model is listed. Only a build run with --use-fixture accepts this file; it must never be deployed.';
+export const DERIVED_BY_ADDRESS_NOTE = 'FIXTURE, not a live index. The Directory index named in `derived_from` in which the first database also names its ModelSpec model by `model.address`, plus a second database that does, to test that databases are found by address. Only a build run with --use-fixture accepts this file; it must never be deployed.';
 
 export const checksumOf = list => `sha256:${createHash('sha256').update(JSON.stringify(list)).digest('hex')}`;
 
@@ -41,12 +42,14 @@ export function markAsFixture(kind, json, copiedFrom) {
   return { format: json.format, checksum: json.checksum, _fixture: { note: FIXTURE_NOTE, copied_from: copiedFrom }, [list]: json[list] };
 }
 
-/** The Directory fixture plus a second database of the same model, found by `model.address` only. */
-export function deriveTwoDatabases(directoryFixture, derivedFrom) {
-  const first = directoryFixture.databases.find(db => db.model);
-  if (!first) throw new Error('The Directory index has no database with a model to derive a second one from');
-  const address = `modelspec://github.com/datatug/chinookdb/${first.model.name}`;
-  const second = {
+function modelAddress(first) {
+  const repository = new URL(first.repository).pathname.replace(/^\/+|\/+$/g, '').replace(/\.git$/, '');
+  return `modelspec://github.com/${repository}/${first.model.name}`;
+}
+
+/** A second database of the first database's model: another publisher, found by `model.address` only. */
+function secondDatabase(first) {
+  return {
     id: `${first.id}-second-host`,
     title: `${first.title} (second host)`,
     description: `A second database of the ${first.model.name} model, from another publisher, for testing.`,
@@ -56,16 +59,30 @@ export function deriveTwoDatabases(directoryFixture, derivedFrom) {
     commit: first.commit,
     manifest: 'ovdb.yaml',
     licence: first.licence,
-    model: { name: first.model.name, path: 'models/chinook.modelspec.hcl', address },
+    model: { name: first.model.name, path: 'models/chinook.modelspec.hcl', address: modelAddress(first) },
     recordsets: [],
   };
-  const databases = [...directoryFixture.databases, second];
-  return {
-    format: directoryFixture.format,
-    checksum: checksumOf(databases),
-    _fixture: { note: DERIVED_NOTE, derived_from: derivedFrom },
-    databases,
-  };
+}
+
+function firstWithModel(directoryFixture) {
+  const first = directoryFixture.databases.find(db => db.model);
+  if (!first) throw new Error('The Directory index has no database with a model to derive a second one from');
+  return first;
+}
+
+/** The Directory fixture plus a second database of the same model, found by `model.address` only. */
+export function deriveTwoDatabases(directoryFixture, derivedFrom) {
+  const databases = [...directoryFixture.databases, secondDatabase(firstWithModel(directoryFixture))];
+  return { format: directoryFixture.format, checksum: checksumOf(databases), _fixture: { note: DERIVED_NOTE, derived_from: derivedFrom }, databases };
+}
+
+/** Both databases name the model by `model.address`: the first gets the address the real entry will carry once its manifest does. */
+export function deriveTwoByAddress(directoryFixture, derivedFrom) {
+  const first = firstWithModel(directoryFixture);
+  const address = modelAddress(first);
+  const databases = directoryFixture.databases.map(db => (db === first ? { ...db, model: { ...db.model, address } } : db));
+  databases.push(secondDatabase(first));
+  return { format: directoryFixture.format, checksum: checksumOf(databases), _fixture: { note: DERIVED_BY_ADDRESS_NOTE, derived_from: derivedFrom }, databases };
 }
 
 async function write(file, json) {
@@ -90,6 +107,7 @@ async function main() {
     await write(FIXTURE_SETS.default[kind], fixtures[kind]);
   }
   await write(FIXTURE_SETS['two-databases'].directory, deriveTwoDatabases(fixtures.directory, FIXTURE_SETS.default.directory));
+  await write(FIXTURE_SETS['two-by-address'].directory, deriveTwoByAddress(fixtures.directory, FIXTURE_SETS.default.directory));
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {

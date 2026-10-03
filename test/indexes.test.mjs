@@ -2,8 +2,8 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { test } from 'node:test';
-import { IndexError, baseAddress, loadIndex, readIndexText, repositoryKey, validateDirectoryIndex, validateMeaningGraphIndex, validateModelspecIndex } from '../src/indexes.mjs';
-import { COMMIT, REPO, directoryJson, graphsJson, modelspecJson } from './helpers.mjs';
+import { IndexError, baseAddress, loadIndex, normaliseModelAddress, readIndexText, repositoryKey, validateDirectoryIndex, validateMeaningGraphIndex, validateModelspecIndex } from '../src/indexes.mjs';
+import { ADDRESS, COMMIT, REPO, directoryJson, graphsJson, modelspecJson, modelspecWithComponents } from './helpers.mjs';
 
 const fixture = async name => JSON.parse(await readFile(new URL(`../fixtures/${name}.fixture.json`, import.meta.url), 'utf8'));
 const fixtureSync = name => JSON.parse(readFileSync(new URL(`../fixtures/${name}.fixture.json`, import.meta.url), 'utf8'));
@@ -14,6 +14,8 @@ test('the committed fixtures validate and carry the fixture marker', async () =>
   const mg = validateMeaningGraphIndex(await fixture('meaninggraph-registry-index'), fx);
   const dir = validateDirectoryIndex(await fixture('ovdb-directory-index'), fx);
   const two = validateDirectoryIndex(await fixture('ovdb-directory-index.two-databases'), fx);
+  const byAddress = validateDirectoryIndex(await fixture('ovdb-directory-index.two-by-address'), fx);
+  assert.deepEqual(byAddress.databases.map(d => d.model.address), ['modelspec://github.com/datatug/chinookdb/chinook', 'modelspec://github.com/datatug/chinookdb/chinook']);
   assert.equal(ms.models[0].address, 'modelspec://github.com/datatug/chinookdb/chinook');
   assert.equal(ms.models[0].entities.length, 11);
   assert.deepEqual(mg.graphs.map(g => g.id), ['chinook', 'core']);
@@ -32,7 +34,7 @@ test('a fixture marker is refused outside fixture mode, and fixture mode require
 });
 test('the checksums of the committed fixtures match their lists', async () => {
   const { createHash } = await import('node:crypto');
-  for (const [name, list] of [['modelspec-registry-index', 'models'], ['meaninggraph-registry-index', 'graphs'], ['ovdb-directory-index', 'databases'], ['ovdb-directory-index.two-databases', 'databases']]) {
+  for (const [name, list] of [['modelspec-registry-index', 'models'], ['meaninggraph-registry-index', 'graphs'], ['ovdb-directory-index', 'databases'], ['ovdb-directory-index.two-databases', 'databases'], ['ovdb-directory-index.two-by-address', 'databases']]) {
     const json = await fixture(name);
     assert.equal(json.checksum, `sha256:${createHash('sha256').update(JSON.stringify(json[list])).digest('hex')}`, name);
   }
@@ -131,4 +133,46 @@ test('loadIndex names the index in every failure', async () => {
   await assert.rejects(loadIndex({ location: 'https://x.example/i.json' }, validateDirectoryIndex, { fetchImpl: marked }), /_fixture/);
   const ok = await loadIndex({ location: 'https://x.example/i.json' }, validateDirectoryIndex, { fetchImpl: async () => ({ ok: true, text: async () => JSON.stringify(directoryJson()) }) });
   assert.equal(ok.databases.length, 3);
+});
+
+test('a registered model address is unpinned and unique without regard to the case of owner and repository', () => {
+  const m = modelspecJson().models[0];
+  assert.throws(() => validateModelspecIndex(modelspecJson({ models: [{ ...m, address: `${m.address}?ref=${COMMIT}` }] })), /unpinned/);
+  const dup = { ...m, id: 'other', address: 'modelspec://github.com/ACME/Shop/shop' };
+  assert.throws(() => validateModelspecIndex(modelspecJson({ models: [m, dup] })), /duplicates/);
+  const otherModule = { ...m, id: 'other', address: 'modelspec://github.com/acme/shop/Shop' };
+  assert.equal(validateModelspecIndex(modelspecJson({ models: [m, otherModule] })).models.length, 2, 'the module is case-sensitive');
+  // a database may pin the model it uses
+  const db = directoryJson().databases[1];
+  assert.equal(validateDirectoryIndex(directoryJson({ databases: [{ ...db, model: { address: `${ADDRESS}?ref=${COMMIT}` } }] })).databases[0].model.address, `${ADDRESS}?ref=${COMMIT}`);
+  assert.throws(() => validateDirectoryIndex(directoryJson({ databases: [{ ...db, model: { address: `${ADDRESS}?ref=abc` } }] })), /address/);
+});
+
+test('model addresses are compared without the pin and without the case of owner and repository', () => {
+  const key = normaliseModelAddress;
+  assert.equal(key(`modelspec://github.com/DataTug/ChinookDB/chinook?ref=${COMMIT}`), 'modelspec://github.com/datatug/chinookdb/chinook');
+  assert.notEqual(key('modelspec://github.com/datatug/chinookdb/chinook'), key('modelspec://github.com/datatug/chinookdb/Chinook'));
+});
+
+test('components and use are read, validated and kept: nothing the pages show is dropped silently', () => {
+  const ok = validateModelspecIndex(modelspecWithComponents());
+  const model = ok.models[0];
+  assert.deepEqual(model.entities[0].use, ['Auditable', 'Elsewhere.Tagged']);
+  assert.deepEqual(model.components.map(c => c.name), ['Auditable', 'Empty']);
+  assert.deepEqual(model.components[0].fields.map(f => [f.name, f.type, f.references, f.component, f.required]), [
+    ['createdAt', 'datetime', undefined, undefined, true],
+    ['createdBy', 'reference', 'Artist', undefined, false],
+    ['meta', 'component', undefined, 'Auditable', false],
+  ]);
+  assert.equal(model.entities[0].properties.at(-1).component, 'Auditable');
+  const withComponents = patch => { const json = modelspecWithComponents(); Object.assign(json.models[0], patch(json.models[0])); return json; };
+  assert.throws(() => validateModelspecIndex(withComponents(m => ({ components: [...m.components, { name: 'Auditable', fields: [] }] }))), /duplicates component/);
+  assert.throws(() => validateModelspecIndex(withComponents(() => ({ components: [{ name: 'a b', fields: [] }] }))), /letters, digits and underscores/);
+  assert.throws(() => validateModelspecIndex(withComponents(() => ({ components: [{ name: 'X', fields: [{ name: 'f"', type: 'int' }] }] }))), /letters, digits and underscores/);
+  assert.throws(() => validateModelspecIndex(withComponents(() => ({ components: [{ name: 'X', fields: [{ name: 'f', type: 'int' }, { name: 'f', type: 'int' }] }] }))), /duplicates property/);
+  assert.throws(() => validateModelspecIndex(withComponents(() => ({ components: {} }))), /components must be an array/);
+  assert.throws(() => validateModelspecIndex(withComponents(m => ({ entities: [{ ...m.entities[0], use: ['<b>'] }] }))), /use\[0\]/);
+  assert.throws(() => validateModelspecIndex(withComponents(m => ({ entities: [{ ...m.entities[0], use: 'Auditable' }] }))), /use must be an array/);
+  assert.throws(() => validateModelspecIndex(withComponents(m => ({ entities: [{ ...m.entities[0], properties: [{ name: 'p', type: 'component', component: '<x>' }] }] }))), /component name/);
+  assert.deepEqual(validateModelspecIndex(modelspecJson()).models[0].components, [], 'older indexes without components still validate');
 });

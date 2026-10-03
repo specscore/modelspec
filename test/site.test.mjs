@@ -5,7 +5,7 @@ import { lstat, mkdir, readdir, readFile, symlink, writeFile } from 'node:fs/pro
 import { join } from 'node:path';
 import { test } from 'node:test';
 import { OUT_NAMES } from '../src/config.mjs';
-import { BUILD_MARKER, buildSite, loadData, prepareOutput } from '../src/site.mjs';
+import { ASSETSIGNORE_TEXT, BUILD_MARKER, buildSite, loadData, prepareOutput } from '../src/site.mjs';
 import { REPO, config, directoryJson, graphsJson, productionConfig, read, sampleData, tempRoot } from './helpers.mjs';
 
 const fixtureConfig = (root, name = 'dist-e2e') => ({ ...config(['--use-fixture', '--out', name], {}), outDir: join(root, name) });
@@ -22,7 +22,8 @@ test('a build is public/ plus registry/ plus build-info.json, and the landing pa
     for (const file of ['style.css', 'script.js', 'favicon.svg', 'registry.css']) assert.equal(await read(dist, file), await read(root, 'public', file));
     assert.ok(existsSync(join(dist, 'registry', 'index.html')));
     assert.ok(existsSync(join(dist, 'registry', 'models', 'chinook', 'index.html')));
-    assert.equal(await read(dist, '.assetsignore'), `${BUILD_MARKER}\n`);
+    assert.equal(await read(dist, '.assetsignore'), ASSETSIGNORE_TEXT);
+    assert.equal(ASSETSIGNORE_TEXT, `${BUILD_MARKER}\nbuild-info.json\n`, 'the marker and build-info.json stay out of the upload');
     const info = JSON.parse(await read(dist, 'build-info.json'));
     assert.equal(info.production, true);
     assert.equal(info.outDir, 'dist');
@@ -173,4 +174,25 @@ test('CLI: --out dist is refused for a fixture build, and the output of a refuse
   const bad = spawnSync(process.execPath, [join(REPO, 'scripts/build.mjs'), '--use-fixture', '--out', 'public'], { encoding: 'utf8' });
   assert.equal(bad.status, 1);
   assert.match(await readFile(join(REPO, 'public', 'index.html'), 'utf8'), /<title>ModelSpec/);
+});
+
+test('the by-address fixture build finds both databases by model address', async () => {
+  const { root, cleanup } = await tempRoot();
+  try {
+    const c = { ...config(['--use-fixture', '--fixture-set', 'two-by-address', '--out', 'dist-e2e-address'], {}), outDir: join(root, 'dist-e2e-address') };
+    await buildSite({ root, config: c });
+    const html = await read(root, 'dist-e2e-address', 'registry', 'models', 'chinook', 'index.html');
+    assert.match(html, /Databases using this model <span class="reg-count">2<\/span>/);
+    assert.equal((html.match(/<dd>model address<\/dd>/g) ?? []).length, 2);
+    assert.doesNotMatch(html, /<dd>repository and model file<\/dd>/);
+  } finally { await cleanup(); }
+});
+
+test('build-info.json holds no absolute local path', async () => {
+  const { root, cleanup } = await tempRoot();
+  try {
+    await buildSite({ root, config: fixtureConfig(root), data: sampleData() });
+    const text = await read(root, 'dist-e2e', 'build-info.json');
+    assert.ok(!text.includes(root) && !/\/Users\/|\/home\/|\/private\//.test(text), text);
+  } finally { await cleanup(); }
 });

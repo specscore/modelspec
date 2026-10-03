@@ -6,7 +6,7 @@ import { test } from 'node:test';
 import { DEFAULTS } from '../src/config.mjs';
 import { BUILD_MARKER, buildSite } from '../src/site.mjs';
 import { distProblems } from '../scripts/check-build.mjs';
-import { deploy, planDeploy } from '../scripts/deploy.mjs';
+import { CONFIG_OVERRIDES, configOverrides, deploy, planDeploy } from '../scripts/deploy.mjs';
 import { REPO, config, productionConfig, read, sampleData, tempRoot } from './helpers.mjs';
 
 const prodRoot = async () => {
@@ -125,20 +125,61 @@ test('deploy passes the production values through and strips them from the build
   assert.deepEqual(buildEnv, { PATH: '/bin' });
 });
 
-test('deploy runs check, build, verification, then wrangler deploy without arguments; it stops at the first failure', async () => {
+test('deploy runs check, build, verification, then wrangler deploy with an absolute --config and --assets; it stops at the first failure', async () => {
   const calls = [];
-  const run = (command, args) => { calls.push([command.split('/').pop(), ...args]); return 0; };
-  await deploy({ argv: [], env: {}, run, verify: async () => [], log: () => {} });
-  assert.deepEqual(calls.map(c => c[0]), ['npm', 'node', 'wrangler']);
-  assert.deepEqual(calls[1].slice(1).map(a => a.split('/').pop()), ['build.mjs', '--out', 'dist']);
-  assert.deepEqual(calls[2], ['wrangler', 'deploy']);
+  const run = (command, args) => { calls.push([command, ...args]); return 0; };
+  await deploy({ argv: [], env: {}, root: '/repo', run, verify: async () => [], exists: () => false, log: () => {} });
+  assert.deepEqual(calls.map(c => c[0].split('/').pop()), ['npm', 'node', 'wrangler']);
+  assert.deepEqual(calls[1].slice(1), ['/repo/scripts/build.mjs', '--out', 'dist']);
+  assert.deepEqual(calls[2], ['/repo/node_modules/.bin/wrangler', 'deploy', '--config', '/repo/wrangler.jsonc', '--assets', '/repo/dist']);
 
   const failing = name => (command, args) => (args.includes(name) ? 1 : 0);
   let ran = 0;
-  await assert.rejects(deploy({ argv: [], env: {}, run: (...a) => { ran++; return failing('check')(...a); }, verify: async () => [], log: () => {} }), /check step failed/);
+  await assert.rejects(deploy({ argv: [], env: {}, root: '/repo', run: (...a) => { ran++; return failing('check')(...a); }, verify: async () => [], exists: () => false, log: () => {} }), /check step failed/);
   assert.equal(ran, 1);
-  await assert.rejects(deploy({ argv: [], env: {}, run: () => 0, verify: async () => ['dist/ is a fixture build'], log: () => {} }), /Refusing to deploy:\n  dist\/ is a fixture build/);
+  await assert.rejects(deploy({ argv: [], env: {}, root: '/repo', run: () => 0, verify: async () => ['dist/ is a fixture build'], exists: () => false, log: () => {} }), /Refusing to deploy:\n  dist\/ is a fixture build/);
   const seen = [];
-  await assert.rejects(deploy({ argv: [], env: {}, run: (c, a) => { seen.push(a); return a.includes('--out') ? 1 : 0; }, verify: async () => [], log: () => {} }), /build step failed/);
+  await assert.rejects(deploy({ argv: [], env: {}, root: '/repo', run: (c, a) => { seen.push(a); return a.includes('--out') ? 1 : 0; }, verify: async () => [], exists: () => false, log: () => {} }), /build step failed/);
   assert.ok(!seen.some(a => a.includes('deploy')), 'wrangler never ran');
+});
+
+test('deploy refuses a wrangler.json, wrangler.toml or .wrangler/deploy/config.json redirect before it builds or runs anything', async () => {
+  for (const file of CONFIG_OVERRIDES) {
+    let ran = 0;
+    await assert.rejects(
+      deploy({ argv: [], env: {}, root: '/repo', run: () => { ran++; return 0; }, verify: async () => [], exists: path => path === `/repo/${file}`, log: () => {} }),
+      error => error.message.includes(file) && /Refusing to deploy/.test(error.message),
+      file,
+    );
+    assert.equal(ran, 0, `nothing ran for ${file}`);
+  }
+  assert.deepEqual(CONFIG_OVERRIDES, ['wrangler.json', 'wrangler.toml', '.wrangler/deploy/config.json']);
+});
+
+test('configOverrides finds real files in a real directory', async () => {
+  const { root, cleanup } = await tempRoot();
+  try {
+    assert.deepEqual(configOverrides(root), []);
+    await writeFile(join(root, 'wrangler.json'), '{}');
+    await mkdir(join(root, '.wrangler', 'deploy'), { recursive: true });
+    await writeFile(join(root, '.wrangler', 'deploy', 'config.json'), '{"configPath":"x"}');
+    assert.deepEqual(configOverrides(root), ['wrangler.json', '.wrangler/deploy/config.json']);
+  } finally { await cleanup(); }
+});
+
+test('the real tree has none of those files, and the real wrangler binary is named from the repository root', () => {
+  assert.deepEqual(configOverrides(REPO), [], 'a stray wrangler.json, wrangler.toml or redirect in this checkout');
+});
+
+test('the guard refuses a dist/ whose .assetsignore is not the one the build writes, or is missing', async () => {
+  for (const [change, expected] of [
+    [root => writeFile(join(root, 'dist', '.assetsignore'), `${BUILD_MARKER}\n`), /\.assetsignore is not the one the build writes/],
+    [root => rm(join(root, 'dist', '.assetsignore')), /\.assetsignore is missing/],
+  ]) {
+    const { root, cleanup } = await prodRoot();
+    try {
+      await change(root);
+      assert.match((await distProblems(root)).join('\n'), expected);
+    } finally { await cleanup(); }
+  }
 });

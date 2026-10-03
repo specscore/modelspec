@@ -5,9 +5,11 @@ import { defineConfig } from '@playwright/test';
 // committed fixtures so the tests need no network:
 //   8791  the fixture copies of the real indexes (one Chinook database)
 //   8792  the same, with a second database of the Chinook model in the Directory
+//   8793  the same, with both Directory databases naming the model by model.address
 // The sibling sites are not served: the tests only assert where links point.
 export const MODELSPEC_PORT = 8791;
 export const TWO_PORT = 8792;
+export const ADDRESS_PORT = 8793;
 export const MEANINGGRAPH_BASE_URL = 'http://127.0.0.1:4010';
 export const DIRECTORY_BASE_URL = 'http://127.0.0.1:4011';
 
@@ -40,5 +42,6 @@ export default defineConfig({
   webServer: [
     server(MODELSPEC_PORT, 9291, 'dist-e2e'),
     server(TWO_PORT, 9292, 'dist-e2e-two', '--fixture-set two-databases'),
+    server(ADDRESS_PORT, 9293, 'dist-e2e-address', '--fixture-set two-by-address'),
   ],
 });

@@ -6,10 +6,16 @@
 // appends them to the script, so `npm run deploy -- --assets x` would reach
 // wrangler), no fixture or local-index flags, and none of the index or base-URL
 // variables unless it is set to the production value. There is no override.
-// The build guard in wrangler.jsonc (scripts/check-build.mjs) then checks dist/
-// once more when wrangler starts.
+// wrangler is then run as `wrangler deploy --config <ROOT>/wrangler.jsonc
+// --assets <ROOT>/dist` (absolute paths), so a stray wrangler.json, wrangler.toml
+// or .wrangler/deploy/config.json redirect cannot change the configuration, and
+// the directory uploaded is the directory the guard checked. The build guard in
+// wrangler.jsonc (scripts/check-build.mjs) checks dist/ once more when wrangler
+// starts. Only this script is protected against such flags and files: a plain
+// `wrangler deploy --assets <dir>` is not.
 
 import { spawnSync } from 'node:child_process';
+import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { DEFAULTS, ROOT } from '../src/config.mjs';
@@ -43,6 +49,14 @@ export function planDeploy(argv, env) {
   return { buildEnv };
 }
 
+/** Files that would make wrangler read some other configuration than wrangler.jsonc. */
+export const CONFIG_OVERRIDES = ['wrangler.json', 'wrangler.toml', '.wrangler/deploy/config.json'];
+
+/** The wrangler configuration files that must not exist beside wrangler.jsonc; an empty list means fit. */
+export function configOverrides(root = ROOT, exists = existsSync) {
+  return CONFIG_OVERRIDES.filter(file => exists(join(root, file)));
+}
+
 /** Run a command with inherited output; the exit status (1 when it could not start). */
 function runCommand(command, args, env) {
   return spawnSync(command, args, { cwd: ROOT, env, stdio: 'inherit' }).status ?? 1;
@@ -52,11 +66,15 @@ function runCommand(command, args, env) {
  * Check, build, verify, upload. `run` and `verify` are injectable for tests.
  * Resolves only when wrangler ran; every other outcome throws.
  */
-export async function deploy({ argv, env, run = runCommand, verify = distProblems, log = console.log }) {
+export async function deploy({ argv, env, root = ROOT, run = runCommand, verify = () => distProblems(root), exists = existsSync, log = console.log }) {
   const { buildEnv } = planDeploy(argv, env);
+  const overrides = configOverrides(root, exists);
+  if (overrides.length > 0) {
+    throw new Error(`Refusing to deploy: ${overrides.join(', ')} exists beside wrangler.jsonc and could make wrangler read another configuration (it is git-ignored or untracked, so git status may not show it). Remove it: rm ${overrides.join(' ')}`);
+  }
   const steps = [
     ['check', 'npm', ['run', '--silent', 'check'], buildEnv],
-    ['build', process.execPath, [join(ROOT, 'scripts/build.mjs'), '--out', 'dist'], buildEnv],
+    ['build', process.execPath, [join(root, 'scripts/build.mjs'), '--out', 'dist'], buildEnv],
   ];
   for (const [name, command, args, stepEnv] of steps) {
     const status = run(command, args, stepEnv);
@@ -65,8 +83,8 @@ export async function deploy({ argv, env, run = runCommand, verify = distProblem
   const problems = await verify();
   if (problems.length > 0) throw new Error(`Refusing to deploy:\n  ${problems.join('\n  ')}`);
   log('dist/ was built from the production indexes.');
-  // No arguments: wrangler.jsonc names ./dist, and nothing from our own argv reaches wrangler.
-  const status = run(join(ROOT, 'node_modules/.bin/wrangler'), ['deploy'], env);
+  // The configuration and the assets directory are named explicitly, with absolute paths; nothing from our own argv reaches wrangler.
+  const status = run(join(root, 'node_modules/.bin/wrangler'), ['deploy', '--config', join(root, 'wrangler.jsonc'), '--assets', join(root, 'dist')], env);
   if (status !== 0) throw new Error(`wrangler deploy failed (exit ${status})`);
 }
 
