@@ -247,6 +247,7 @@ GraphSpec consumes ModelSpec for structure; ModelSpec does not depend on GraphSp
 - [docs/](docs/README.md): architecture, [OpenVaultDB](https://openvaultdb.com/) integration, SpecScore integration, and catalog notes.
 - [examples/](examples/README.md): example ModelSpec modules.
 - [schema/](schema/README.md): planned JSON Schema publication location.
+- `public/`, `src/`, `scripts/`, `tools/`, `fixtures/`, `test/`, `e2e/`: the [modelspec.org](#website-modelspecorg) site and its build.
 
 ## Authored And Machine Formats
 
@@ -258,6 +259,140 @@ serialization and YAML as a possible secondary serialization. See
 [spec/hcl-authoring.md](spec/hcl-authoring.md),
 [spec/json-format.md](spec/json-format.md), and
 [docs/format-analysis.md](docs/format-analysis.md).
+
+## Website (modelspec.org)
+
+The site is the landing page (`public/`) plus registry pages generated at build
+time from three public indexes. It is served by one Cloudflare Worker
+(`wrangler.jsonc`, Workers Static Assets) from `dist/`, which is not committed:
+
+```text
+dist/  =  copy of public/            the landing page, style.css, script.js, favicon, registry.css
+       +  registry/                  /registry/ and /registry/models/<id>/ (generated)
+       +  build-info.json            what the build was made from (read by the deploy guard)
+       +  .modelspec-build-output    marker: this directory was created by the build
+       +  .assetsignore              keeps the marker and build-info.json out of the upload
+```
+
+The registry is new and a draft. `/registry/` lists every model of the
+[ModelSpec registry](https://github.com/modelspec-org/registry); each model page
+shows its entities and properties (anchors `#entity-<Name>`,
+`#property-<Entity>-<Property>`), the components it declares with their fields
+(`#component-<Name>`, `#field-<Component>-<Field>`) and the components each entity
+embeds (`use`), the MeaningGraph graphs that bind it and the OVDB
+Directory databases that use it. Every page is static HTML and works without
+JavaScript.
+
+Requires Node.js 22 or newer.
+
+```sh
+npm ci
+npm run build           # production: reads the three live indexes, writes dist/
+npm run build:fixture   # reads the committed fixtures, writes dist-fixture/ (never dist/)
+npm run dev             # fixture build, then wrangler dev --local on dist-fixture/
+npm run check           # syntax checks and a fixture build into dist-check/
+npm test                # unit tests (node:test)
+npm run test:e2e        # Playwright against fixture builds served by wrangler dev --local, desktop and 375px
+npm run deploy          # production build, guard, wrangler deploy with pinned --config and --assets
+```
+
+### Data sources
+
+| Variable | Default | What |
+|---|---|---|
+| `MODELSPEC_REGISTRY_INDEX_URL` | `https://raw.githubusercontent.com/modelspec-org/registry/main/index.json` | models with their entities and properties (`modelspec-registry/draft-1`) |
+| `MEANINGGRAPH_REGISTRY_INDEX_URL` | `https://raw.githubusercontent.com/meaninggraph/registry/main/index.json` | graphs and the model files they bind (`meaning-registry/draft-1`) |
+| `OVDB_DIRECTORY_INDEX_URL` | `https://raw.githubusercontent.com/openvaultdb/directory/main/index.json` | databases and the model they use (`ovdb-directory/draft-1`) |
+| `MEANINGGRAPH_BASE_URL` | `https://meaninggraph.io` | links to `/graphs/<graph>/` |
+| `OVDB_DIRECTORY_BASE_URL` | `https://directory.openvaultdb.com` | links to `/databases/<id>/` |
+
+Index URLs must be https; a local file needs `--allow-local-index`. Base URLs
+must be https, or http on localhost. The pages read only what they show (the
+formats are drafts, unknown fields are ignored) and validate it: ids, names and
+commits are checked, every URL must be https, and everything is escaped into the
+HTML.
+
+"Meaning graphs for this model" are the graphs whose repository is the model's
+repository and whose `model_files` include one of the model's two files.
+"Databases using this model" are the Directory databases whose `model.address` is
+the model's address or, while their entry carries no `model.address`, whose
+repository and `model.path` are the model's repository and source file. Addresses
+are compared without a `?ref=` pin and without regard to the case of the GitHub owner
+and repository (the module name is case-sensitive); a registered model's own
+address must be unpinned. A database that names another address never matches by
+repository and path.
+
+### Fixtures, non-production builds and the deploy guard
+
+A build is **production** only when it reads all three indexes from the defaults
+above and links the real MeaningGraph and OVDB Directory sites. It is the only
+build that may be written to `dist/`, and it fails loudly (and leaves nothing
+behind) when any index is unreadable or invalid. There is no fallback to older or
+hand-written data. Until `modelspec-org/registry` and `openvaultdb/directory` have
+an `index.json` on `main`, a production build fails; that is expected.
+
+Everything else is a **non-production** build:
+
+- `--use-fixture` reads `fixtures/*.fixture.json`: verbatim copies of real indexes
+  with a top-level `_fixture` marker naming where each was copied from.
+  `--use-fixture --fixture-set two-databases` swaps the Directory fixture for a
+  derived one in which a second database names the same model by address, and
+  `--fixture-set two-by-address` for one in which both databases do. An index carrying
+  `_fixture` is refused by every other build; fixture mode refuses an index without
+  it and any index variable. Regenerate with
+  `npm run fixtures -- --modelspec <url> --directory <url> --meaninggraph <url>` (the
+  copies were made from commit-pinned raw URLs; the checksums are verified first).
+- Any other https index or base URL, or a local file, is also non-production.
+- A non-production build goes to its own directory and carries a red banner on every
+  page, `<meta name="modelspec-build-source">` on every page and a `build-info.json`
+  with `"production": false`. To preview real data that is not on `main` yet, for example:
+  `MODELSPEC_REGISTRY_INDEX_URL=<branch index URL> OVDB_DIRECTORY_INDEX_URL=<branch index URL> node scripts/build.mjs`
+  writes `dist-nonprod/`.
+- `--out` accepts only `dist` (production only), `dist-fixture`, `dist-nonprod`,
+  `dist-check`, `dist-e2e`, `dist-e2e-two` and `dist-e2e-address`. The build deletes an output directory
+  only if it is absent, empty, or holds the marker file `.modelspec-build-output`
+  that an earlier build wrote (kept out of the upload by `.assetsignore`); a symbolic
+  link or anything else is refused. It never touches `public/`, `spec/`, `schema/`,
+  the repository root or anything outside the repository.
+
+Deploying. Nothing in this repository deploys by itself: the checks in
+`.github/workflows/site.yml` (unit tests, fixture build, browser tests; read-only,
+no secret) have no deploy step.
+
+`npm run deploy` is the one supported way. It takes no arguments and no index or
+base-URL override, refuses to run while a `wrangler.json`, a `wrangler.toml` or a
+`.wrangler/deploy/config.json` redirect exists (they could make wrangler read some
+other configuration, and git-ignored ones do not show in `git status`), runs
+`check`, builds `dist/`, verifies it, and only then runs
+`wrangler deploy --config <repo>/wrangler.jsonc --assets <repo>/dist` with absolute
+paths, so the configuration is `wrangler.jsonc` and the directory uploaded is the
+directory the guard checked.
+
+What the guard covers. `wrangler.jsonc` runs `scripts/check-build.mjs` as its build
+command, so a plain `wrangler deploy`, `wrangler deploy --dry-run` and
+`wrangler versions upload` from this checkout refuse anything but a production
+build of `dist/`: `build-info.json` must say production from the three default
+indexes and links, every generated page must carry the production marker, and
+`dist/` must be exactly `public/` plus the generated `registry/` pages (so the
+landing page is byte-identical to `public/index.html`) with the `.assetsignore` the
+build writes. `wrangler dev` only warns. What it does **not** cover: the guard
+checks `dist/`, not whatever else wrangler is told to upload, so
+`wrangler deploy --assets <other directory>` (the `dev` script and the browser tests
+use `--assets` on purpose), a `--config <other file>`, and the configuration files
+listed above bypass it. Only `npm run deploy` is protected against those flags and
+files; do not deploy with plain wrangler.
+
+`build-info.json` is kept out of the upload by `.assetsignore` (the guard reads it
+from `dist/` locally); it lists the source of each index and the pinned commits, and
+holds no local path.
+
+Deploy order. The landing page and every registry page link to the Chinook pages on
+https://meaninggraph.io (`/graphs/chinook/`) and https://directory.openvaultdb.com
+(`/databases/chinook/`). The build checks that the three indexes carry Chinook, and
+that the Chinook graph and database belong to the Chinook model, but it cannot see
+whether those two sites are live. Make a first production deploy only after both
+Chinook pages are live (the cross-browse plan's task 6 comes before task 7), and
+check the links in its journey test.
 
 ## Status
 

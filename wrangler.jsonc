@@ -1,14 +1,26 @@
 {
-  // Static landing site for modelspec.org. Single page, no build step: plain
-  // index.html + style.css + a small script.js (scroll-reveal + mobile nav),
-  // served as Cloudflare Workers static assets. Mirrors specscore/specscore.
+  // modelspec.org: the landing page plus registry pages generated at build time,
+  // served as Cloudflare Workers static assets from dist/.
+  //
+  // dist/ is built by `npm run build` from public/ and the three registry indexes
+  // (see README.md); it is not committed. The build command below is a guard, not
+  // a build. For a plain `wrangler deploy`, `--dry-run` or `versions upload` from
+  // this checkout it refuses anything but a production build of dist/, and it only
+  // warns on `wrangler dev`. It checks dist/ and nothing else: `--assets <other
+  // directory>`, `--config <other file>`, a wrangler.json or wrangler.toml beside this
+  // file and a .wrangler/deploy/config.json redirect all bypass it. Deploy only with
+  // `npm run deploy`, which names this file and dist/ explicitly and refuses those files.
+  "$schema": "node_modules/wrangler/config-schema.json",
   "name": "modelspec-org",
   "compatibility_date": "2026-06-02",
   "observability": {
     "enabled": true
   },
+  "build": {
+    "command": "node scripts/check-build.mjs"
+  },
   "assets": {
-    "directory": "public"
+    "directory": "./dist"
   },
   "routes": [
     { "pattern": "modelspec.org", "custom_domain": true }
