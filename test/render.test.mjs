@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { test } from 'node:test';
-import { assertChinookEverywhere, anchorId, esc, extractShell, renderBanner, renderLanding, renderModelPage, renderRegistryPage, safeUrl } from '../src/render.mjs';
+import { assertChinookEverywhere, anchorId, esc, extractShell, homepageLabel, renderBanner, renderLanding, renderModelPage, renderRegistryPage, safeUrl } from '../src/render.mjs';
 import { REPO, COMMIT, config, directoryJson, graphsJson, modelspecJson, modelspecWithComponents, sampleData } from './helpers.mjs';
 
 const template = await readFile(`${REPO}/public/index.html`, 'utf8');
@@ -248,4 +248,58 @@ test('the non-production banner wraps long URLs', () => {
 test('the new landing section has no .reveal: it must be readable without JavaScript', () => {
   const section = /<section id="layers"[\s\S]*?<\/section>/.exec(template)[0];
   assert.doesNotMatch(section.replace(/<!--[\s\S]*?-->/g, ''), /reveal/);
+});
+
+const withHomepage = value => {
+  const json = modelspecJson();
+  if (value !== undefined) json.models[0].homepage = value;
+  return render(sampleData({ modelspec: json }));
+};
+const WEBSITE_ROW = '<div><dt>Website</dt><dd><a class="reg-homepage" href="https://chinookdb.com/model/" target="_blank" rel="noreferrer">chinookdb.com/model</a></dd></div>';
+
+test('homepage: the model page has a Website row between Repository and Pinned commit, with the URL as text and the neighbours\' link attributes', () => {
+  const { model } = withHomepage('https://chinookdb.com/model/');
+  assert.ok(model.includes(WEBSITE_ROW), 'the exact row');
+  const facts = /<dl class="reg-facts">[\s\S]*?<\/dl>/.exec(model)[0];
+  assert.ok(facts.indexOf('<dt>Repository</dt>') < facts.indexOf('<dt>Website</dt>') && facts.indexOf('<dt>Website</dt>') < facts.indexOf('<dt>Pinned commit</dt>'));
+  assert.equal((model.match(/<dt>Website<\/dt>/g) ?? []).length, 1);
+  assert.match(facts, /class="reg-repo" href="https:\/\/github\.com\/acme\/shop" target="_blank" rel="noreferrer"/, 'same convention as the repository link');
+});
+
+test('homepage: absent means no row and no empty element', () => {
+  const { model } = withHomepage();
+  assert.doesNotMatch(model, /Website|reg-homepage/);
+  assert.doesNotMatch(model, /<dt><\/dt>|<dd><\/dd>/);
+  assert.match(model, /<\/dd><\/div>\n        <div><dt>Pinned commit<\/dt>/, 'Repository row runs straight into Pinned commit');
+});
+
+test('homepage: only the model page shows it', () => {
+  const { index } = withHomepage('https://chinookdb.com/model/');
+  assert.doesNotMatch(index, /chinookdb\.com|Website|reg-homepage/);
+});
+
+test('homepage label: the URL without its scheme and without trailing slashes', () => {
+  assert.equal(homepageLabel('https://chinookdb.com/model/'), 'chinookdb.com/model');
+  assert.equal(homepageLabel('https://chinookdb.com/'), 'chinookdb.com');
+  assert.equal(homepageLabel('https://chinookdb.com'), 'chinookdb.com');
+  assert.equal(homepageLabel('https://chinookdb.com/a/b.c_d~e-f'), 'chinookdb.com/a/b.c_d~e-f');
+  assert.equal(homepageLabel('HTTPS://chinookdb.com/x//'), 'chinookdb.com/x');
+});
+
+test('homepage: a quote or angle bracket the validator lets through is HTML-escaped, in the link and in its text', () => {
+  const { model } = withHomepage('https://chinookdb.com/x"><script>alert(1)</script>');
+  assert.doesNotMatch(model, /<script>alert/);
+  assert.match(model, /href="https:\/\/chinookdb\.com\/x&quot;&gt;&lt;script&gt;alert\(1\)&lt;\/script&gt;"/);
+  assert.match(model, />chinookdb\.com\/x&quot;&gt;&lt;script&gt;alert\(1\)&lt;\/script&gt;<\/a>/);
+  const single = withHomepage("https://chinookdb.com/x'onmouseover='alert(1)").model;
+  assert.doesNotMatch(single, /href="[^"]*'/);
+  assert.match(single, /x&#39;onmouseover=&#39;alert\(1\)/);
+});
+
+test('homepage: the renderer itself refuses a link that is not https, even if the validator is bypassed', () => {
+  const data = sampleData({ modelspec: modelspecJson() });
+  for (const bad of ['javascript:alert(1)', 'http://chinookdb.com/', 'chinookdb.com']) {
+    data.modelspec.models[0].homepage = bad;
+    assert.throws(() => renderModelPage(data.modelspec.models[0], data, ctx, shell), /Refusing to render a link/, bad);
+  }
 });
