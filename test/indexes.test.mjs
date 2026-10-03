@@ -176,3 +176,23 @@ test('components and use are read, validated and kept: nothing the pages show is
   assert.throws(() => validateModelspecIndex(withComponents(m => ({ entities: [{ ...m.entities[0], properties: [{ name: 'p', type: 'component', component: '<x>' }] }] }))), /component name/);
   assert.deepEqual(validateModelspecIndex(modelspecJson()).models[0].components, [], 'older indexes without components still validate');
 });
+
+test('homepage: optional, kept as given when it is an https URL, and absent when the entry has none', async () => {
+  const withHomepage = value => modelspecJson({ models: [{ ...modelspecJson().models[0], homepage: value }] });
+  assert.equal(validateModelspecIndex(withHomepage('https://chinookdb.com/model/')).models[0].homepage, 'https://chinookdb.com/model/');
+  assert.equal(validateModelspecIndex(modelspecJson()).models[0].homepage, undefined);
+  assert.equal(Object.hasOwn(modelspecJson().models[0], 'homepage'), false);
+  const committed = validateModelspecIndex(await fixture('modelspec-registry-index'), fx);
+  assert.equal(committed.models[0].homepage, 'https://chinookdb.com/model/', 'the committed fixture carries it');
+});
+
+test('homepage: a value that is not a string or not an https URL fails the build, like any other bad index value', () => {
+  const withHomepage = value => modelspecJson({ models: [{ ...modelspecJson().models[0], homepage: value }] });
+  for (const bad of [42, true, null, {}, ['https://chinookdb.com/'], '', '   ']) {
+    assert.throws(() => validateModelspecIndex(withHomepage(bad)), /models\[0\]\.homepage must be a non-empty string/, JSON.stringify(bad));
+  }
+  for (const bad of ['http://chinookdb.com/', 'javascript:alert(1)', 'data:text/html,x', 'ftp://chinookdb.com/', '//chinookdb.com/', 'chinookdb.com/model', 'not a url']) {
+    assert.throws(() => validateModelspecIndex(withHomepage(bad)), /models\[0\]\.homepage must be (an https URL|an absolute URL)/, bad);
+  }
+  assert.throws(() => validateModelspecIndex(withHomepage('https://user:secret@chinookdb.com/')), /homepage must not carry credentials/);
+});

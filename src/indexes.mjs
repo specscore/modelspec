@@ -243,6 +243,7 @@ export function validateModelspecIndex(json, options = {}) {
       title: text(m.title, `${at}.title`),
       description: text(m.description, `${at}.description`),
       status: text(m.status, `${at}.status`),
+      homepage: m.homepage === undefined ? undefined : httpsUrl(m.homepage, `${at}.homepage`),
       address,
       repository: normaliseRepositoryUrl(pattern(m.repository, `${at}.repository`, GITHUB_REPOSITORY, 'a https://github.com/<org>/<repo> URL')),
       commit: pattern(m.commit, `${at}.commit`, COMMIT, 'a full 40-character commit id'),

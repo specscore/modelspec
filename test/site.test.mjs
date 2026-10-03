@@ -6,7 +6,7 @@ import { join } from 'node:path';
 import { test } from 'node:test';
 import { OUT_NAMES } from '../src/config.mjs';
 import { ASSETSIGNORE_TEXT, BUILD_MARKER, buildSite, loadData, prepareOutput } from '../src/site.mjs';
-import { REPO, config, directoryJson, graphsJson, productionConfig, read, sampleData, tempRoot } from './helpers.mjs';
+import { REPO, config, directoryJson, graphsJson, modelspecJson, productionConfig, read, sampleData, tempRoot } from './helpers.mjs';
 
 const fixtureConfig = (root, name = 'dist-e2e') => ({ ...config(['--use-fixture', '--out', name], {}), outDir: join(root, name) });
 
@@ -125,6 +125,18 @@ test('a fixture-marked index is refused by a production build', async () => {
   try {
     const marked = async () => ({ ok: true, text: async () => JSON.stringify({ ...graphsJson(), _fixture: { note: 'x' } }) });
     await assert.rejects(loadData(productionConfig(root), { fetchImpl: marked }), /_fixture/);
+  } finally { await cleanup(); }
+});
+
+test('a build whose ModelSpec index has a bad homepage fails and names the index', async () => {
+  const { root, cleanup } = await tempRoot();
+  try {
+    for (const bad of ['http://chinookdb.com/', 42]) {
+      const json = modelspecJson();
+      json.models[0].homepage = bad;
+      const served = async () => ({ ok: true, text: async () => JSON.stringify(json) });
+      await assert.rejects(loadData(productionConfig(root), { fetchImpl: served }), /models\[0\]\.homepage must be .*\(index: https:\/\/raw\.githubusercontent\.com\/modelspec-org\/registry\/main\/index\.json\)/, String(bad));
+    }
   } finally { await cleanup(); }
 });
 
