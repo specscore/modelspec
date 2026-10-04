@@ -29,6 +29,10 @@ entity "User" {
 }
 ```
 
+An entity may omit `key` when the model makes no claim of stable record identity.
+If present, an entity key must be a non-empty list of distinct properties or
+fields provided by components it uses.
+
 Tooling should parse HCL into a ModelSpec AST. That AST should then be serializable to
 JSON for machine ingestion and to YAML if a consumer needs a YAML representation.
 
