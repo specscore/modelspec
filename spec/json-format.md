@@ -111,10 +111,11 @@ Entities are keyed by entity name:
 }
 ```
 
-An entity's `key` is optional. When it is omitted, the model does not assert a
-stable identity for the entity's records. When present, the key must be a
-non-empty list of distinct property names (including properties supplied by
-components the entity uses).
+An entity's `key` is optional. When it is omitted, the model does not assert
+stable logical identity for the entity's records; this does not describe or
+rule out primary-key or unique constraints in a physical source schema. When
+present, the key must be a non-empty list of distinct property names (including
+properties supplied by components the entity uses).
 
 Property objects MAY use one of:
 

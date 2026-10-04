@@ -62,9 +62,11 @@ entity "Discount" {
 }
 ```
 
-Omitting `key` is intentional when the source has no stable record identifier.
-If a key is present, it must be a non-empty list of distinct properties
-(including properties supplied by components the entity uses).
+Omitting `key` means the model does not assert stable logical record identity.
+It does not describe or rule out primary-key or unique constraints in a physical
+source; those belong in the source schema. If a key is present, it must be a
+non-empty list of distinct properties (including properties supplied by
+components the entity uses).
 
 ## Property, Field, And Column
 
