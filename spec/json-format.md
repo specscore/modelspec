@@ -19,7 +19,7 @@ A ModelSpec JSON AST serialization MUST be a JSON object with these top-level fi
 | `module` | Yes | Module identity and version metadata. |
 | `components` | No | Reusable field groups. |
 | `enums` | No | Named controlled vocabularies. |
-| `entities` | No | Identity-bearing application data concepts. |
+| `entities` | No | Logical application data concepts; `key` may declare record identity. |
 | `collections` | No | Storage-neutral data sources or collection projections. |
 | `recordsets` | No | Strict tabular result shapes. |
 | `projections` | No | Advisory target-specific mapping hints. |
@@ -110,6 +110,12 @@ Entities are keyed by entity name:
   }
 }
 ```
+
+An entity's `key` is optional. When it is omitted, the model does not assert
+stable logical identity for the entity's records; this does not describe or
+rule out primary-key or unique constraints in a physical source schema. When
+present, the key must be a non-empty list of distinct property names (including
+properties supplied by components the entity uses).
 
 Property objects MAY use one of:
 

@@ -10,7 +10,7 @@ ModelSpec has five foundational structural concepts:
 
 | Concept | Purpose |
 |---|---|
-| Entity | Identity-bearing business object and semantic anchor. |
+| Entity | Logical business concept and semantic anchor; a key may declare record identity. |
 | Component | Reusable group of fields with no independent identity. |
 | Enum | Named, reusable controlled vocabulary of values. |
 | Collection | Named data source or storage-neutral container projection. |
@@ -25,8 +25,10 @@ five kind tokens (`entities`, `components`, `enums`, `collections`,
 
 ## Entity
 
-An Entity is a logical, identity-bearing business object. It owns canonical
-properties, may embed components, and declares identity through keys.
+An Entity is a logical business concept and semantic anchor. It owns canonical
+properties and may embed components. An entity may declare record identity with
+a key; when no key is present, the model makes no claim that its records have a
+stable identity.
 
 ```hcl
 entity "User" {
@@ -46,6 +48,25 @@ entity "User" {
 ```
 
 An Entity is not a table, collection, class, or API resource. Those are projections.
+An entity can describe rows from a source table with no declared primary key:
+
+```hcl
+entity "Discount" {
+  property "discountType" {
+    type = "string"
+  }
+
+  property "discount" {
+    type = "decimal"
+  }
+}
+```
+
+Omitting `key` means the model does not assert stable logical record identity.
+It does not describe or rule out primary-key or unique constraints in a physical
+source; those belong in the source schema. If a key is present, it must be a
+non-empty list of distinct properties (including properties supplied by
+components the entity uses).
 
 ## Property, Field, And Column
 
@@ -309,7 +330,7 @@ A ModelSpec document must be validatable. Validation should report located error
 
 - unresolved references
 - duplicate names within a concept kind
-- missing keys
+- invalid keys (for example, an empty key, repeated property, or a key that names no property)
 - invalid types
 - invalid constraints
 - invalid projection references
