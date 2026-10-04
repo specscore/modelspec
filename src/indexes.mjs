@@ -339,8 +339,7 @@ export function validateDirectoryIndex(json, options = {}) {
       recordId = uniqueId(d.recordId, `${at}.recordId`, recordIds);
       if (d.localId === undefined) fail(`${at}.localId`, 'is required when id is a global database identity');
       if (d.url !== id) fail(`${at}.url`, 'must equal the canonical global database identity id');
-    } else if (d.recordId !== undefined) recordId = uniqueId(d.recordId, `${at}.recordId`, recordIds);
-    else recordId = id;
+    } else recordId = uniqueId(d.recordId ?? id, `${at}.recordId`, recordIds);
     const expectedDirectoryPath = id.startsWith('https://') ? directoryPathForGlobalId(id, `${at}.id`) : undefined;
     const directoryPath = d.directoryPath === undefined ? expectedDirectoryPath : text(d.directoryPath, `${at}.directoryPath`);
     if (expectedDirectoryPath !== undefined && directoryPath !== expectedDirectoryPath) fail(`${at}.directoryPath`, `must be ${expectedDirectoryPath} for id`);

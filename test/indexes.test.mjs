@@ -138,6 +138,19 @@ test('global database ids derive safe Directory routes and keep local ids separa
   assert.deepEqual(validateDirectoryIndex(directoryJson({ databases: [{ ...database('northwind.example'), id: 'https://northwind.example/', url: 'https://northwind.example/', directoryPath: '/ovdb/northwind.example/' }] })).databases[0].directoryPath, '/ovdb/northwind.example/');
 });
 
+test('legacy database ids reserve their normalized recordId against global ids', () => {
+  const legacy = { ...directoryJson().databases[0], id: 'shop', url: 'https://shop.example/ovdb/dbs/shop' };
+  const global = {
+    ...legacy,
+    id: 'https://publisher.example/shop/',
+    url: 'https://publisher.example/shop/',
+    recordId: 'shop',
+    localId: 'shop',
+    directoryPath: '/ovdb/publisher.example/shop/',
+  };
+  assert.throws(() => validateDirectoryIndex(directoryJson({ databases: [legacy, global] })), /recordId duplicates shop/);
+});
+
 test('repository and address helpers', () => {
   assert.equal(repositoryKey('https://GitHub.com/DataTug/ChinookDB.git/'), 'github.com/datatug/chinookdb');
   assert.equal(baseAddress(`modelspec://github.com/a/b/c?ref=${COMMIT}`), 'modelspec://github.com/a/b/c');
