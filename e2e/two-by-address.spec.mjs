@@ -15,8 +15,8 @@ test('both databases that name model.address are listed, each found by address',
   const rows = page.locator('#databases .reg-row');
   await expect(rows).toHaveCount(2);
   for (const database of withAddress) {
-    const row = page.locator(`#databases [data-database="${database.id}"]`);
-    await expect(row.locator('.reg-database-link')).toHaveAttribute('href', `${DIRECTORY_BASE_URL}/databases/${database.id}/`);
+    const row = page.locator(`#databases [data-database="${database.recordId}"]`);
+    await expect(row.locator('.reg-database-link')).toHaveAttribute('href', `${DIRECTORY_BASE_URL}${database.directoryPath}`);
     await expect(row.locator('.reg-canonical')).toHaveText(database.url);
     await expect(row.locator('.reg-mini')).toContainText('model address');
   }

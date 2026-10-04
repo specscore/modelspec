@@ -181,7 +181,7 @@ test('the two-databases fixture build lists both databases on the model page', a
     assert.match(html, /data-database="chinook"/);
     assert.match(html, /data-database="chinook-second-host"/);
     assert.match(html, /Databases using this model <span class="reg-count">2<\/span>/);
-    assert.match(html, /second-host\.example\.com/);
+    assert.match(html, /acme\.example\.net/);
     assert.match(html, /git\.example\.com\/second-host\/chinook-hosting/);
   } finally { await cleanup(); }
 });

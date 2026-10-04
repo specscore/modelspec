@@ -7,7 +7,7 @@ import { DIRECTORY_BASE_URL, MEANINGGRAPH_BASE_URL } from '../playwright.config.
 const fixture = name => JSON.parse(readFileSync(new URL(`../fixtures/${name}.fixture.json`, import.meta.url), 'utf8'));
 const model = fixture('modelspec-registry-index').models.find(m => m.id === 'chinook');
 const graph = fixture('meaninggraph-registry-index').graphs.find(g => g.id === 'chinook');
-const database = fixture('ovdb-directory-index').databases.find(d => d.id === 'chinook');
+const database = fixture('ovdb-directory-index').databases.find(d => (d.recordId ?? d.id) === 'chinook');
 const propertyCount = model.entities.reduce((n, e) => n + e.properties.length, 0);
 
 const MODEL_PAGE = '/registry/models/chinook/';
@@ -148,7 +148,7 @@ test('Databases using this model: the Chinook database, with canonical URL, publ
   const rows = section.locator('.reg-row');
   await expect(rows).toHaveCount(1);
   await expect(rows.locator('.reg-database-link')).toHaveText(database.title);
-  await expect(rows.locator('.reg-database-link')).toHaveAttribute('href', `${DIRECTORY_BASE_URL}/databases/chinook/`);
+  await expect(rows.locator('.reg-database-link')).toHaveAttribute('href', `${DIRECTORY_BASE_URL}${database.directoryPath}`);
   await expect(rows.locator('.reg-canonical')).toHaveText(database.url);
   await expect(rows.locator('.reg-publisher')).toHaveText('datatug/chinookdb');
   await expect(rows.locator('.reg-publisher')).toHaveAttribute('href', database.repository);
@@ -166,7 +166,7 @@ test('the landing page: the new section with its three links, the Chinook senten
   await expect(layers.getByRole('link', { name: 'meaninggraph.io' })).toHaveAttribute('href', MEANINGGRAPH_BASE_URL);
   const note = layers.locator('.layers-note');
   await expect(note).toContainText('Chinook is in all three');
-  await expect(note.getByRole('link', { name: 'listed in the OVDB Directory' })).toHaveAttribute('href', `${DIRECTORY_BASE_URL}/databases/chinook/`);
+  await expect(note.getByRole('link', { name: 'listed in the OVDB Directory' })).toHaveAttribute('href', `${DIRECTORY_BASE_URL}${database.directoryPath}`);
   await expect(note.getByRole('link', { name: 'modelled in ModelSpec' })).toHaveAttribute('href', MODEL_PAGE);
   await expect(note.getByRole('link', { name: 'explained in MeaningGraph' })).toHaveAttribute('href', `${MEANINGGRAPH_BASE_URL}/graphs/chinook/`);
   await expect(layers.locator('.layers-why li strong')).toHaveText(['Start from a published model.', 'Recognise the same data in different places.', 'Run many databases of one model.']);
@@ -262,7 +262,7 @@ test.describe('without JavaScript', () => {
     await page.goto(`${MODEL_PAGE}#property-Customer-Country`);
     await expect(page.locator('#property-Customer-Country')).toBeInViewport({ ratio: 1 });
     await expect(page.locator('#meaning-graphs .reg-graph-link')).toHaveAttribute('href', `${MEANINGGRAPH_BASE_URL}/graphs/chinook/`);
-    await expect(page.locator('#databases .reg-database-link')).toHaveAttribute('href', `${DIRECTORY_BASE_URL}/databases/chinook/`);
+    await expect(page.locator('#databases .reg-database-link')).toHaveAttribute('href', `${DIRECTORY_BASE_URL}${database.directoryPath}`);
     await expect(page.locator('.reg-crumbs').getByRole('link', { name: 'Registry' })).toHaveAttribute('href', '/registry/');
     await noHorizontalScroll(page);
   });

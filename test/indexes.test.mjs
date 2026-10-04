@@ -103,6 +103,41 @@ test('graphs and databases: ids, https URLs and model addresses are checked', ()
   assert.equal(validateDirectoryIndex(db({ model: undefined })).databases[0].model, undefined);
 });
 
+test('global database ids derive safe Directory routes and keep local ids separate from record ids', () => {
+  const source = directoryJson().databases[0];
+  const database = (host, localId = 'shared') => {
+    const id = `https://${host}/${localId}/`;
+    return {
+      ...source,
+      id,
+      recordId: host === 'first.example.org' ? 'registry-one' : 'registry-two',
+      localId,
+      directoryPath: `/ovdb/${host}/${localId}/`,
+      url: id,
+      serverId: `https://${host}/ovdb`,
+      serverDbBaseUrl: `https://${host}/resources/${localId}/`,
+      apiUrl: `https://${host}/gateway/${localId}`,
+    };
+  };
+  const input = directoryJson({ databases: [database('first.example.org'), database('second.example.org')] });
+  const parsed = validateDirectoryIndex(input).databases;
+  assert.deepEqual(parsed.map(({ localId, recordId }) => [localId, recordId]), [['shared', 'registry-one'], ['shared', 'registry-two']]);
+  assert.deepEqual(parsed.map(({ directoryPath }) => directoryPath), ['/ovdb/first.example.org/shared/', '/ovdb/second.example.org/shared/']);
+  const global = database('third.example.org');
+  for (const patch of [
+    { recordId: undefined },
+    { localId: undefined },
+    { url: 'https://other.example.org/shared/' },
+  ]) {
+    assert.throws(() => validateDirectoryIndex(directoryJson({ databases: [{ ...global, ...patch }] })), /recordId|localId|canonical global database identity/);
+  }
+  for (const id of ['https://example.org/a/../b/', 'https://example.org/a%2Fb/', 'https://127.0.0.1/db/']) {
+    assert.throws(() => validateDirectoryIndex(directoryJson({ databases: [{ ...source, id, url: id, recordId: 'unsafe', localId: 'db', directoryPath: '/ovdb/example.org/db/' }] })), /database identity|traversal|unsafe path|public host/);
+  }
+  assert.throws(() => validateDirectoryIndex(directoryJson({ databases: [database('first.example.org'), { ...database('first.example.org'), id: 'https://first.example.org/shared', url: 'https://first.example.org/shared', recordId: 'registry-other', directoryPath: '/ovdb/first.example.org/shared/' }] })), /duplicate global database identity|duplicate Directory path/);
+  assert.deepEqual(validateDirectoryIndex(directoryJson({ databases: [{ ...database('northwind.example'), id: 'https://northwind.example/', url: 'https://northwind.example/', directoryPath: '/ovdb/northwind.example/' }] })).databases[0].directoryPath, '/ovdb/northwind.example/');
+});
+
 test('repository and address helpers', () => {
   assert.equal(repositoryKey('https://GitHub.com/DataTug/ChinookDB.git/'), 'github.com/datatug/chinookdb');
   assert.equal(baseAddress(`modelspec://github.com/a/b/c?ref=${COMMIT}`), 'modelspec://github.com/a/b/c');

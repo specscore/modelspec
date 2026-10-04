@@ -43,7 +43,12 @@ const encodePath = path => path.split('/').map(encodeURIComponent).join('/');
 
 export const modelPath = id => `${REGISTRY_PATH}models/${encodeURIComponent(id)}/`;
 export const graphUrl = (base, id) => `${trimBase(base)}/graphs/${encodeURIComponent(id)}/`;
-export const databaseUrl = (base, id) => `${trimBase(base)}/databases/${encodeURIComponent(id)}/`;
+export const databaseUrl = (base, database) => {
+  const path = typeof database === 'string'
+    ? `/databases/${encodeURIComponent(database)}/`
+    : database.directoryPath ?? `/databases/${encodeURIComponent(database.recordId ?? database.id)}/`;
+  return `${trimBase(base)}${path}`;
+};
 export const commitUrl = model => `${model.repository}/commit/${model.commit}`;
 export const fileUrl = (model, path) => `${model.repository}/blob/${model.commit}/${encodePath(path)}`;
 
@@ -182,7 +187,7 @@ function statusPill(status) {
 }
 
 /** The three-layers copy, ModelSpec first, shared with the OVDB Directory and MeaningGraph sites. */
-function layersBlock(ctx) {
+function layersBlock(ctx, data) {
   return `<section class="reg-layers" id="layers" aria-labelledby="layers-heading">
       <h2 id="layers-heading">Where it is, what shape it has, what it means.</h2>
       <ul class="reg-layer-list">
@@ -190,13 +195,15 @@ function layersBlock(ctx) {
         <li><strong><a href="${safeUrl(trimBase(ctx.ovdbDirectoryBaseUrl) + '/')}">OVDB Directory</a></strong>: where the data is, who publishes it and how to reach it.</li>
         <li><strong><a href="${safeUrl(trimBase(ctx.meaningGraphBaseUrl) + '/')}">MeaningGraph</a></strong>: what the data means. Meanings are attached to ModelSpec fields, so one description serves every copy of the same model.</li>
       </ul>
-      ${chinookNote(ctx)}
+      ${chinookNote(ctx, data)}
     </section>`;
 }
 
 /** The sentence "Chinook is in all three", linking the three Chinook pages. Checked against the data by assertChinookEverywhere. */
-export function chinookNote(ctx) {
-  return `<p class="layers-note reg-chinook">Chinook is in all three: <a class="reg-chinook-directory" href="${safeUrl(databaseUrl(ctx.ovdbDirectoryBaseUrl, 'chinook'))}">listed in the OVDB Directory</a>, <a class="reg-chinook-model" href="${esc(modelPath('chinook'))}">modelled in ModelSpec</a>, <a class="reg-chinook-graph" href="${safeUrl(graphUrl(ctx.meaningGraphBaseUrl, 'chinook'))}">explained in MeaningGraph</a>.</p>`;
+export function chinookNote(ctx, data) {
+  const database = data?.directory?.databases.find(entry => (entry.recordId ?? entry.id) === 'chinook');
+  const directoryLink = database ? databaseUrl(ctx.ovdbDirectoryBaseUrl, database) : databaseUrl(ctx.ovdbDirectoryBaseUrl, 'chinook');
+  return `<p class="layers-note reg-chinook">Chinook is in all three: <a class="reg-chinook-directory" href="${safeUrl(directoryLink)}">listed in the OVDB Directory</a>, <a class="reg-chinook-model" href="${esc(modelPath('chinook'))}">modelled in ModelSpec</a>, <a class="reg-chinook-graph" href="${safeUrl(graphUrl(ctx.meaningGraphBaseUrl, 'chinook'))}">explained in MeaningGraph</a>.</p>`;
 }
 
 /**
@@ -208,14 +215,14 @@ export function assertChinookEverywhere(data) {
   const missing = [];
   if (!model) missing.push('model chinook in the ModelSpec registry');
   if (!data.meaninggraph.graphs.some(g => g.id === 'chinook')) missing.push('graph chinook in the MeaningGraph registry');
-  if (!data.directory.databases.some(d => d.id === 'chinook')) missing.push('database chinook in the OVDB Directory');
+  if (!data.directory.databases.some(d => (d.recordId ?? d.id) === 'chinook')) missing.push('database chinook in the OVDB Directory');
   if (missing.length > 0) {
     throw new Error(`The landing page says Chinook is in all three layers, but the indexes have no ${missing.join(' and no ')}. Fix the data or the landing page; the build does not publish a false claim.`);
   }
   // They must also be the Chinook model's graph and database, or the model page would contradict the claim.
   const unmatched = [];
   if (!graphsForModel(model, data.meaninggraph.graphs).some(g => g.id === 'chinook')) unmatched.push('graph chinook does not bind the Chinook model');
-  if (!databasesForModel(model, data.directory.databases).some(({ database }) => database.id === 'chinook')) unmatched.push('database chinook does not name the Chinook model');
+  if (!databasesForModel(model, data.directory.databases).some(({ database }) => (database.recordId ?? database.id) === 'chinook')) unmatched.push('database chinook does not name the Chinook model');
   if (unmatched.length > 0) {
     throw new Error(`The landing page says Chinook is in all three layers, but ${unmatched.join(' and ')} (see "Meaning graphs for this model" and "Databases using this model"). Fix the data or the landing page.`);
   }
@@ -262,7 +269,7 @@ export function renderRegistryPage(data, ctx, shell) {
         ${cards}
       </ul>
     </section>
-    ${layersBlock(ctx)}
+    ${layersBlock(ctx, data)}
     ${sourceNote(ctx, data)}
   </main>`;
   return page({
@@ -362,8 +369,8 @@ function renderGraphRow(graph, ctx) {
 
 function renderDatabaseRow({ database, via }, ctx) {
   const how = via === 'address' ? 'model address' : 'repository and model file';
-  return `<li class="reg-row" data-database="${esc(database.id)}">
-          <div class="reg-row-head"><a class="reg-database-link" href="${safeUrl(databaseUrl(ctx.ovdbDirectoryBaseUrl, database.id))}">${esc(database.title)}</a><code class="reg-id">${esc(database.id)}</code>${statusPill(database.status)}</div>
+  return `<li class="reg-row" data-database="${esc(database.recordId ?? database.id)}">
+          <div class="reg-row-head"><a class="reg-database-link" href="${safeUrl(databaseUrl(ctx.ovdbDirectoryBaseUrl, database))}">${esc(database.title)}</a><code class="reg-id">${esc(database.recordId ?? database.id)}</code>${statusPill(database.status)}</div>
           <dl class="reg-mini">
             <div><dt>Canonical URL</dt><dd><code class="reg-canonical">${esc(database.url)}</code></dd></div>
             <div><dt>Publisher</dt><dd>${externalLink(database.repository, repositoryLabel(database.repository), 'reg-publisher')}</dd></div>

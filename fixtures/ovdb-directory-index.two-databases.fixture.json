@@ -1,17 +1,17 @@
 {
   "format": "ovdb-directory/draft-1",
-  "checksum": "sha256:b5b4bf12472fa926e562e96301a3460f6e8cdb387d4c2ad86611674823390936",
+  "checksum": "sha256:1b2d646526451fbd746f2fa3ccce1e9ee746ace641624843957cdc80757985aa",
   "_fixture": {
-    "note": "FIXTURE, not a live index. The Directory index named in `derived_from` with a second database added that names the same ModelSpec model by its address, to test that every database of a model is listed. Only a build run with --use-fixture accepts this file; it must never be deployed.",
+    "note": "OFFLINE TEST FIXTURE derived from the pinned source snapshot and adapted to test global database identities; only a build run with --use-fixture accepts this file, and it must never be deployed.",
     "derived_from": "fixtures/ovdb-directory-index.fixture.json"
   },
   "databases": [
     {
-      "id": "chinook",
+      "id": "https://demodb.dev/chinook/",
       "title": "Chinook music store",
       "description": "The Chinook sample database: a digital music store with artists, albums, tracks, playlists, customers, employees and invoices. Read-only, served from a pinned copy of the upstream SQLite fixture. Its recordsets and fields carry the meanings of the chinook meaning graph.",
       "status": "draft",
-      "url": "https://chinookdb.com/ovdb/dbs/chinook",
+      "url": "https://demodb.dev/chinook/",
       "deployment": {
         "url": "https://cloud.openvaultdb.com/ovdb/dbs/chinook",
         "engine": "sqlite"
@@ -935,14 +935,20 @@
             }
           ]
         }
-      ]
+      ],
+      "recordId": "chinook",
+      "localId": "chinook",
+      "directoryPath": "/ovdb/demodb.dev/chinook/",
+      "serverId": "https://demodb.dev/ovdb",
+      "serverDbBaseUrl": "https://demodb.dev/database/chinook/",
+      "apiUrl": "https://demodb.dev/api/chinook"
     },
     {
-      "id": "chinook-second-host",
+      "id": "https://acme.example.net/chinook/",
       "title": "Chinook music store (second host)",
       "description": "A second database of the chinook model, from another publisher, for testing.",
       "status": "draft",
-      "url": "https://second-host.example.com/ovdb/dbs/chinook",
+      "url": "https://acme.example.net/chinook/",
       "repository": "https://git.example.com/second-host/chinook-hosting",
       "commit": "be96bf45fdfa13559b6627d281c1e30ce92ad38f",
       "manifest": "ovdb.yaml",
@@ -952,7 +958,13 @@
         "path": "models/chinook.modelspec.hcl",
         "address": "modelspec://github.com/datatug/chinookdb/chinook"
       },
-      "recordsets": []
+      "recordsets": [],
+      "recordId": "chinook-second-host",
+      "localId": "chinook",
+      "directoryPath": "/ovdb/acme.example.net/chinook/",
+      "serverId": "https://acme.example.net/ovdb",
+      "serverDbBaseUrl": "https://acme.example.net/database/chinook/",
+      "apiUrl": "https://acme.example.net/api/chinook"
     }
   ]
 }

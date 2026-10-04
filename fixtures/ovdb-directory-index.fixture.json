@@ -1,17 +1,17 @@
 {
   "format": "ovdb-directory/draft-1",
-  "checksum": "sha256:4fb9c10d3f05c1949c11d59d22efa2339309e5ca2b20d2f324c2cdd337126946",
+  "checksum": "sha256:00057d7ff5e7bcf5b15059f2feffe637217e08e530f43c3dbdbdf51f4dee70c7",
   "_fixture": {
-    "note": "FIXTURE, not a live index. A copy of the index named in `copied_from`, kept for offline builds and tests. Only a build run with --use-fixture accepts this file; it must never be deployed.",
+    "note": "OFFLINE TEST FIXTURE derived from the pinned source snapshot and adapted to test global database identities; only a build run with --use-fixture accepts this file, and it must never be deployed.",
     "copied_from": "https://raw.githubusercontent.com/openvaultdb/directory/b2fb35edc26135d4625ac060aba00a297d2a90c8/index.json"
   },
   "databases": [
     {
-      "id": "chinook",
+      "id": "https://demodb.dev/chinook/",
       "title": "Chinook music store",
       "description": "The Chinook sample database: a digital music store with artists, albums, tracks, playlists, customers, employees and invoices. Read-only, served from a pinned copy of the upstream SQLite fixture. Its recordsets and fields carry the meanings of the chinook meaning graph.",
       "status": "draft",
-      "url": "https://chinookdb.com/ovdb/dbs/chinook",
+      "url": "https://demodb.dev/chinook/",
       "deployment": {
         "url": "https://cloud.openvaultdb.com/ovdb/dbs/chinook",
         "engine": "sqlite"
@@ -935,7 +935,13 @@
             }
           ]
         }
-      ]
+      ],
+      "recordId": "chinook",
+      "localId": "chinook",
+      "directoryPath": "/ovdb/demodb.dev/chinook/",
+      "serverId": "https://demodb.dev/ovdb",
+      "serverDbBaseUrl": "https://demodb.dev/database/chinook/",
+      "apiUrl": "https://demodb.dev/api/chinook"
     }
   ]
 }

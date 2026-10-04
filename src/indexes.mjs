@@ -286,10 +286,35 @@ export function validateMeaningGraphIndex(json, options = {}) {
 
 // ------------------------------------------------------------ OVDB Directory
 
+function directoryPathForGlobalId(value, where) {
+  let url;
+  try { url = new URL(value); } catch { fail(where, 'must be a canonical public https database identity URL'); }
+  if (url.protocol !== 'https:' || url.username || url.password || url.port || url.search || url.hash || url.href !== value) {
+    fail(where, 'must be a canonical public https database identity URL without credentials, port, query or fragment');
+  }
+  const privateSuffixes = ['localhost', 'local', 'localdomain', 'internal', 'lan', 'home.arpa', 'arpa', 'intranet', 'corp', 'private', 'svc', 'home', 'test', 'invalid', 'onion'];
+  if (!url.hostname.includes('.') || url.hostname.endsWith('.') || url.hostname.includes(':') || /^\d+(\.\d+)*$/.test(url.hostname) || privateSuffixes.some((suffix) => url.hostname === suffix || url.hostname.endsWith(`.${suffix}`)) || url.hostname.split('.').some((label) => !/^(?!-)[a-z0-9-]{1,63}(?<!-)$/.test(label))) {
+    fail(where, 'must use a public host');
+  }
+  const segments = url.pathname.split('/').slice(1);
+  if (segments.at(-1) === '') segments.pop();
+  if (segments.some((segment) => segment === '' || segment === '.' || segment === '..')) fail(where, 'must not contain empty or traversal path segments');
+  for (const segment of segments) {
+    let decoded;
+    try { decoded = decodeURIComponent(segment); } catch { fail(where, 'contains an invalid path escape'); }
+    if (decoded === '.' || decoded === '..' || /[/\\\u0000-\u001f\u007f]/.test(decoded)) fail(where, 'contains an unsafe path segment');
+    if (segment.includes('%') && encodeURIComponent(decoded).replace(/[!'()*]/g, (character) => `%${character.codePointAt(0).toString(16).toUpperCase()}`) !== segment) fail(where, 'contains a non-canonical encoded path segment');
+  }
+  const route = url.pathname.endsWith('/') ? url.pathname : `${url.pathname}/`;
+  return `/ovdb/${url.host}${route}`;
+}
+
 /** Validate an already parsed OVDB Directory index and return the normalised form. */
 export function validateDirectoryIndex(json, options = {}) {
   const head = envelope(json, DIRECTORY_FORMAT, 'databases', options);
   const ids = new Set();
+  const globalIds = new Set();
+  const recordIds = new Set();
   const databases = json.databases.map((d, i) => {
     const at = `databases[${i}]`;
     object(d, at);
@@ -303,8 +328,37 @@ export function validateDirectoryIndex(json, options = {}) {
       };
       if (model.path === undefined && model.address === undefined) fail(`${at}.model`, 'must carry an address or a path');
     }
+    let id;
+    if (typeof d.id === 'string' && d.id.startsWith('https://')) {
+      id = d.id;
+      if (globalIds.has(id)) fail(`${at}.id`, `duplicate global database identity ${JSON.stringify(id)}`);
+      globalIds.add(id);
+    } else id = uniqueId(d.id, `${at}.id`, ids);
+    let recordId;
+    if (id.startsWith('https://')) {
+      recordId = uniqueId(d.recordId, `${at}.recordId`, recordIds);
+      if (d.localId === undefined) fail(`${at}.localId`, 'is required when id is a global database identity');
+      if (d.url !== id) fail(`${at}.url`, 'must equal the canonical global database identity id');
+    } else if (d.recordId !== undefined) recordId = uniqueId(d.recordId, `${at}.recordId`, recordIds);
+    else recordId = id;
+    const expectedDirectoryPath = id.startsWith('https://') ? directoryPathForGlobalId(id, `${at}.id`) : undefined;
+    const directoryPath = d.directoryPath === undefined ? expectedDirectoryPath : text(d.directoryPath, `${at}.directoryPath`);
+    if (expectedDirectoryPath !== undefined && directoryPath !== expectedDirectoryPath) fail(`${at}.directoryPath`, `must be ${expectedDirectoryPath} for id`);
+    if (expectedDirectoryPath === undefined && d.directoryPath !== undefined) fail(`${at}.directoryPath`, 'is supported only with a global database identity id');
+    const serverId = d.serverId === undefined ? undefined : httpsUrl(d.serverId, `${at}.serverId`);
+    const serverOrigin = serverId === undefined ? undefined : new URL(serverId).origin;
+    const serverDbBaseUrl = d.serverDbBaseUrl === undefined ? undefined : httpsUrl(d.serverDbBaseUrl, `${at}.serverDbBaseUrl`);
+    const apiUrl = d.apiUrl === undefined ? undefined : httpsUrl(d.apiUrl, `${at}.apiUrl`);
+    if (serverOrigin && serverDbBaseUrl && new URL(serverDbBaseUrl).origin !== serverOrigin) fail(`${at}.serverDbBaseUrl`, 'must share the serverId origin');
+    if (serverOrigin && apiUrl && new URL(apiUrl).origin !== serverOrigin) fail(`${at}.apiUrl`, 'must share the serverId origin');
     return {
-      id: uniqueId(d.id, `${at}.id`, ids),
+      id,
+      ...(recordId === undefined ? {} : { recordId }),
+      ...(d.localId === undefined ? {} : { localId: pattern(d.localId, `${at}.localId`, /^[a-z][a-z0-9-]{0,39}$/, 'lowercase letters, digits and single hyphens, beginning with a letter') }),
+      ...(directoryPath === undefined ? {} : { directoryPath }),
+      ...(serverId === undefined ? {} : { serverId }),
+      ...(serverDbBaseUrl === undefined ? {} : { serverDbBaseUrl }),
+      ...(apiUrl === undefined ? {} : { apiUrl }),
       title: text(d.title, `${at}.title`),
       status: text(d.status, `${at}.status`),
       url: httpsUrl(d.url, `${at}.url`),
@@ -312,5 +366,11 @@ export function validateDirectoryIndex(json, options = {}) {
       model,
     };
   });
+  const routes = new Set();
+  for (const database of databases) {
+    if (!database.directoryPath) continue;
+    if (routes.has(database.directoryPath.toLowerCase())) fail('databases', `duplicate Directory path ${JSON.stringify(database.directoryPath)}`);
+    routes.add(database.directoryPath.toLowerCase());
+  }
   return { ...head, databases };
 }
