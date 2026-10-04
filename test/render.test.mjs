@@ -171,7 +171,7 @@ test('the landing page: production output is public/index.html unchanged', () =>
 
 test('the landing page: other base URLs replace only the two default addresses, and the banner goes in', () => {
   const html = renderLanding(template, ctx);
-  assert.match(html, /href="http:\/\/127\.0\.0\.1:4011\/databases\/chinook\/"/);
+  assert.match(html, /href="http:\/\/127\.0\.0\.1:4011\/ovdb\/demodb\.dev\/chinook\/"/);
   assert.match(html, /href="http:\/\/127\.0\.0\.1:4010\/graphs\/chinook\/"/);
   assert.match(html, /href="http:\/\/127\.0\.0\.1:4010" rel="noopener">meaninggraph\.io/);
   assert.doesNotMatch(html, /https:\/\/meaninggraph\.io|https:\/\/directory\.openvaultdb\.com/);
@@ -190,7 +190,7 @@ test('the landing page has the nav link, the footer link and the section with it
   assert.match(section, /Where it is, what shape it has, what it means\./);
   assert.ok(section.indexOf('<h3>ModelSpec</h3>') < section.indexOf('<h3>OVDB Directory</h3>'));
   assert.match(section, /Chinook is in all three:/);
-  for (const href of ['https://directory.openvaultdb.com/databases/chinook/', '/registry/models/chinook/', 'https://meaninggraph.io/graphs/chinook/', 'https://directory.openvaultdb.com"', 'https://meaninggraph.io"']) {
+  for (const href of ['https://directory.openvaultdb.com/ovdb/demodb.dev/chinook/', '/registry/models/chinook/', 'https://meaninggraph.io/graphs/chinook/', 'https://directory.openvaultdb.com"', 'https://meaninggraph.io"']) {
     assert.ok(section.includes(`href="${href.replace(/"$/, '')}"`), href);
   }
   assert.equal((section.match(/<li><strong>/g) ?? []).length, 3);

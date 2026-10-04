@@ -305,7 +305,7 @@ npm run deploy          # production build, guard, wrangler deploy with pinned -
 | `MEANINGGRAPH_REGISTRY_INDEX_URL` | `https://raw.githubusercontent.com/meaninggraph/registry/main/index.json` | graphs and the model files they bind (`meaning-registry/draft-1`) |
 | `OVDB_DIRECTORY_INDEX_URL` | `https://raw.githubusercontent.com/openvaultdb/directory/main/index.json` | databases and the model they use (`ovdb-directory/draft-1`) |
 | `MEANINGGRAPH_BASE_URL` | `https://meaninggraph.io` | links to `/graphs/<graph>/` |
-| `OVDB_DIRECTORY_BASE_URL` | `https://directory.openvaultdb.com` | links to `/databases/<id>/` |
+| `OVDB_DIRECTORY_BASE_URL` | `https://directory.openvaultdb.com` | links to the Directory `directoryPath` from the pinned index (legacy indexes fall back to `/databases/<recordId>/`) |
 
 Index URLs must be https; a local file needs `--allow-local-index`. Base URLs
 must be https, or http on localhost. The pages read only what they show (the
@@ -441,7 +441,7 @@ Or run the "Deploy" workflow from the Actions tab (with `force` to skip the comp
 
 Deploy order. The landing page and every registry page link to the Chinook pages on
 https://meaninggraph.io (`/graphs/chinook/`) and https://directory.openvaultdb.com
-(`/databases/chinook/`). The build checks that the three indexes carry Chinook, and
+(`/ovdb/demodb.dev/chinook/`). The build checks that the three indexes carry Chinook, and
 that the Chinook graph and database belong to the Chinook model, but it cannot see
 whether those two sites are live. Make a first production deploy only after both
 Chinook pages are live (the cross-browse plan's task 6 comes before task 7), and

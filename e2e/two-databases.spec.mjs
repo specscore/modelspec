@@ -23,14 +23,14 @@ test('both databases that name the Chinook model are listed, each with its own l
   const rows = section.locator('.reg-row');
   await expect(rows).toHaveCount(2);
 
-  const one = section.locator(`[data-database="${first.id}"]`);
-  await expect(one.locator('.reg-database-link')).toHaveAttribute('href', `${DIRECTORY_BASE_URL}/databases/${first.id}/`);
+  const one = section.locator(`[data-database="${first.recordId}"]`);
+  await expect(one.locator('.reg-database-link')).toHaveAttribute('href', `${DIRECTORY_BASE_URL}${first.directoryPath}`);
   await expect(one.locator('.reg-canonical')).toHaveText(first.url);
   await expect(one.locator('.reg-publisher')).toHaveText('datatug/chinookdb');
   await expect(one).toContainText('repository and model file');
 
-  const two = section.locator(`[data-database="${second.id}"]`);
-  await expect(two.locator('.reg-database-link')).toHaveAttribute('href', `${DIRECTORY_BASE_URL}/databases/${second.id}/`);
+  const two = section.locator(`[data-database="${second.recordId}"]`);
+  await expect(two.locator('.reg-database-link')).toHaveAttribute('href', `${DIRECTORY_BASE_URL}${second.directoryPath}`);
   await expect(two.locator('.reg-canonical')).toHaveText(second.url);
   await expect(two.locator('.reg-publisher')).toHaveText('git.example.com/second-host/chinook-hosting');
   await expect(two.locator('.reg-publisher')).toHaveAttribute('href', second.repository);
