@@ -108,6 +108,7 @@ function sourceNote(ctx, data) {
     ['ModelSpec registry', data.modelspec],
     ['MeaningGraph registry', data.meaninggraph],
     ['OVDB Directory', data.directory],
+    ...(data.directory.sourcesChecksum === undefined ? [] : [['OVDB Directory source metadata', { checksum: data.directory.sourcesChecksum }]]),
   ].map(([label, index]) => `${esc(label)} <code>${esc(index.checksum)}</code>`).join(', ');
   const where = ctx.mode === 'production' ? 'Built at build time from the public ModelSpec registry, the MeaningGraph registry and the OVDB Directory index.' : `This is a ${esc(SOURCE_LABELS[ctx.mode])} build, not made from the production indexes.`;
   return `<p class="reg-source">${where} A change in any of them reaches this page by a rebuild. Index checksums: ${checksums}.</p>`;

@@ -72,7 +72,18 @@ export async function loadData(config, options = {}) {
     read(config.sources.meaninggraph, validateMeaningGraphIndex),
     read(config.sources.directory, validateDirectoryIndex),
   ]);
-  return { modelspec, meaninggraph, directory };
+  return validateSourceModelTargets({ modelspec, meaninggraph, directory });
+}
+
+/** Cross-index references must resolve against the exact registry loaded for this build. */
+function validateSourceModelTargets(data) {
+  const modelIds = new Set(data.modelspec.models.map(model => model.id));
+  for (const source of data.directory.sources ?? []) {
+    if (source.modelId !== undefined && !modelIds.has(source.modelId)) {
+      throw new Error(`Directory source ${source.id} references unknown ModelSpec model ${source.modelId}`);
+    }
+  }
+  return data;
 }
 
 function describeSource(root, source) {
@@ -109,6 +120,7 @@ export function buildInfo(config, data, root, pages) {
       modelspec: data.modelspec.checksum,
       meaninggraph: data.meaninggraph.checksum,
       ovdbDirectory: data.directory.checksum,
+      ...(data.directory.sourcesChecksum === undefined ? {} : { ovdbDirectorySources: data.directory.sourcesChecksum }),
     },
     models: data.modelspec.models.map(m => ({ id: m.id, commit: m.commit })),
     pages,
@@ -131,7 +143,7 @@ export function buildInfo(config, data, root, pages) {
 export async function buildSite({ root, config, data, readOptions = {}, log = () => {} }) {
   const out = await prepareOutput(root, config.outName);
   const publicDir = join(resolve(root), 'public');
-  const indexes = data ?? await loadData(config, readOptions);
+  const indexes = validateSourceModelTargets(data ?? await loadData(config, readOptions));
 
   const template = await readFile(join(publicDir, 'index.html'), 'utf8');
   for (const name of RESERVED) {
