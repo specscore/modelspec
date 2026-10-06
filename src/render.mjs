@@ -6,6 +6,7 @@ import { databasesForModel, graphsForModel, sourcesForModel } from './match.mjs'
 
 export const SOURCE_META = 'modelspec-build-source';
 export const REGISTRY_PATH = '/registry/';
+export const SOURCES_PATH = '/registry/sources/';
 export const REGISTRY_REPOSITORY_URL = 'https://github.com/modelspec-org/registry';
 
 const HTML_ESCAPES = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
@@ -270,6 +271,7 @@ export function renderRegistryPage(data, ctx, shell) {
         ${cards}
       </ul>
     </section>
+    <p><a href="${SOURCES_PATH}">Source discoveries (${data.directory.sources.length})</a> from the OVDB Directory</p>
     ${layersBlock(ctx, data)}
     ${sourceNote(ctx, data)}
   </main>`;
@@ -282,6 +284,46 @@ export function renderRegistryPage(data, ctx, shell) {
     shell,
     main,
   });
+}
+
+// ------------------------------------------------------------ /registry/sources/
+
+export function renderSourcesPage(data, ctx, shell) {
+  const sources = [...data.directory.sources].sort((a, b) => a.title.localeCompare(b.title, 'en') || a.id.localeCompare(b.id, 'en'));
+  const models = new Map(data.modelspec.models.map(model => [model.id, model]));
+  const cards = sources.map(source => {
+    const model = models.get(source.modelId);
+    if (source.modelId !== undefined && !model) throw new Error(`Directory source ${source.id} references unknown ModelSpec model ${source.modelId}`);
+    const href = `${trimBase(ctx.ovdbDirectoryBaseUrl)}/sources/${encodeURIComponent(source.id)}/`;
+    const access = source.access_mode === 'bigquery-native' ? 'BigQuery native access · queries blocked' : 'Proposed access: HTTP through OVDB';
+    const search = [source.title, source.id, source.publisher, source.access_mode].join(' ').toLowerCase();
+    return `<li class="reg-row reg-source-card" data-source-id="${esc(source.id)}" data-search="${esc(search)}" data-access="${esc(source.access_mode)}">
+      <div class="reg-row-head"><h2>${esc(source.title)}</h2>${statusPill('Inactive')}</div>
+      <p class="reg-row-desc">${esc(source.description)}</p>
+      <dl class="reg-mini"><div><dt>Source ID</dt><dd><code>${esc(source.id)}</code></dd></div>
+        <div><dt>Publisher</dt><dd>${esc(source.publisher)}</dd></div>
+        <div><dt>Access</dt><dd>${esc(access)}</dd></div>
+        <div><dt>ModelSpec</dt><dd>${model ? `Declared model link: <a class="reg-source-model" href="${esc(modelPath(model.id))}">${esc(model.title)}</a> ${statusPill(model.status)}` : 'No ModelSpec link declared'}</dd></div></dl>
+      <p><a class="reg-source-action" href="${safeUrl(href)}">View source in OVDB Directory</a></p>
+    </li>`;
+  }).join('\n');
+  // Source navigation marks Sources current while preserving Registry on model pages.
+  const sourceShell = { ...shell, header: shell.header.replace(' aria-current="page">Registry', '>Registry').replace('href="/registry/sources/">', 'href="/registry/sources/" aria-current="page">'), footer: shell.footer.replace(' aria-current="page">Registry', '>Registry').replace('href="/registry/sources/">', 'href="/registry/sources/" aria-current="page">') };
+  return page({ where: 'source discoveries', title: 'Source discoveries — ModelSpec', description: 'Browse inactive source discovery metadata from the OVDB Directory, proposed access and explicit ModelSpec links.', path: SOURCES_PATH, ctx, shell: sourceShell,
+    main: `  <main id="top" class="reg">
+      ${crumbs(['ModelSpec', '/'], ['Registry', REGISTRY_PATH], ['Source discoveries', SOURCES_PATH])}
+      <header class="reg-hero"><p class="section-label">OVDB Directory discovery metadata</p><h1>Source discoveries</h1>
+      <p class="reg-lede">Source discoveries from the OVDB Directory. These entries are inactive; their access routes and native bindings require acceptance before queries can run.</p></header>
+      <p class="reg-draft" role="note">A metadata link does not establish accepted native-field bindings or activate source access.</p>
+      ${sources.length ? `<form class="reg-source-controls" data-source-controls hidden role="search">
+        <div><label for="source-search">Search sources</label><input id="source-search" type="search" placeholder="Title, ID, publisher or access mode" autocomplete="off"></div>
+        <div><label for="source-access">Proposed access</label><select id="source-access"><option value="">All access modes</option><option value="live-http-via-ovdb">HTTP through OVDB</option><option value="bigquery-native">BigQuery native</option></select></div>
+        <button type="reset">Reset</button></form>
+        <p id="source-result-count" role="status" aria-live="polite">${sources.length} source discoveries</p>
+        <p id="source-empty" class="reg-none" hidden>No sources match. Clear the search or reset the filters.</p>
+        <ul class="reg-rows" id="source-list">${cards}</ul>` : '<p class="reg-none">No source discoveries in this index.</p>'}
+      ${sourceNote(ctx, data)}
+    </main>` });
 }
 
 // ------------------------------------------------------------ /registry/models/<id>/
@@ -486,6 +528,7 @@ export function renderModelPage(model, data, ctx, shell) {
 export function renderRegistryPages(data, ctx, shell) {
   const pages = new Map();
   pages.set('registry/index.html', renderRegistryPage(data, ctx, shell));
+  pages.set('registry/sources/index.html', renderSourcesPage(data, ctx, shell));
   for (const model of data.modelspec.models) {
     pages.set(`registry/models/${model.id}/index.html`, renderModelPage(model, data, ctx, shell));
   }

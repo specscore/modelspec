@@ -205,7 +205,7 @@ test('the landing claim "Chinook is in all three" is checked against the data', 
 
 test('extractShell fails loudly when the landing page loses a part it reuses', () => {
   assert.throws(() => extractShell(template.replace('<header class="site-head">', '<header>')), /site header/);
-  assert.throws(() => extractShell(template.replace('<a href="/registry/">Registry</a>\n      <a class="nav-cta"', '<a class="nav-cta"')), /Registry link/);
+  assert.throws(() => extractShell(template.replace('<a href="/registry/">Registry</a>', '')), /Registry link/);
 });
 
 test('components: the section, every field, the entity use lists and the component-typed properties', () => {

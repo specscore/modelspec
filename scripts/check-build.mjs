@@ -106,6 +106,7 @@ export async function distProblems(root = ROOT) {
   }
 
   const pages = files.filter(file => file.startsWith('registry/') && file.endsWith('.html'));
+  if (!pages.includes('registry/sources/index.html')) problems.push('registry/sources/index.html is missing');
   if (!pages.includes('registry/index.html')) problems.push('registry/index.html is missing');
   if (info && pages.length !== (info.pages ?? 0) - 1) problems.push(`it has ${pages.length} registry pages but build-info says ${(info.pages ?? 0) - 1}`);
   const meta = `<meta name="${SOURCE_META}" content="production">`;

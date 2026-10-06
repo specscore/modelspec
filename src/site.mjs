@@ -122,6 +122,7 @@ export function buildInfo(config, data, root, pages) {
       ovdbDirectory: data.directory.checksum,
       ...(data.directory.sourcesChecksum === undefined ? {} : { ovdbDirectorySources: data.directory.sourcesChecksum }),
     },
+    sourceDiscoveries: (data.directory.sources ?? []).map(source => ({ id: source.id })),
     models: data.modelspec.models.map(m => ({ id: m.id, commit: m.commit })),
     pages,
   };

@@ -11,7 +11,7 @@ import { compareBuild, verifyLive } from '../src/freshness.mjs';
 
 const source = (overrides = {}) => ({
   id: 'different-source-id', format: 'ovdb-source/draft-1', status: 'inactive',
-  title: 'Source discovery', description: 'Native source metadata.', publisher: 'Source publisher',
+  access_mode: 'live-http-via-ovdb', title: 'Source discovery', description: 'Native source metadata.', publisher: 'Source publisher',
   modelspec_url: 'https://modelspec.org/registry/models/chinook/', ...overrides,
 });
 const directory = sources => directoryJson({ databases: [], sources,

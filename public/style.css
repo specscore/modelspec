@@ -813,8 +813,9 @@ pre code {
   .layers-grid, .layers-why { grid-template-columns: 1fr; }
 }
 
-/* The header gained a Registry link: between the hamburger breakpoint and about
-   900px the eight links need a little less room between them to stay on one line. */
-@media (min-width: 861px) and (max-width: 900px) {
-  .site-nav { gap: 1.2rem; }
+/* Keep Registry and Sources on one line above the mobile breakpoint. */
+@media (min-width: 861px) and (max-width: 1050px) {
+  .site-nav { gap: .85rem; }
+  .site-nav a { white-space: nowrap; }
+  .brand { flex-shrink: 0; }
 }

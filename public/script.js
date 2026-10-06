@@ -48,3 +48,28 @@
     if (e.matches) setOpen(false);
   });
 })();
+
+// Source discovery search runs entirely on the rendered metadata.
+(function () {
+  var form = document.querySelector('[data-source-controls]');
+  if (!form) return;
+  var search = document.getElementById('source-search');
+  var access = document.getElementById('source-access');
+  var cards = Array.from(document.querySelectorAll('[data-source-id]'));
+  function update() {
+    var query = search.value.trim().toLowerCase();
+    var visible = 0;
+    cards.forEach(function (card) {
+      card.hidden = !(card.dataset.search.includes(query) && (!access.value || card.dataset.access === access.value));
+      if (!card.hidden) visible++;
+    });
+    document.getElementById('source-result-count').textContent = visible + ' of ' + cards.length + ' source discoveries';
+    document.getElementById('source-empty').hidden = visible !== 0;
+  }
+  form.hidden = false;
+  form.addEventListener('submit', function (event) { event.preventDefault(); });
+  search.addEventListener('input', update);
+  access.addEventListener('change', update);
+  form.addEventListener('reset', function () { setTimeout(update, 0); });
+  update();
+})();
