@@ -2,7 +2,7 @@
 // index goes through esc() or safeUrl(); nothing is concatenated raw.
 
 import { DEFAULTS } from './config.mjs';
-import { databasesForModel, graphsForModel } from './match.mjs';
+import { databasesForModel, graphsForModel, sourcesForModel } from './match.mjs';
 
 export const SOURCE_META = 'modelspec-build-source';
 export const REGISTRY_PATH = '/registry/';
@@ -381,6 +381,7 @@ function renderDatabaseRow({ database, via }, ctx) {
 
 export function renderModelPage(model, data, ctx, shell) {
   const { graphs, databases } = modelCounts(model, data);
+  const sources = sourcesForModel(model, data.directory.sources);
   const localEntities = new Set(model.entities.map(e => e.name));
   const localComponents = new Set(model.components.map(c => c.name));
   const propertyCount = model.entities.reduce((n, e) => n + e.properties.length, 0);
@@ -412,6 +413,13 @@ export function renderModelPage(model, data, ctx, shell) {
         ${databases.map(d => renderDatabaseRow(d, ctx)).join('\n        ')}
       </ul>`;
 
+  const sourceRows = sources.length === 0
+    ? '<p class="reg-none">No inactive source discovery in the OVDB Directory explicitly links to this model yet.</p>'
+    : `<ul class="reg-rows">${sources.map(source => `<li class="reg-row" data-source="${esc(source.id)}">
+        <div class="reg-row-head"><a class="reg-source-link" href="${safeUrl(`${trimBase(ctx.ovdbDirectoryBaseUrl)}/sources/${encodeURIComponent(source.id)}/`)}">${esc(source.title)}</a><span class="reg-pill">Inactive</span></div>
+        <p class="reg-row-desc">${esc(excerpt(source.description, 220))}</p>
+        <dl class="reg-mini"><div><dt>Publisher</dt><dd>${esc(source.publisher)}</dd></div><div><dt>Related by</dt><dd>Explicit ModelSpec metadata link</dd></div></dl>
+      </li>`).join('')}</ul>`;
   const main = `  <main id="top" class="reg">
     ${crumbs(['ModelSpec', '/'], ['Registry', REGISTRY_PATH], [model.title, modelPath(model.id)])}
     <header class="reg-hero">
@@ -422,6 +430,7 @@ export function renderModelPage(model, data, ctx, shell) {
         <li><a href="#entities">Entities</a></li>${model.components.length > 0 ? '\n        <li><a href="#components">Components</a></li>' : ''}
         <li><a href="#meaning-graphs">Meaning graphs</a></li>
         <li><a href="#databases">Databases</a></li>
+        <li><a href="#source-discoveries">Source discoveries</a></li>
       </ul>
     </header>
     <p class="reg-layers-line"><strong>Where it is, what shape it has, what it means.</strong> This page is the shape: the <a href="${safeUrl(trimBase(ctx.ovdbDirectoryBaseUrl) + '/')}">OVDB Directory</a> says where databases of this model are, <a href="${safeUrl(trimBase(ctx.meaningGraphBaseUrl) + '/')}">MeaningGraph</a> says what its fields mean.</p>
@@ -453,6 +462,11 @@ export function renderModelPage(model, data, ctx, shell) {
       <h2 id="databases-heading">Databases using this model <span class="reg-count">${databases.length}</span></h2>
       <p class="reg-section-note">From the OVDB Directory: databases that name this model, by its address or, while their entry carries no model address, by repository and model file.</p>
       ${databaseRows}
+    </section>
+    <section class="reg-section" id="source-discoveries" aria-labelledby="source-discoveries-heading">
+      <h2 id="source-discoveries-heading">Related inactive source discoveries <span class="reg-count">${sources.length}</span></h2>
+      <p class="reg-section-note">From explicit ModelSpec metadata links in the OVDB Directory. These discoveries are inactive: the links do not establish native field bindings, database availability or query activation.</p>
+      ${sourceRows}
     </section>
     ${sourceNote(ctx, data)}
   </main>`;

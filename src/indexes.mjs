@@ -10,6 +10,7 @@
 // hand-written data.
 
 import { readFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
 
 export const MODELSPEC_FORMAT = 'modelspec-registry/draft-1';
 export const MEANINGGRAPH_FORMAT = 'meaning-registry/draft-1';
@@ -371,5 +372,40 @@ export function validateDirectoryIndex(json, options = {}) {
     if (routes.has(database.directoryPath.toLowerCase())) fail('databases', `duplicate Directory path ${JSON.stringify(database.directoryPath)}`);
     routes.add(database.directoryPath.toLowerCase());
   }
-  return { ...head, databases };
+  return { ...head, databases, sources: validateSourceDiscoveries(json.sources, json.sourcesChecksum), sourcesChecksum: json.sourcesChecksum };
+}
+
+/** Validate the inactive discovery metadata used by model pages, without reading provider data. */
+export function validateSourceDiscoveries(value, checksum) {
+  if (value === undefined) {
+    if (checksum !== undefined) fail('sourcesChecksum', 'requires sources');
+    return [];
+  }
+  list(value, 'sources');
+  pattern(checksum, 'sourcesChecksum', CHECKSUM, 'sha256:<64 hex>');
+  const expected = `sha256:${createHash('sha256').update(JSON.stringify(value)).digest('hex')}`;
+  if (checksum !== expected) fail('sourcesChecksum', 'does not match the source metadata');
+  const ids = new Set();
+  return value.map((source, i) => {
+    const at = `sources[${i}]`;
+    object(source, at);
+    const id = uniqueId(source.id, `${at}.id`, ids);
+    if (id.length > 80) fail(`${at}.id`, 'must be at most 80 characters');
+    if (source.status !== 'inactive') fail(`${at}.status`, 'must be inactive');
+    if (!['ovdb-source/draft-1', 'ovdb-source/draft-2'].includes(source.format)) fail(`${at}.format`, 'must be an OVDB source discovery format');
+    let modelId;
+    if (source.modelspec_url !== undefined) {
+      text(source.modelspec_url, `${at}.modelspec_url`);
+      const match = /^https:\/\/modelspec\.org\/registry\/models\/([a-z0-9]+(?:-[a-z0-9]+)*)\/$/.exec(source.modelspec_url);
+      if (!match) fail(`${at}.modelspec_url`, 'must be an exact canonical ModelSpec model route');
+      modelId = match[1];
+    }
+    return {
+      id, modelId,
+      title: text(source.title, `${at}.title`),
+      description: text(source.description, `${at}.description`),
+      publisher: text(source.publisher, `${at}.publisher`),
+      status: source.status,
+    };
+  });
 }
