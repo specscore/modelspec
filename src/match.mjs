@@ -37,3 +37,8 @@ export function databasesForModel(model, databases) {
   }
   return found;
 }
+
+/** Only explicit canonical Directory model links establish a source discovery relationship. */
+export function sourcesForModel(model, sources = []) {
+  return sources.filter(source => source.modelId === model.id);
+}
