@@ -1,8 +1,8 @@
 {
   "format": "ovdb-directory/draft-1",
-  "checksum": "sha256:47416b834018a7d92bea76cf38007d0c6df551fd4c795de6de4dbb3f4d2a80a3",
+  "checksum": "sha256:f6b1d08ffd67c1927183d1f09176b088c29690828780d77f83a1ada6ff63d5d3",
   "_fixture": {
-    "note": "OFFLINE TEST FIXTURE derived from the pinned source snapshot and adapted to test global database identities; only a build run with --use-fixture accepts this file, and it must never be deployed.",
+    "note": "FIXTURE, not a live index. The Directory index named in `derived_from` in which the first database also names its ModelSpec model by `model.address`, plus a second database that does, to test that databases are found by address. Only a build run with --use-fixture accepts this file; it must never be deployed.",
     "derived_from": "fixtures/ovdb-directory-index.fixture.json"
   },
   "databases": [
@@ -946,10 +946,16 @@
     },
     {
       "id": "https://acme.example.net/chinook/",
+      "recordId": "chinook-second-host",
+      "localId": "chinook",
+      "directoryPath": "/ovdb/acme.example.net/chinook/",
       "title": "Chinook music store (second host)",
       "description": "A second database of the chinook model, from another publisher, for testing.",
       "status": "draft",
       "url": "https://acme.example.net/chinook/",
+      "serverId": "https://acme.example.net/ovdb",
+      "serverDbBaseUrl": "https://acme.example.net/database/chinook/",
+      "apiUrl": "https://acme.example.net/api/chinook",
       "repository": "https://git.example.com/second-host/chinook-hosting",
       "commit": "be96bf45fdfa13559b6627d281c1e30ce92ad38f",
       "manifest": "ovdb.yaml",
@@ -959,13 +965,1065 @@
         "path": "models/chinook.modelspec.hcl",
         "address": "modelspec://github.com/datatug/chinookdb/chinook"
       },
-      "recordsets": [],
-      "recordId": "chinook-second-host",
-      "localId": "chinook",
-      "directoryPath": "/ovdb/acme.example.net/chinook/",
-      "serverId": "https://acme.example.net/ovdb",
-      "serverDbBaseUrl": "https://acme.example.net/database/chinook/",
-      "apiUrl": "https://acme.example.net/api/chinook"
+      "recordsets": []
     }
-  ]
+  ],
+  "sources": [
+    {
+      "id": "bigquery-google-trends",
+      "format": "ovdb-source/draft-2",
+      "title": "Google Trends on BigQuery",
+      "description": "Inactive dataset-level discovery of Google Trends search-interest data documented for BigQuery. Current native tables, coverage, schema and intended-use conditions require verification before access.",
+      "publisher": "Google",
+      "homepage": "https://support.google.com/trends/answer/12764470",
+      "terms_url": "https://support.google.com/trends/answer/4365538",
+      "status": "inactive",
+      "hosting_provider": "Google BigQuery",
+      "access_mode": "bigquery-native",
+      "query_activation": "blocked",
+      "locator": {
+        "source_project": "bigquery-public-data",
+        "dataset_id": "google_trends",
+        "existence_status": "unverified",
+        "location_status": "unverified"
+      },
+      "documentation": {
+        "kind": "documented-definition",
+        "url": "https://github.com/GoogleCloudPlatform/public-datasets-pipelines/blob/14735c60589ab22361dc0d54ad7491ba7ae96a04/datasets/google_trends/pipelines/dataset.yaml",
+        "commit": "14735c60589ab22361dc0d54ad7491ba7ae96a04"
+      },
+      "access_requirements": {
+        "authentication": "required",
+        "execution_project": "unconfigured",
+        "cost_admission": "not-granted",
+        "runtime_acceptance": "pending",
+        "documentation_url": "https://docs.cloud.google.com/bigquery/public-data"
+      },
+      "owned_retention": {
+        "intent": "none",
+        "enforcement": "unverified"
+      },
+      "provider_retention": {
+        "result_storage": "materialized-results",
+        "authorization": "pending-review",
+        "documentation_url": "https://docs.cloud.google.com/bigquery/docs/cached-results"
+      },
+      "activation_blockers": [
+        "Current exact source project/dataset/table identities, location, object type and native schema/types/modes/constraints require separately authorized metadata-only evidence and a bounded table allowlist before activation.",
+        "Authentication, execution-project IAM, explicit cost admission, finite SQL/output/time/bytes limits, and real Go plus browser acceptance remain pending.",
+        "Owned no-retention enforcement and separately scoped authorization of BigQuery result materialization are required before any query, including free jobs.",
+        "Establish which terms apply to the exact BigQuery distribution and intended use, including attribution and any third-party geography requirements, before activation."
+      ],
+      "notices": [
+        "Google's current dataset help https://support.google.com/trends/answer/12764470 documents bigquery-public-data.google_trends.top_terms as a candidate only; no current table, binding or query allowlist is accepted here.",
+        "Search-interest data is aggregated and normalized; scores are not raw search volumes. Advertised rolling windows and cadence are not current freshness guarantees. International/hourly tables and DMA/country mappings are not accepted.",
+        "Google's use and citation guidance permits information use subject to Google Terms and requires attribution when reused. This entry grants no independent data licence or clearance for the proposed BigQuery route. Attribution should identify Google Trends and avoid conflating it with Google Ads.",
+        "Third-party geography requirements remain unresolved; DMA boundaries are not licensed by this listing.",
+        "Pinned authored definitions establish documented candidate names, not current existence, permissions, storage region, freshness or a deployed query service. Repository code/documentation licences do not licence dataset contents.",
+        "BigQuery writes query results to destination or temporary tables. Disabling cache retrieval does not prevent provider materialization; typical temporary caching of about 24 hours is not a guaranteed maximum deletion period.",
+        "This entry serves descriptive metadata only. It contains no source rows, accepted native schema, model/meaning binding, query endpoint, execution credential or cost authorization."
+      ],
+      "maintainers": [
+        "trakhimenok"
+      ]
+    },
+    {
+      "id": "bigquery-new-york-citibike",
+      "format": "ovdb-source/draft-2",
+      "title": "Citi Bike candidates within BigQuery new_york",
+      "description": "Inactive discovery of documented Citi Bike trip and station candidates within bigquery-public-data.new_york. Publisher and source conditions apply only to the Citi Bike candidates; unrelated New York data is outside this listing's scope.",
+      "publisher": "Lyft Bikes and Scooters, LLC (Citi Bike candidates only)",
+      "homepage": "https://citibikenyc.com/",
+      "terms_url": "https://citibikenyc.com/data-sharing-policy",
+      "status": "inactive",
+      "hosting_provider": "Google BigQuery",
+      "access_mode": "bigquery-native",
+      "query_activation": "blocked",
+      "locator": {
+        "source_project": "bigquery-public-data",
+        "dataset_id": "new_york",
+        "existence_status": "unverified",
+        "location_status": "unverified"
+      },
+      "documentation": {
+        "kind": "documented-definition",
+        "url": "https://github.com/GoogleCloudPlatform/public-datasets-pipelines/blob/14735c60589ab22361dc0d54ad7491ba7ae96a04/datasets/new_york/pipelines/dataset.yaml",
+        "commit": "14735c60589ab22361dc0d54ad7491ba7ae96a04"
+      },
+      "access_requirements": {
+        "authentication": "required",
+        "execution_project": "unconfigured",
+        "cost_admission": "not-granted",
+        "runtime_acceptance": "pending",
+        "documentation_url": "https://docs.cloud.google.com/bigquery/public-data"
+      },
+      "owned_retention": {
+        "intent": "none",
+        "enforcement": "unverified"
+      },
+      "provider_retention": {
+        "result_storage": "materialized-results",
+        "authorization": "pending-review",
+        "documentation_url": "https://docs.cloud.google.com/bigquery/docs/cached-results"
+      },
+      "activation_blockers": [
+        "Current exact source project/dataset/table identities, location, object type and native schema/types/modes/constraints require separately authorized metadata-only evidence and a bounded table allowlist before activation.",
+        "Authentication, execution-project IAM, explicit cost admission, finite SQL/output/time/bytes limits, and real Go plus browser acceptance remain pending.",
+        "Owned no-retention enforcement and separately scoped authorization of BigQuery result materialization are required before any query, including free jobs.",
+        "Resolve whether the intended BigQuery/OVDB access path and use meet the Citi Bike Data Sharing Policy, including authorized interfaces, extraction and redistribution restrictions, before activation.",
+        "Resolve the distinct new_york and new_york_citibike identities before accepting any schema or table binding; no alias, migration or equivalence is established."
+      ],
+      "notices": [
+        "Google's ARIMA tutorial https://docs.cloud.google.com/bigquery/docs/arima-time-series-forecasting-with-limits-tutorial documents bigquery-public-data.new_york.citibike_trips and its geospatial tutorial https://docs.cloud.google.com/bigquery/docs/geospatial-get-started documents bigquery-public-data.new_york.citibike_stations. These are unaccepted documentation-backed candidates only, not live tables or an enforced query allowlist.",
+        "The Google-authored pipeline routes station output to new_york_citibike, a different native dataset. Its station schema is not bound to new_york here; modern upstream CSV schemas are not transposed. NYC coverage and pipeline compute location establish no storage region.",
+        "The publisher identifies the upstream Citi Bike owner for these candidates only, not a verified BigQuery dataset owner or the owner of unrelated new_york tables. Source conditions for unrelated tables are outside this listing's scope.",
+        "Citi Bike's Data Sharing Policy allows limited lawful product/service use while restricting standalone redistribution, unapproved access/extraction, rider identification, affiliation implications and trademark use. Metadata-only discovery neither distributes the dataset nor establishes Google-route authorization or query/redistribution permission.",
+        "Plain descriptive attribution implies no Citi Bike, Lyft or sponsor endorsement and grants no trademark permission. No Citi Bike logo is included.",
+        "This scoped discovery consumes the project/dataset locator; it is not dataset-wide rights acceptance and cannot be duplicated for another new_york subset without a separately reviewed representation.",
+        "Pinned authored definitions establish documented candidate names, not current existence, permissions, storage region, freshness or a deployed query service. Repository code/documentation licences do not licence dataset contents.",
+        "BigQuery writes query results to destination or temporary tables. Disabling cache retrieval does not prevent provider materialization; typical temporary caching of about 24 hours is not a guaranteed maximum deletion period.",
+        "This entry serves descriptive metadata only. It contains no source rows, accepted native schema, model/meaning binding, query endpoint, execution credential or cost authorization."
+      ],
+      "maintainers": [
+        "trakhimenok"
+      ]
+    },
+    {
+      "id": "bigquery-world-bank-wdi",
+      "format": "ovdb-source/draft-2",
+      "title": "World Development Indicators on BigQuery",
+      "description": "Dataset-level discovery of World Bank development statistics on Google BigQuery. Native tables, observation coverage and indicator rights require verification before access.",
+      "status": "inactive",
+      "publisher": "World Bank",
+      "hosting_provider": "Google BigQuery",
+      "homepage": "https://datatopics.worldbank.org/world-development-indicators/",
+      "terms_url": "https://data.worldbank.org/summary-terms-of-use",
+      "access_mode": "bigquery-native",
+      "query_activation": "blocked",
+      "locator": {
+        "source_project": "bigquery-public-data",
+        "dataset_id": "world_bank_wdi",
+        "existence_status": "unverified",
+        "location_status": "unverified"
+      },
+      "documentation": {
+        "kind": "documented-definition",
+        "url": "https://github.com/GoogleCloudPlatform/public-datasets-pipelines/blob/14735c60589ab22361dc0d54ad7491ba7ae96a04/datasets/world_bank_wdi/pipelines/dataset.yaml",
+        "commit": "14735c60589ab22361dc0d54ad7491ba7ae96a04"
+      },
+      "access_requirements": {
+        "authentication": "required",
+        "execution_project": "unconfigured",
+        "cost_admission": "not-granted",
+        "runtime_acceptance": "pending",
+        "documentation_url": "https://docs.cloud.google.com/bigquery/public-data"
+      },
+      "owned_retention": {
+        "intent": "none",
+        "enforcement": "unverified"
+      },
+      "provider_retention": {
+        "result_storage": "materialized-results",
+        "authorization": "pending-review",
+        "documentation_url": "https://docs.cloud.google.com/bigquery/docs/cached-results"
+      },
+      "activation_blockers": [
+        "Authorized metadata-only dataset/table inspection must establish current existence, location, native schema/types/modes and an exact bounded table allowlist. No observation table is accepted here.",
+        "Indicator-specific provider rights, edition and attribution must be accepted for the exact intended use. World Bank summary terms do not grant unrestricted dataset-wide commercial entitlement.",
+        "Economy/aggregate identity, units, year coverage and semantic/model bindings require independent acceptance; no registered model is claimed.",
+        "Authentication and a separate execution project, cost admission, finite query/output limits and Go/JavaScript runtime acceptance remain pending.",
+        "Owned no-retention enforcement and explicit provider result-storage authorization are required before any query, including free jobs."
+      ],
+      "notices": [
+        "Attribution is required to the World Bank and its data providers as specified in their metadata. No World Bank endorsement is implied.",
+        "World Bank summary terms generally use CC BY 4.0 with mandatory additions, subject to dataset and indicator/provider exceptions. Some indicators require additional consent or have noncommercial restrictions.",
+        "The pinned Google-authored definition documents the dataset name; the public-program source project is a discovery candidate, not an authenticated metadata receipt. The repository is deprecated and its schedule is not a freshness guarantee.",
+        "BigQuery writes query results to destination or temporary tables. Disabling query-cache retrieval does not prevent provider materialization; typical temporary cache duration is about 24 hours, not a guaranteed maximum deletion period.",
+        "This entry serves descriptive metadata only. It contains no copied source rows, table schema assertion, query endpoint, execution credential or cost authorization."
+      ],
+      "maintainers": [
+        "trakhimenok"
+      ]
+    },
+    {
+      "id": "cisa-kev",
+      "format": "ovdb-source/draft-1",
+      "title": "CISA Known Exploited Vulnerabilities identifiers",
+      "description": "Inactive W3 discovery for d2-rs-cisa. Partial vulnerabilities[] native strings describe catalogued CVE identity and source context; no vulnerability lookup or mitigation workflow is activated.",
+      "status": "inactive",
+      "publisher": "Cybersecurity and Infrastructure Security Agency (CISA)",
+      "homepage": "https://www.cisa.gov/known-exploited-vulnerabilities-catalog",
+      "resource_url": "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json",
+      "terms_url": "https://www.cisa.gov/sites/default/files/licenses/kev/license.txt",
+      "access_mode": "live-http-via-ovdb",
+      "retention": "none",
+      "activation_blockers": [
+        "No admitted execution route exists. live-http-via-ovdb names a proposed gateway; actual GET/CORS/authentication/rate limits, redirect/DNS/resource allowlists and row/byte/time budgets remain unverified.",
+        "Canonical source definition, bounded decoder and source-qualified ModelSpec/MeaningGraph bindings require separate acceptance. This partial native-string subset does not model the complete source response, context or grammar.",
+        "Rights for the exact returned material and intended use and required notices remain admission gates. Licence permission never authorizes source snapshots or result retention in this programme.",
+        "Transient RAM/current-display execution and no-store enforcement across browser, adapter, OVDB, edge and intermediary sinks remain unproved. Retained paging/history/export/download/fixtures/replay and data-bearing logs are not authorized.",
+        "Exact execution observation metadata, native context, null/missing/multiplicity policy and freshness remain unverified. Resource HEAD and authored metadata pins do not establish current rows or future response bytes.",
+        "Accepted research assertion d2-edge-cisa-nvd concerns exact CVE identity only. NVD rights remain unresolved; catalog absence never proves unexploited. No actual demo CVE-key journey is accepted."
+      ],
+      "notices": [
+        "Metadata/documentation and endpoint HEAD checked 2026-10-06. No source dataset payload was requested or retained; no query service is activated.",
+        "CISA KEV licence identifies CC0; linked third-party material retains separate terms and CISA logo/DHS seal/endorsement are excluded. Official CISA licence URL returned 403 to the web tool; publisher mirror verified at https://github.com/cisagov/kev-data/blob/develop/LICENSE.",
+        "Native field documentation: https://github.com/cisagov/kev-data/blob/develop/known_exploited_vulnerabilities_schema.json. No CWE-array, product matching, universal deadline or complete-source interpretation is claimed.",
+        "W3 selection records five inactive source opportunities only. NVD remains deferred pending authoritative current terms; all unselected candidate IDs and original dispositions remain in datatug/datatug spec/research/public-data-fabric. No source reads, canonical binding admission or DataTug UI change is authorized by this entry."
+      ],
+      "recordsets": [
+        {
+          "name": "KevVulnerability",
+          "description": "Partial string subset relative to each vulnerabilities[] object. Grain is a catalogued CVE within an enclosing catalog version; envelope/version and the full vulnerability model remain outside this entry.",
+          "fields": [
+            {
+              "name": "cveID",
+              "type": "string",
+              "description": "Native CVE identifier string. Preserve exact CVE namespace; vendor/product names are not identity keys."
+            },
+            {
+              "name": "dateAdded",
+              "type": "string",
+              "description": "Native date string for entry addition, distinct from vulnerability publication, modification and action due dates."
+            },
+            {
+              "name": "vulnerabilityName",
+              "type": "string",
+              "description": "Native descriptive title string; no unique-name or product identity claim."
+            },
+            {
+              "name": "knownRansomwareCampaignUse",
+              "type": "string",
+              "description": "Native source classification string. Unknown does not mean false; optionality and current vocabulary remain admission gates."
+            }
+          ]
+        }
+      ],
+      "maintainers": [
+        "trakhimenok"
+      ]
+    },
+    {
+      "id": "cldr48-territory-codes",
+      "format": "ovdb-source/draft-1",
+      "title": "CLDR 48 territory code mappings",
+      "description": "Inactive W2 discovery for d1-cldr-codes. This documentation-qualified CLDR 48 subset describes only the type, numeric and alpha3 XML attributes of supplementalData/codeMappings/territoryCodes; no code conversion or join is activated.",
+      "status": "inactive",
+      "publisher": "Unicode Consortium",
+      "homepage": "https://cldr.unicode.org/index/downloads",
+      "resource_url": "https://raw.githubusercontent.com/unicode-org/cldr/acd6d88ae493633240e19a87a721076a8a75c310/common/supplemental/supplementalData.xml",
+      "terms_url": "https://www.unicode.org/license.txt",
+      "access_mode": "live-http-via-ovdb",
+      "retention": "none",
+      "activation_blockers": [
+        "No admitted execution gateway exists. The access_mode names a proposed OVDB Go proxy route only; CORS, exact XML reads, redirect/DNS allowlists and bounded XML decoding with row/byte/time budgets remain unverified.",
+        "The locator is based on official file-tree metadata and documentation, not a read of the CLDR 48 XML. Exact element presence, attribute values, coverage, optional attributes and decoder/model bindings need separate acceptance before activation.",
+        "Canonical source definition and source-qualified ModelSpec/MeaningGraph artifacts require separate acceptance. XML attributes remain native strings; no country, economy, territory, historical or deprecated/reserved-code equivalence is accepted.",
+        "Rights for the exact material and intended use and the applicable copyright and permission notice remain admission gates. Licence permission does not authorize source snapshots or result retention in this programme.",
+        "Transient RAM/current-display execution and no-store enforcement across browser, OVDB, adapter, edge and intermediary sinks remain unproved. Retained paging, histories, exports, fixtures, replay caches and data-bearing logs are not authorized.",
+        "CLDR 48 is an explicit edition, not a claim to the latest release. No silent upgrade to CLDR 48.1/48.2, numeric coercion, ISO country bridge or complete CLDR schema is admitted."
+      ],
+      "notices": [
+        "Source: Unicode Consortium, CLDR 48. Official documentation, release tree metadata and terms checked on 2026-10-06; no XML dataset bytes were fetched or retained.",
+        "Unicode License V3 permits use, copying, adaptation, distribution and sale with its copyright and permission notice in copies or associated documentation. Preserve that notice; Unicode names do not grant endorsement or advertising permission.",
+        "Edition evidence: https://cldr.unicode.org/index/downloads links release-48; https://github.com/unicode-org/cldr/tree/release-48/common/supplemental lists supplementalData.xml. Git tag release-48 resolves to the resource commit acd6d88ae493633240e19a87a721076a8a75c310. This metadata pin does not verify live response bytes.",
+        "Documented path: https://cldr.unicode.org/development/development-process/design-proposals/bcp47-validation-and-canonicalization names supplementalData.xml/codeMappings/territoryCodes. LDML documentation at https://www.unicode.org/reports/tr35/tr35-info.html#Supplemental_Code_Mapping defines the attributes and warns that supplemental file splitting may change. The release-specific path and binding remain unverified by a data read.",
+        "Only the documented type, numeric and alpha3 subset is described. Optional fips10, deprecated internet, aliases, containment, locale, language, currency and other CLDR candidates remain outside this entry and preserved in the research backlog."
+      ],
+      "recordsets": [
+        {
+          "name": "TerritoryCode",
+          "description": "Partial documentation-qualified XML attribute subset at /supplementalData/codeMappings/territoryCodes. Element/attribute presence and full edition schema are unverified; this listing does not establish code equivalence, accepted lookup keys or compatibility with GeoNames/World Bank.",
+          "fields": [
+            {
+              "name": "type",
+              "type": "string",
+              "description": "Documented native XML type attribute; preserve the original CLDR region-subtag string without inferring sovereign-country identity."
+            },
+            {
+              "name": "numeric",
+              "type": "string",
+              "description": "Documented native XML numeric attribute as a lexical string; preserve leading zeros and do not coerce to an integer or infer equivalence."
+            },
+            {
+              "name": "alpha3",
+              "type": "string",
+              "description": "Documented native XML alpha3 attribute as a lexical string; no accepted country/economy bridge follows from the attribute name."
+            }
+          ]
+        }
+      ],
+      "maintainers": [
+        "trakhimenok"
+      ]
+    },
+    {
+      "id": "cldr48-windows-zones",
+      "format": "ovdb-source/draft-1",
+      "title": "CLDR 48 Windows timezone mappings",
+      "description": "Inactive W3 discovery for d1-cldr-windows-zones. Partial documented XML attribute strings retain Windows ID, territory and the raw Unicode-zone list; no timezone conversion or country-zone lookup is activated.",
+      "status": "inactive",
+      "publisher": "Unicode Consortium",
+      "homepage": "https://cldr.unicode.org/index/downloads",
+      "resource_url": "https://raw.githubusercontent.com/unicode-org/cldr/acd6d88ae493633240e19a87a721076a8a75c310/common/supplemental/windowsZones.xml",
+      "terms_url": "https://www.unicode.org/license.txt",
+      "access_mode": "live-http-via-ovdb",
+      "retention": "none",
+      "activation_blockers": [
+        "No admitted execution route exists. live-http-via-ovdb names a proposed gateway; actual GET/CORS/authentication/rate limits, redirect/DNS/resource allowlists and row/byte/time budgets remain unverified.",
+        "Canonical source definition, bounded decoder and source-qualified ModelSpec/MeaningGraph bindings require separate acceptance. This partial native-string subset does not model the complete source response, context or grammar.",
+        "Rights for the exact returned material and intended use and required notices remain admission gates. Licence permission never authorizes source snapshots or result retention in this programme.",
+        "Transient RAM/current-display execution and no-store enforcement across browser, adapter, OVDB, edge and intermediary sinks remain unproved. Retained paging/history/export/download/fixtures/replay and data-bearing logs are not authorized.",
+        "Exact execution observation metadata, native context, null/missing/multiplicity policy and freshness remain unverified. Resource HEAD and authored metadata pins do not establish current rows or future response bytes.",
+        "d1-edge-windows-zone remains unresolved. Territory/default/list expansion, CLDR long-ID aliases and civil-rule runtime behavior require separate reconciliation.",
+        "Official Git tree metadata confirms this file at CLDR 48 commit acd6d88ae493633240e19a87a721076a8a75c310, blob 26a62c3f0645851fa13ebddbce9b6f20528d5777; metadata presence and HEAD do not verify native XML contents."
+      ],
+      "notices": [
+        "Metadata/documentation and endpoint HEAD checked 2026-10-06. No source dataset payload was requested or retained; no query service is activated.",
+        "Unicode License V3 requires copyright/permission notice in copies or associated documentation; Unicode names do not grant endorsement or advertising permission.",
+        "CLDR 48 documented field grammar and list/default context: https://www.unicode.org/reports/tr35/tr35-76/tr35-dates.html#Windows_Zones. CLDR 48 is explicit, not a latest-release claim. Source pin is distinct from any execution gateway.",
+        "W3 selection records five inactive source opportunities only. NVD remains deferred pending authoritative current terms; all unselected candidate IDs and original dispositions remain in datatug/datatug spec/research/public-data-fabric. No source reads, canonical binding admission or DataTug UI change is authorized by this entry."
+      ],
+      "recordsets": [
+        {
+          "name": "WindowsZoneMap",
+          "description": "Partial documented attributes on /supplementalData/windowsZones/mapTimezones/mapZone in explicit CLDR 48. Actual element/attribute presence and full edition schema remain unverified by a data read.",
+          "fields": [
+            {
+              "name": "other",
+              "type": "string",
+              "description": "Native XML Windows TZID attribute string; descriptive resemblance is not zone identity."
+            },
+            {
+              "name": "territory",
+              "type": "string",
+              "description": "Native XML context attribute string. 001 default and ZZ remain distinct; no sovereign-country or territory-code equivalence is admitted."
+            },
+            {
+              "name": "type",
+              "type": "string",
+              "description": "Native XML space-delimited Unicode long timezone-ID list string. Preserve aliases and list order; no scalar timezone or tzdb identity mapping is accepted."
+            }
+          ]
+        }
+      ],
+      "maintainers": [
+        "trakhimenok"
+      ]
+    },
+    {
+      "id": "ea-monitoring-measures",
+      "format": "ovdb-source/draft-1",
+      "title": "Environment Agency measure metadata",
+      "description": "Inactive proposed measure-code subset. No observation values or unit conversion accepted.",
+      "status": "inactive",
+      "publisher": "Environment Agency",
+      "homepage": "https://environment.data.gov.uk/flood-monitoring/doc/reference",
+      "resource_url": "https://environment.data.gov.uk/flood-monitoring/id/measures",
+      "terms_url": "https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/",
+      "access_mode": "live-http-via-ovdb",
+      "retention": "none",
+      "activation_blockers": [
+        "No admitted execution route exists. The gateway is proposed only; actual GET/CORS, required headers, rate/cost limits, redirect/DNS allowlists and finite row/byte/time budgets remain unverified.",
+        "Canonical source definition, bounded decoder, missing/null/multiplicity policy and source-qualified ModelSpec/MeaningGraph bindings need separate acceptance. No semantic join or model binding is claimed.",
+        "Exact intended-use rights and notices remain admission gates. A provider licence grant does not grant this workflow authorization to fetch, copy, snapshot or retain source data or results. This task authorizes documentation and registry metadata only. Future transient RAM/current display and no-store enforcement across owned/intermediary sinks remain unproved.",
+        "Retained paging/history/export/download/fixtures/replay and data-bearing logs are not authorized. Current shape, native context, response completeness and freshness require separately authorized evidence.",
+        "Nested latestReading and non-string period, station/unit resources are excluded. No observation/value model or station join accepted."
+      ],
+      "notices": [
+        "Documentation: https://environment.data.gov.uk/flood-monitoring/doc/reference#measures. Proposed inventory is relative to items[].",
+        "Publisher documents OGL attribution: this uses Environment Agency flood and river level data from the real-time data API (Beta). No registration required; service-level guarantee absent.",
+        "Read-only documentation research on 2026-10-06; no source payload requested, no copies/snapshots or query service. No registry binding accepted."
+      ],
+      "recordsets": [
+        {
+          "name": "MonitoringMeasure",
+          "description": "Proposed partial native-string inventory only; current response shape is unverified and the full enclosing response is not modeled.",
+          "fields": [
+            {
+              "name": "notation",
+              "type": "string",
+              "description": "Source notation preserved without normalization."
+            },
+            {
+              "name": "parameter",
+              "type": "string",
+              "description": "Native parameter token; vocabulary unaccepted."
+            },
+            {
+              "name": "qualifier",
+              "type": "string",
+              "description": "Native qualifier; datum context unaccepted."
+            }
+          ]
+        }
+      ],
+      "maintainers": [
+        "trakhimenok"
+      ]
+    },
+    {
+      "id": "ea-monitoring-stations",
+      "format": "ovdb-source/draft-1",
+      "title": "Environment Agency monitoring station metadata",
+      "description": "Inactive proposed station-reference subset. No measurements or geographic join accepted.",
+      "status": "inactive",
+      "publisher": "Environment Agency",
+      "homepage": "https://environment.data.gov.uk/flood-monitoring/doc/reference",
+      "resource_url": "https://environment.data.gov.uk/flood-monitoring/id/stations",
+      "terms_url": "https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/",
+      "access_mode": "live-http-via-ovdb",
+      "retention": "none",
+      "activation_blockers": [
+        "No admitted execution route exists. The gateway is proposed only; actual GET/CORS, required headers, rate/cost limits, redirect/DNS allowlists and finite row/byte/time budgets remain unverified.",
+        "Canonical source definition, bounded decoder, missing/null/multiplicity policy and source-qualified ModelSpec/MeaningGraph bindings need separate acceptance. No semantic join or model binding is claimed.",
+        "Exact intended-use rights and notices remain admission gates. A provider licence grant does not grant this workflow authorization to fetch, copy, snapshot or retain source data or results. This task authorizes documentation and registry metadata only. Future transient RAM/current display and no-store enforcement across owned/intermediary sinks remain unproved.",
+        "Retained paging/history/export/download/fixtures/replay and data-bearing logs are not authorized. Current shape, native context, response completeness and freshness require separately authorized evidence.",
+        "Nested measures/readings, @id URI and numeric coordinates are excluded. No stationReference/RLOI/wiski equivalence is accepted."
+      ],
+      "notices": [
+        "Documentation: https://environment.data.gov.uk/flood-monitoring/doc/reference#stations. Proposed inventory is relative to items[].",
+        "Publisher documents OGL attribution: this uses Environment Agency flood and river level data from the real-time data API (Beta). No registration required; service-level guarantee absent.",
+        "Read-only documentation research on 2026-10-06; no source payload requested, no copies/snapshots or query service. No registry binding accepted."
+      ],
+      "recordsets": [
+        {
+          "name": "MonitoringStation",
+          "description": "Proposed partial native-string inventory only; current response shape is unverified and the full enclosing response is not modeled.",
+          "fields": [
+            {
+              "name": "notation",
+              "type": "string",
+              "description": "Source notation; preserve original spelling."
+            },
+            {
+              "name": "stationReference",
+              "type": "string",
+              "description": "Telemetry-feed reference; no global identifier equivalence."
+            }
+          ]
+        }
+      ],
+      "maintainers": [
+        "trakhimenok"
+      ]
+    },
+    {
+      "id": "ecb-daily",
+      "format": "ovdb-source/draft-1",
+      "title": "ECB euro foreign exchange reference rates",
+      "description": "Preparatory discovery of the original ECB daily XML resource for a bounded live read through OVDB. The returned publication contains one reference date and quote currencies against EUR; this entry does not activate queries.",
+      "status": "inactive",
+      "publisher": "European Central Bank (ECB)",
+      "homepage": "https://www.ecb.europa.eu/stats/policy_and_exchange_rates/euro_reference_exchange_rates/html/index.en.html",
+      "resource_url": "https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml",
+      "terms_url": "https://www.ecb.europa.eu/services/using-our-site/disclaimer/html/index.en.html",
+      "access_mode": "live-http-via-ovdb",
+      "retention": "none",
+      "activation_blockers": [
+        "B1: Final definition, native-to-model binding and dynamic publisher admission need exact-artifact acceptance.",
+        "B2: Captured source rights/read evidence and enforcement of no retention across the complete execution path remain unproved.",
+        "B3: Public browser inspection/query journeys with notices, dates and teardown remain unproved.",
+        "B4: Paid applicability and any before-payment notices, or an enforced free-only route, remain unresolved."
+      ],
+      "notices": [
+        "Source: European Central Bank (ECB).",
+        "The original ECB rates are available free of charge from the ECB website.",
+        "ECB reference rates are indicative and provided for information. The ECB discourages their use for transactions.",
+        "ECB reuse conditions apply. This metadata entry grants no redistribution, retained-copy or commercial entitlement."
+      ],
+      "recordsets": [
+        {
+          "name": "FxReferenceQuote",
+          "description": "Proposed native recordset: one quoted currency on one returned reference date. Semantic grain is (time, currency), not an immutable revision or a stable point-read address. A currency-only transport locator is scoped to one transient response. EUR is explicit base context, not an invented source row. Historical lookup, transaction execution, daily-average/closing-price meanings, conversions and federation are not admitted.",
+          "fields": [
+            {
+              "name": "time",
+              "type": "string",
+              "description": "Native reference date label in YYYY-MM-DD form; not a publication instant or fetch timestamp."
+            },
+            {
+              "name": "currency",
+              "type": "string",
+              "description": "Native uppercase quoted currency code; no country, territory or transaction-currency inference."
+            },
+            {
+              "name": "rate",
+              "type": "string",
+              "description": "Native positive decimal lexical string: quote-currency units per one EUR. Preserve all digits and trailing zeros; no binary-float normalization."
+            }
+          ]
+        }
+      ],
+      "maintainers": [
+        "trakhimenok"
+      ],
+      "modelspec_url": "https://modelspec.org/registry/models/ecb-daily/",
+      "meaninggraph_url": "https://meaninggraph.io/graphs/ecb-daily/"
+    },
+    {
+      "id": "fsa-establishment-metadata",
+      "format": "ovdb-source/draft-1",
+      "title": "FSA establishment metadata for hygiene ratings",
+      "description": "Inactive documented establishment string subset for possible premise lookup. Rating values, images and postcode/entity joins are outside this scope.",
+      "status": "inactive",
+      "publisher": "Food Standards Agency",
+      "homepage": "https://ratings.food.gov.uk/open-data",
+      "resource_url": "https://api.ratings.food.gov.uk/Establishments",
+      "terms_url": "https://ratings.food.gov.uk/terms-and-conditions",
+      "access_mode": "live-http-via-ovdb",
+      "retention": "none",
+      "activation_blockers": [
+        "No admitted execution route exists. The gateway is proposed only; actual GET/CORS, required headers, rate/cost limits, redirect/DNS allowlists and finite row/byte/time budgets remain unverified.",
+        "Canonical source definition, bounded decoder, missing/null/multiplicity policy and source-qualified ModelSpec/MeaningGraph bindings need separate acceptance. No semantic join or model binding is claimed.",
+        "Exact intended-use rights and notices remain admission gates. A provider licence grant does not grant this workflow authorization to fetch, copy, snapshot or retain source data or results. This task authorizes documentation and registry metadata only. Future transient RAM/current display and no-store enforcement across owned/intermediary sinks remain unproved.",
+        "Retained paging/history/export/download/fixtures/replay and data-bearing logs are not authorized. Current shape, native context, response completeness and freshness require separately authorized evidence.",
+        "Header/version, bounded per-query paging and null/missing field behavior must be accepted before execution. Current browser preflight/CORS is unverified.",
+        "Inspection context differs across FHRS/FHIS. No current-risk/safety score, site-to-business equivalence or enduring ID join accepted."
+      ],
+      "notices": [
+        "Official API help documents free access without registration/API keys and requires x-api-version: 2. Documentation is https://api.ratings.food.gov.uk/help. Header cannot be encoded by this browse record; no runnable source definition is claimed.",
+        "Proposed inventory follows the synthetic documentation example (the generated page labels it Request body formats, not an observed response or authoritative current response schema) under establishments[], not an XML-to-JSON schema equivalence: https://api.ratings.food.gov.uk/Help/Api/GET-Establishments_name_address_longitude_latitude_maxDistanceLimit_businessTypeId_schemeTypeKey_ratingKey_ratingOperatorKey_localAuthorityId_countryId_sortOptionKey_pageNumber_pageSize.",
+        "FSA terms put ratings information/services under OGL; branding/images have separate requirements. Use text-only attribution; no FSA logo/rating badge or endorsement.",
+        "FHRSID is numeric in the synthetic JSON documentation example and excluded from this string-only subset. All rating fields and imagery, nested scores/geocode, and full address fields are outside this proposed inventory.",
+        "Official best practices require flow control; undocumented changing throttles can yield403/429. Pages above200 incur extra rate limits; API need not return a complete national listing.",
+        "Read-only documentation research on 2026-10-06; no source payload requested, no copies/snapshots or query service. No registry binding accepted.",
+        "FSA conditions require current or explicitly dated rating information if ratings are ever displayed. This partial metadata listing contains no rating values or imagery and does not accept that future display workflow."
+      ],
+      "recordsets": [
+        {
+          "name": "EstablishmentMetadata",
+          "description": "Proposed partial native-string inventory only; current response shape is unverified and the full enclosing response is not modeled.",
+          "fields": [
+            {
+              "name": "BusinessName",
+              "type": "string",
+              "description": "Native descriptive name; not a unique identity key."
+            },
+            {
+              "name": "PostCode",
+              "type": "string",
+              "description": "Native postcode text; missing/private-address policy unaccepted."
+            },
+            {
+              "name": "LocalAuthorityBusinessID",
+              "type": "string",
+              "description": "Authority-local reference; reused identifiers do not prove persistent business identity."
+            },
+            {
+              "name": "LocalAuthorityCode",
+              "type": "string",
+              "description": "Source authority code; no external government-code equivalence."
+            }
+          ]
+        }
+      ],
+      "maintainers": [
+        "trakhimenok"
+      ]
+    },
+    {
+      "id": "geonames-admin1",
+      "format": "ovdb-source/draft-1",
+      "title": "GeoNames first administrative divisions",
+      "description": "Inactive W1 discovery for d1-geo-admin1. The original admin1CodesASCII extract documents first-level administrative display names and keys; accepted scoped source relationships do not activate joins.",
+      "status": "inactive",
+      "publisher": "GeoNames",
+      "homepage": "https://www.geonames.org/export/",
+      "resource_url": "https://download.geonames.org/export/dump/admin1CodesASCII.txt",
+      "terms_url": "https://download.geonames.org/export/dump/readme.txt",
+      "access_mode": "live-http-via-ovdb",
+      "retention": "none",
+      "activation_blockers": [
+        "Copied-provider activation is frozen. A working bounded original-resource route or specific user retention authorization is required; existing copies remain inactive and preserved.",
+        "No admitted execution gateway exists. The access_mode names a proposed OVDB Go proxy route only; direct-browser CORS/authentication, exact resource reads, redirect/DNS allowlists and row/byte/time budgets remain unverified.",
+        "Canonical source definition, decoder, ModelSpec and MeaningGraph artifacts and exact native-field bindings require separate acceptance. Related registered projection metadata is linked for browsing only; no accepted original-resource mappings are asserted here.",
+        "Rights for the exact returned material and intended use, attribution/change notices, full W1 reference closure and missing-reference behavior remain admission gates.",
+        "Transient RAM/current-display execution and no-store enforcement across browser, OVDB, adapter, edge and intermediary sinks remain unproved. Retained paging, histories, exports, fixtures, replay caches and data-bearing logs are not authorized.",
+        "The documented extract is not a keyed query API. Economical bounded original-resource access without retained indexes, archives or fallback copies is unresolved. GeoNames webservices are a distinct unadmitted alternative requiring a username and service-credit review."
+      ],
+      "notices": [
+        "Source: GeoNames, https://www.geonames.org/. Documentation and resource listing checked on 2026-10-06; no source data was read or retained for this entry.",
+        "The extract README states CC BY 4.0: https://creativecommons.org/licenses/by/4.0/. Credit GeoNames, link the licence and indicate changes. Commercial reuse is permitted under those conditions; no warranty of accuracy, timeliness or completeness is given.",
+        "Provider licence permission does not grant the user authorization required for source or result retention. This entry authorizes no download, import, refresh, snapshot or copied-provider activation.",
+        "GeoNames documents daily extracts. These are mutable original resources; listing dates and cadence do not establish row observation dates, historical geography or guaranteed freshness."
+      ],
+      "recordsets": [
+        {
+          "name": "Admin1Code",
+          "description": "Partial proposed metadata for the documented administrative code/name/geonameid columns. Code namespaces require country context; these codes must not be globally equated with ISO subdivisions. The exact code parser, native bindings and missing-reference behavior remain unaccepted.",
+          "fields": [
+            {
+              "name": "code",
+              "type": "string",
+              "description": "Native combined administrative key; exact decomposition and namespace acceptance pending."
+            },
+            {
+              "name": "name",
+              "type": "string",
+              "description": "Documented administrative display name."
+            },
+            {
+              "name": "geonameid",
+              "type": "string",
+              "description": "Lexical GeoNames feature identifier; closure against the place resource remains unverified."
+            }
+          ]
+        }
+      ],
+      "maintainers": [
+        "trakhimenok"
+      ],
+      "modelspec_url": "https://modelspec.org/registry/models/geonames/",
+      "meaninggraph_url": "https://meaninggraph.io/graphs/geonames/"
+    },
+    {
+      "id": "geonames-alternates",
+      "format": "ovdb-source/draft-1",
+      "title": "GeoNames alternate names",
+      "description": "Inactive W1 discovery for d1-geo-alternates. The documented alternateNamesV2 archive carries source-qualified aliases and intervals. No universal label matching, geocoding or language equivalence is established.",
+      "status": "inactive",
+      "publisher": "GeoNames",
+      "homepage": "https://www.geonames.org/export/",
+      "resource_url": "https://download.geonames.org/export/dump/alternateNamesV2.zip",
+      "terms_url": "https://download.geonames.org/export/dump/readme.txt",
+      "access_mode": "live-http-via-ovdb",
+      "retention": "none",
+      "activation_blockers": [
+        "Copied-provider activation is frozen. A working bounded original-resource route or specific user retention authorization is required; existing copies remain inactive and preserved.",
+        "No admitted execution gateway exists. The access_mode names a proposed OVDB Go proxy route only; direct-browser CORS/authentication, exact resource reads, redirect/DNS allowlists and row/byte/time budgets remain unverified.",
+        "Canonical source definition, decoder, ModelSpec and MeaningGraph artifacts and exact native-field bindings require separate acceptance. Related registered projection metadata is linked for browsing only; no accepted original-resource mappings are asserted here.",
+        "Rights for the exact returned material and intended use, attribution/change notices, full W1 reference closure and missing-reference behavior remain admission gates.",
+        "Transient RAM/current-display execution and no-store enforcement across browser, OVDB, adapter, edge and intermediary sinks remain unproved. Retained paging, histories, exports, fixtures, replay caches and data-bearing logs are not authorized.",
+        "The documented extract is not a keyed query API. Economical bounded original-resource access without retained indexes, archives or fallback copies is unresolved. GeoNames webservices are a distinct unadmitted alternative requiring a username and service-credit review."
+      ],
+      "notices": [
+        "Source: GeoNames, https://www.geonames.org/. Documentation and resource listing checked on 2026-10-06; no source data was read or retained for this entry.",
+        "The extract README states CC BY 4.0: https://creativecommons.org/licenses/by/4.0/. Credit GeoNames, link the licence and indicate changes. Commercial reuse is permitted under those conditions; no warranty of accuracy, timeliness or completeness is given.",
+        "Provider licence permission does not grant the user authorization required for source or result retention. This entry authorizes no download, import, refresh, snapshot or copied-provider activation.",
+        "GeoNames documents daily extracts. These are mutable original resources; listing dates and cadence do not establish row observation dates, historical geography or guaranteed freshness."
+      ],
+      "recordsets": [
+        {
+          "name": "AlternateName",
+          "description": "Partial proposed metadata from the alternate-name documentation. Source flags and interval interpretation need accepted bindings. The isolanguage column also contains non-language categories such as links or identifier codes; it must not be collapsed into a language meaning. Names may have many variants per feature.",
+          "fields": [
+            {
+              "name": "alternateNameId",
+              "type": "string",
+              "description": "Lexical identifier for an alternate-name row."
+            },
+            {
+              "name": "geonameid",
+              "type": "string",
+              "description": "Referenced GeoNames feature identifier; missing references must stay visible."
+            },
+            {
+              "name": "isolanguage",
+              "type": "string",
+              "description": "Source-qualified language or special category code, not a universally accepted language identifier."
+            },
+            {
+              "name": "from",
+              "type": "string",
+              "description": "Native interval label; exact date/period semantics remain pending."
+            },
+            {
+              "name": "to",
+              "type": "string",
+              "description": "Native interval label; null/open-bound interpretation remains pending."
+            }
+          ]
+        }
+      ],
+      "maintainers": [
+        "trakhimenok"
+      ],
+      "modelspec_url": "https://modelspec.org/registry/models/geonames/",
+      "meaninggraph_url": "https://meaninggraph.io/graphs/geonames/"
+    },
+    {
+      "id": "geonames-countries",
+      "format": "ovdb-source/draft-1",
+      "title": "GeoNames country references",
+      "description": "Inactive W1 discovery for d1-geo-countries. The original countryInfo extract is a candidate country lookup foundation; exact decoder, keys, semantics and bounded access remain unaccepted.",
+      "status": "inactive",
+      "publisher": "GeoNames",
+      "homepage": "https://www.geonames.org/export/",
+      "resource_url": "https://download.geonames.org/export/dump/countryInfo.txt",
+      "terms_url": "https://download.geonames.org/export/dump/readme.txt",
+      "access_mode": "live-http-via-ovdb",
+      "retention": "none",
+      "activation_blockers": [
+        "Copied-provider activation is frozen. A working bounded original-resource route or specific user retention authorization is required; existing copies remain inactive and preserved.",
+        "No admitted execution gateway exists. The access_mode names a proposed OVDB Go proxy route only; direct-browser CORS/authentication, exact resource reads, redirect/DNS allowlists and row/byte/time budgets remain unverified.",
+        "Canonical source definition, decoder, ModelSpec and MeaningGraph artifacts and exact native-field bindings require separate acceptance. Related registered projection metadata is linked for browsing only; no accepted original-resource mappings are asserted here.",
+        "Rights for the exact returned material and intended use, attribution/change notices, full W1 reference closure and missing-reference behavior remain admission gates.",
+        "Transient RAM/current-display execution and no-store enforcement across browser, OVDB, adapter, edge and intermediary sinks remain unproved. Retained paging, histories, exports, fixtures, replay caches and data-bearing logs are not authorized.",
+        "The documented extract is not a keyed query API. Economical bounded original-resource access without retained indexes, archives or fallback copies is unresolved. GeoNames webservices are a distinct unadmitted alternative requiring a username and service-credit review."
+      ],
+      "notices": [
+        "Source: GeoNames, https://www.geonames.org/. Documentation and resource listing checked on 2026-10-06; no source data was read or retained for this entry.",
+        "The extract README states CC BY 4.0: https://creativecommons.org/licenses/by/4.0/. Credit GeoNames, link the licence and indicate changes. Commercial reuse is permitted under those conditions; no warranty of accuracy, timeliness or completeness is given.",
+        "Provider licence permission does not grant the user authorization required for source or result retention. This entry authorizes no download, import, refresh, snapshot or copied-provider activation.",
+        "GeoNames documents daily extracts. These are mutable original resources; listing dates and cadence do not establish row observation dates, historical geography or guaranteed freshness."
+      ],
+      "recordsets": [
+        {
+          "name": "CountryInfo",
+          "description": "Partial proposed metadata for the countryInfo tab-delimited extract. Field labels follow retained research and require exact-column verification before binding; this is not a complete accepted schema. Country, territory and sovereign-state identity must remain distinct. Undated population and currency/language context do not establish dated observations or transaction currencies.",
+          "fields": [
+            {
+              "name": "ISO",
+              "type": "string",
+              "description": "Proposed lexical ISO alpha-2 country label; exact native-column binding and coverage remain pending."
+            },
+            {
+              "name": "Country",
+              "type": "string",
+              "description": "Proposed country display label; a name is not a globally unique identity or a universal user-text join."
+            },
+            {
+              "name": "geonameid",
+              "type": "string",
+              "description": "Proposed lexical GeoNames identifier for the country feature; no current row or referential closure has been read."
+            }
+          ]
+        }
+      ],
+      "maintainers": [
+        "trakhimenok"
+      ],
+      "modelspec_url": "https://modelspec.org/registry/models/geonames/",
+      "meaninggraph_url": "https://meaninggraph.io/graphs/geonames/"
+    },
+    {
+      "id": "geonames-places",
+      "format": "ovdb-source/draft-1",
+      "title": "GeoNames places and geographic features",
+      "description": "Inactive W1 discovery for d1-geo-places. allCountries is the documented worldwide feature extract, not an admitted city-only service or completed ROR location closure.",
+      "status": "inactive",
+      "publisher": "GeoNames",
+      "homepage": "https://www.geonames.org/export/",
+      "resource_url": "https://download.geonames.org/export/dump/allCountries.zip",
+      "terms_url": "https://download.geonames.org/export/dump/readme.txt",
+      "access_mode": "live-http-via-ovdb",
+      "retention": "none",
+      "activation_blockers": [
+        "Copied-provider activation is frozen. A working bounded original-resource route or specific user retention authorization is required; existing copies remain inactive and preserved.",
+        "No admitted execution gateway exists. The access_mode names a proposed OVDB Go proxy route only; direct-browser CORS/authentication, exact resource reads, redirect/DNS allowlists and row/byte/time budgets remain unverified.",
+        "Canonical source definition, decoder, ModelSpec and MeaningGraph artifacts and exact native-field bindings require separate acceptance. Related registered projection metadata is linked for browsing only; no accepted original-resource mappings are asserted here.",
+        "Rights for the exact returned material and intended use, attribution/change notices, full W1 reference closure and missing-reference behavior remain admission gates.",
+        "Transient RAM/current-display execution and no-store enforcement across browser, OVDB, adapter, edge and intermediary sinks remain unproved. Retained paging, histories, exports, fixtures, replay caches and data-bearing logs are not authorized.",
+        "The documented extract is not a keyed query API. Economical bounded original-resource access without retained indexes, archives or fallback copies is unresolved. GeoNames webservices are a distinct unadmitted alternative requiring a username and service-credit review."
+      ],
+      "notices": [
+        "Source: GeoNames, https://www.geonames.org/. Documentation and resource listing checked on 2026-10-06; no source data was read or retained for this entry.",
+        "The extract README states CC BY 4.0: https://creativecommons.org/licenses/by/4.0/. Credit GeoNames, link the licence and indicate changes. Commercial reuse is permitted under those conditions; no warranty of accuracy, timeliness or completeness is given.",
+        "Provider licence permission does not grant the user authorization required for source or result retention. This entry authorizes no download, import, refresh, snapshot or copied-provider activation.",
+        "GeoNames documents daily extracts. These are mutable original resources; listing dates and cadence do not establish row observation dates, historical geography or guaranteed freshness."
+      ],
+      "recordsets": [
+        {
+          "name": "Geoname",
+          "description": "Partial proposed string-column metadata from the GeoNames gazetteer documentation. All feature classes remain source-specific; place must not be silently equated with city. Authored underscore labels below describe documented columns and are not validated native-to-model bindings.",
+          "fields": [
+            {
+              "name": "geonameid",
+              "type": "string",
+              "description": "Lexical identifier of a geographic feature."
+            },
+            {
+              "name": "name",
+              "type": "string",
+              "description": "Native geographic-point display name."
+            },
+            {
+              "name": "country_code",
+              "type": "string",
+              "description": "Authored label for the documented two-letter country code column; exact binding pending."
+            },
+            {
+              "name": "admin1_code",
+              "type": "string",
+              "description": "Authored label for the documented first administrative code; code system is source-specific and may differ by country."
+            }
+          ]
+        }
+      ],
+      "maintainers": [
+        "trakhimenok"
+      ],
+      "modelspec_url": "https://modelspec.org/registry/models/geonames/",
+      "meaninggraph_url": "https://meaninggraph.io/graphs/geonames/"
+    },
+    {
+      "id": "gleif-lei-entities",
+      "format": "ovdb-source/draft-1",
+      "title": "GLEIF LEI entity identifiers",
+      "description": "Inactive W2 discovery for d1-lei-entities. This limited JSON API subset describes only the native lowercase lei string within each data[].attributes object; no entity lookup or relationship query is activated.",
+      "status": "inactive",
+      "publisher": "Global Legal Entity Identifier Foundation (GLEIF)",
+      "homepage": "https://www.gleif.org/en/lei-data/gleif-api",
+      "resource_url": "https://api.gleif.org/api/v1/lei-records",
+      "terms_url": "https://www.gleif.org/en/meta/lei-data-terms-of-use",
+      "access_mode": "live-http-via-ovdb",
+      "retention": "none",
+      "activation_blockers": [
+        "No admitted execution gateway exists. The access_mode names a proposed OVDB Go proxy route only; CORS/authentication, supported API access, redirect/DNS allowlists, exact resource reads and row/byte/time budgets remain unverified.",
+        "Canonical source definition, decoder and source-qualified model/meaning bindings require separate acceptance. This entry has no registered semantic artifacts; it does not model the complete JSON entity or either XML CDF representation.",
+        "Rights for the exact returned material and intended use, supported Access Service restrictions and source/changes/no-affiliation notices remain admission gates.",
+        "Transient RAM/current-display execution and no-store enforcement across browser, OVDB, adapter, edge and intermediary sinks remain unproved. Retained paging, histories, exports, fixtures, replay caches and data-bearing logs are not authorized.",
+        "The base list is a documented discovery locator, not an exact-LEI lookup, a reproducible revision, a currentness guarantee or proof of full-registry access. List defaults/pagination and native nested entity values, numeric/null fields and response envelope remain unmodelled.",
+        "LEI relationship and reporting-exception CDF candidates remain backlog. Their exact archive identities, extraction paths, grain and accounting-consolidation semantics need separate review; no ROR/LEI or local-demo-ID equivalence is accepted."
+      ],
+      "notices": [
+        "Source: GLEIF. Documentation and terms checked on 2026-10-06; no LEI API rows, relationship records, exceptions or archives were fetched or retained.",
+        "GLEIF terms describe LEI and LEI reference data from its supported Access Service under CC0 1.0. Technical restrictions and no misleading GLEIF affiliation apply; separate mapping-file and trademark/logo rights are not included.",
+        "API documentation: https://api.gleif.org/docs (linked by GLEIF). The proposed extraction is data[].attributes.lei, relative native field lei. Lowercase JSON lei is distinct from uppercase XML CDF LEI; neither representation is admitted by this listing.",
+        "No names or local identifiers from demo databases resolve to legal entities here. LEI registration is not a claim of complete business coverage, beneficial ownership, creditworthiness, affiliation or historical identity."
+      ],
+      "recordsets": [
+        {
+          "name": "LeiEntity",
+          "description": "Partial proposed native string subset only: lei relative to each data[].attributes object. The full entity object, links, envelope, pagination, nested fields and relationships remain unmodelled and unaccepted.",
+          "fields": [
+            {
+              "name": "lei",
+              "type": "string",
+              "description": "Documented lowercase JSON identifier at data[].attributes.lei; preserve the original string and namespace. No global name resolution, XML-CDF binding or user-field compatibility is asserted."
+            }
+          ]
+        }
+      ],
+      "maintainers": [
+        "trakhimenok"
+      ]
+    },
+    {
+      "id": "govuk-bank-holidays",
+      "format": "ovdb-source/draft-1",
+      "title": "GOV.UK division-scoped bank holidays",
+      "description": "Inactive W3 discovery for d1-govuk-holidays. Native division and event strings retain their separate extraction roots; this metadata does not provide a complete calendar or business-closure test.",
+      "status": "inactive",
+      "publisher": "Government Digital Service (GOV.UK)",
+      "homepage": "https://www.api.gov.uk/gds/bank-holidays/",
+      "resource_url": "https://www.gov.uk/bank-holidays.json",
+      "terms_url": "https://www.gov.uk/help/reuse-govuk-content",
+      "access_mode": "live-http-via-ovdb",
+      "retention": "none",
+      "activation_blockers": [
+        "No admitted execution route exists. live-http-via-ovdb names a proposed gateway; actual GET/CORS/authentication/rate limits, redirect/DNS/resource allowlists and row/byte/time budgets remain unverified.",
+        "Canonical source definition, bounded decoder and source-qualified ModelSpec/MeaningGraph bindings require separate acceptance. This partial native-string subset does not model the complete source response, context or grammar.",
+        "Rights for the exact returned material and intended use and required notices remain admission gates. Licence permission never authorizes source snapshots or result retention in this programme.",
+        "Transient RAM/current-display execution and no-store enforcement across browser, adapter, OVDB, edge and intermediary sinks remain unproved. Retained paging/history/export/download/fixtures/replay and data-bearing logs are not authorized.",
+        "Exact execution observation metadata, native context, null/missing/multiplicity policy and freshness remain unverified. Resource HEAD and authored metadata pins do not establish current rows or future response bytes.",
+        "The decoder must preserve parent division context and admit event multiplicity and date parsing. Boolean bunting and any derived flattened division field remain unmodelled.",
+        "Earlier ledger coverage 2019-2028 is historical evidence only; current coverage was not read. Northwind/Pubs historical compatibility and any Chinook jurisdiction context remain unaccepted."
+      ],
+      "notices": [
+        "Metadata/documentation and endpoint HEAD checked 2026-10-06. No source dataset payload was requested or retained; no query service is activated.",
+        "GOV.UK content reuse links Open Government Licence 3.0: preserve applicable attribution/licence link, exceptions and no endorsement. The endpoint is documented at https://www.api.gov.uk/gds/bank-holidays/.",
+        "The ledger d1-mapping-holiday accepts a division-scoped bank-holiday event only. Proposed parent/event field inventory reflects dated evidence d1-govuk at hub 95a41f656040694d31c3b118cd8f220126931cf5; exact current returned structure has not been read or accepted.",
+        "W3 selection records five inactive source opportunities only. NVD remains deferred pending authoritative current terms; all unselected candidate IDs and original dispositions remain in datatug/datatug spec/research/public-data-fabric. No source reads, canonical binding admission or DataTug UI change is authorized by this entry."
+      ],
+      "recordsets": [
+        {
+          "name": "HolidayDivision",
+          "description": "Partial native string at each top-level division object. Parent division context is not a native scalar field within its events[] children.",
+          "fields": [
+            {
+              "name": "division",
+              "type": "string",
+              "description": "Native division identifier string on the enclosing object; preserve source namespace and do not infer a division from UK country labels."
+            }
+          ]
+        },
+        {
+          "name": "HolidayEvent",
+          "description": "Partial native strings relative to events[] within a division object. Event meaning requires parent division context; no flattened division field or accepted relationship binding is created.",
+          "fields": [
+            {
+              "name": "title",
+              "type": "string",
+              "description": "Native event title string. It is not a universal or unique event identifier."
+            },
+            {
+              "name": "date",
+              "type": "string",
+              "description": "Native event date string. Parse policy and division-qualified grain need admission; do not infer instant/timezone semantics."
+            },
+            {
+              "name": "notes",
+              "type": "string",
+              "description": "Native notes string, including empty strings. No legal obligation or closure inference."
+            }
+          ]
+        }
+      ],
+      "maintainers": [
+        "trakhimenok"
+      ]
+    },
+    {
+      "id": "iana-application-media-types",
+      "format": "ovdb-source/draft-1",
+      "title": "IANA application media registrations",
+      "description": "Inactive W3 discovery for d2-rs-iana-media. Partial native CSV strings describe application-family registrations; no derived full media token, file-codec match or content inspection is accepted.",
+      "status": "inactive",
+      "publisher": "Internet Assigned Numbers Authority (IANA)",
+      "homepage": "https://www.iana.org/assignments/media-types/",
+      "resource_url": "https://www.iana.org/assignments/media-types/application.csv",
+      "terms_url": "https://www.iana.org/help/licensing-terms",
+      "access_mode": "live-http-via-ovdb",
+      "retention": "none",
+      "activation_blockers": [
+        "No admitted execution route exists. live-http-via-ovdb names a proposed gateway; actual GET/CORS/authentication/rate limits, redirect/DNS/resource allowlists and row/byte/time budgets remain unverified.",
+        "Canonical source definition, bounded decoder and source-qualified ModelSpec/MeaningGraph bindings require separate acceptance. This partial native-string subset does not model the complete source response, context or grammar.",
+        "Rights for the exact returned material and intended use and required notices remain admission gates. Licence permission never authorizes source snapshots or result retention in this programme.",
+        "Transient RAM/current-display execution and no-store enforcement across browser, adapter, OVDB, edge and intermediary sinks remain unproved. Retained paging/history/export/download/fixtures/replay and data-bearing logs are not authorized.",
+        "Exact execution observation metadata, native context, null/missing/multiplicity policy and freshness remain unverified. Resource HEAD and authored metadata pins do not establish current rows or future response bytes.",
+        "d2-map-iana-media remains unresolved. Prove template completeness/missing-row policy and type/subtype/parameter normalization before matching; registration is not proof of actual file content or Chinook codec."
+      ],
+      "notices": [
+        "Metadata/documentation and endpoint HEAD checked 2026-10-06. No source dataset payload was requested or retained; no query service is activated.",
+        "IANA/IETF CC0 statement covers applicable protocol-registry rights and excludes linked RFC text/other material. No trademark/patent/third-party guarantee follows.",
+        "Proposed CSV header names are recorded in dated candidate d2-rs-iana-media, supported by evidence d2-e-iana, at hub 95a41f656040694d31c3b118cd8f220126931cf5. Current HEAD confirms a CSV resource, not current headers/rows or browser GET access.",
+        "W3 selection records five inactive source opportunities only. NVD remains deferred pending authoritative current terms; all unselected candidate IDs and original dispositions remain in datatug/datatug spec/research/public-data-fabric. No source reads, canonical binding admission or DataTug UI change is authorized by this entry."
+      ],
+      "recordsets": [
+        {
+          "name": "ApplicationMediaRegistryRow",
+          "description": "Native CSV subset for the application family. No complete multi-family media registry, parsed MIME parameters or full-token projection is admitted.",
+          "fields": [
+            {
+              "name": "Name",
+              "type": "string",
+              "description": "Native application-family registration/subtype text string. Preserve obsolete/deprecated qualifiers; no unique clean token assertion."
+            },
+            {
+              "name": "Template",
+              "type": "string",
+              "description": "Native template string. Missing/template completeness and canonical full type/subtype need separate review; do not invent a derived media_type field."
+            },
+            {
+              "name": "Reference",
+              "type": "string",
+              "description": "Native CSV reference text only. Linked documents have separate rights; do not follow links for source content implicitly."
+            }
+          ]
+        }
+      ],
+      "maintainers": [
+        "trakhimenok"
+      ]
+    },
+    {
+      "id": "iana-http-status-codes",
+      "format": "ovdb-source/draft-1",
+      "title": "IANA HTTP status registry rows",
+      "description": "Inactive W3 discovery for d2-rs-iana-http. Partial CSV native strings include status values and ranges; this listing does not accept a scalar-code meaning or log-enrichment query.",
+      "status": "inactive",
+      "publisher": "Internet Assigned Numbers Authority (IANA)",
+      "homepage": "https://www.iana.org/assignments/http-status-codes/",
+      "resource_url": "https://www.iana.org/assignments/http-status-codes/http-status-codes-1.csv",
+      "terms_url": "https://www.iana.org/help/licensing-terms",
+      "access_mode": "live-http-via-ovdb",
+      "retention": "none",
+      "activation_blockers": [
+        "No admitted execution route exists. live-http-via-ovdb names a proposed gateway; actual GET/CORS/authentication/rate limits, redirect/DNS/resource allowlists and row/byte/time budgets remain unverified.",
+        "Canonical source definition, bounded decoder and source-qualified ModelSpec/MeaningGraph bindings require separate acceptance. This partial native-string subset does not model the complete source response, context or grammar.",
+        "Rights for the exact returned material and intended use and required notices remain admission gates. Licence permission never authorizes source snapshots or result retention in this programme.",
+        "Transient RAM/current-display execution and no-store enforcement across browser, adapter, OVDB, edge and intermediary sinks remain unproved. Retained paging/history/export/download/fixtures/replay and data-bearing logs are not authorized.",
+        "Exact execution observation metadata, native context, null/missing/multiplicity policy and freshness remain unverified. Resource HEAD and authored metadata pins do not establish current rows or future response bytes.",
+        "d2-map-iana-status remains unresolved because Value includes ranges. Exact scalar-code projection and actual log-field binding require reconciliation."
+      ],
+      "notices": [
+        "Metadata/documentation and endpoint HEAD checked 2026-10-06. No source dataset payload was requested or retained; no query service is activated.",
+        "IANA/IETF CC0 statement covers applicable protocol-registry rights and excludes linked RFC text/other material. No trademark/patent/third-party guarantee follows.",
+        "Proposed CSV header names are recorded in dated candidate d2-rs-iana-http, supported by evidence d2-e-iana, at hub 95a41f656040694d31c3b118cd8f220126931cf5. Current HEAD confirms a CSV resource, not current headers/rows or browser GET access.",
+        "W3 selection records five inactive source opportunities only. NVD remains deferred pending authoritative current terms; all unselected candidate IDs and original dispositions remain in datatug/datatug spec/research/public-data-fabric. No source reads, canonical binding admission or DataTug UI change is authorized by this entry."
+      ],
+      "recordsets": [
+        {
+          "name": "HttpStatusRegistryRow",
+          "description": "Native CSV row subset with lexical status values/ranges. RFC-compliant CSV parsing, reserved/unassigned rows and current headers remain admission gates.",
+          "fields": [
+            {
+              "name": "Value",
+              "type": "string",
+              "description": "Native lexical CSV value, potentially a range/reserved/unassigned entry. Do not coerce every row to one integer or accept whole-column scalar semantics."
+            },
+            {
+              "name": "Description",
+              "type": "string",
+              "description": "Native CSV descriptive text; preserve assignment status and strings without treating them as observed response content."
+            },
+            {
+              "name": "Reference",
+              "type": "string",
+              "description": "Native CSV reference text only; referenced RFCs/other material are outside the registry-data rights scope and must not be fetched implicitly."
+            }
+          ]
+        }
+      ],
+      "maintainers": [
+        "trakhimenok"
+      ]
+    },
+    {
+      "id": "ror-organisations",
+      "format": "ovdb-source/draft-1",
+      "title": "ROR research organization references",
+      "description": "Inactive W1 discovery for d1-ror-organisations. The original ROR organizations API is a candidate exact-key affiliation reference with GeoNames locations; no query or ROR-to-place closure is activated.",
+      "status": "inactive",
+      "publisher": "Research Organization Registry (ROR)",
+      "homepage": "https://ror.org/",
+      "resource_url": "https://api.ror.org/v2/organizations",
+      "terms_url": "https://ror.org/about/terms/",
+      "access_mode": "live-http-via-ovdb",
+      "retention": "none",
+      "activation_blockers": [
+        "Copied-provider activation is frozen. A working bounded original-resource route or specific user retention authorization is required; existing copies remain inactive and preserved.",
+        "No admitted execution gateway exists. The access_mode names a proposed OVDB Go proxy route only; direct-browser CORS/authentication, exact resource reads, redirect/DNS allowlists and row/byte/time budgets remain unverified.",
+        "Canonical source definition, decoder, ModelSpec and MeaningGraph artifacts and exact native-field bindings require separate acceptance. Related registered projection metadata is linked for browsing only; no accepted original-resource mappings are asserted here.",
+        "Rights for the exact returned material and intended use, attribution/change notices, full W1 reference closure and missing-reference behavior remain admission gates.",
+        "Transient RAM/current-display execution and no-store enforcement across browser, OVDB, adapter, edge and intermediary sinks remain unproved. Retained paging, histories, exports, fixtures, replay caches and data-bearing logs are not authorized.",
+        "Exact API rights for embedded GeoNames locations need clarification: the current data-structure page names CC BY 3.0 while reviewed ROR data release 2.13 on Zenodo names CC BY 4.0. Preserve attribution and source-specific evidence; do not infer a blanket CC0 exemption.",
+        "The base list defaults to active records. All-status and exact-ID access, multi-location cardinality, complete references and missing/inactive/withdrawn behavior require runtime acceptance; a list or dump alone cannot prove bounded W1 closure."
+      ],
+      "notices": [
+        "Source: Research Organization Registry (ROR). Documentation checked on 2026-10-06; no organization rows or release archive were read or retained.",
+        "ROR terms provide IDs and metadata under CC0 1.0; website prose is separately CC BY 4.0. Embedded GeoNames geography requires distinct attribution and material-specific licence acceptance.",
+        "Rights discrepancy: https://ror.readme.io/docs/ror-data-structure lists GeoNames CC BY 3.0; https://zenodo.org/records/22902037 states CC BY 4.0 for location data in ROR data release 2.13. This release is rights evidence only, not the original live API resource or an admitted snapshot.",
+        "API documentation: https://ror.readme.io/docs/rest-api and https://ror.readme.io/docs/api-single. Single-ID requests can return inactive/withdrawn records; list calls default to active unless all_status is requested. API search/list limits do not establish full-registry access.",
+        "Documented API rate limit: 2000 requests per five minutes per IP. Registration requirements, CORS, response schema, availability and future changes must be revalidated before activation.",
+        "Research organization identity does not establish legal-entity identity, ROR/LEI equivalence or resolution of names and local demo IDs. Locations and relationships are native arrays and must not be flattened into false scalar fields or counted as organizations."
+      ],
+      "recordsets": [
+        {
+          "name": "Organization",
+          "description": "Partial proposed native scalar metadata only: id and status. ROR schema 2.1 documents names, locations and relationships as arrays, including locations.geonames_id and relationship id/type. Their models, multiplicity, missing references and exact field bindings are dependencies, not accepted scalar projections in this entry.",
+          "fields": [
+            {
+              "name": "id",
+              "type": "string",
+              "description": "Native full ROR identifier string; an exact namespace key rather than a fuzzy organization-name match."
+            },
+            {
+              "name": "status",
+              "type": "string",
+              "description": "Native status string: active, inactive or withdrawn. Source status is distinct from this discovery entry being inactive."
+            }
+          ]
+        }
+      ],
+      "maintainers": [
+        "trakhimenok"
+      ],
+      "modelspec_url": "https://modelspec.org/registry/models/ror/",
+      "meaninggraph_url": "https://meaninggraph.io/graphs/ror/"
+    }
+  ],
+  "sourcesChecksum": "sha256:3495119b41585f8fd7b15c1ab6d2bb0723cef6be3d370ba119bd00dc7bda706a"
 }

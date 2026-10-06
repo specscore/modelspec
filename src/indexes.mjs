@@ -375,7 +375,7 @@ export function validateDirectoryIndex(json, options = {}) {
   return { ...head, databases, sources: validateSourceDiscoveries(json.sources, json.sourcesChecksum), sourcesChecksum: json.sourcesChecksum };
 }
 
-/** Validate the inactive discovery metadata used by model pages, without reading provider data. */
+/** Validate every discovery before extracting optional model links; never read provider data. */
 export function validateSourceDiscoveries(value, checksum) {
   if (value === undefined) {
     if (checksum !== undefined) fail('sourcesChecksum', 'requires sources');
@@ -393,6 +393,9 @@ export function validateSourceDiscoveries(value, checksum) {
     if (id.length > 80) fail(`${at}.id`, 'must be at most 80 characters');
     if (source.status !== 'inactive') fail(`${at}.status`, 'must be inactive');
     if (!['ovdb-source/draft-1', 'ovdb-source/draft-2'].includes(source.format)) fail(`${at}.format`, 'must be an OVDB source discovery format');
+    if (!['live-http-via-ovdb', 'bigquery-native'].includes(source.access_mode)) fail(`${at}.access_mode`, 'must be a supported proposed access mode');
+    if (source.format === 'ovdb-source/draft-2' && (source.access_mode !== 'bigquery-native' || source.query_activation !== 'blocked')) fail(`${at}.query_activation`, 'draft-2 BigQuery queries must be blocked');
+    if (source.format === 'ovdb-source/draft-1' && source.access_mode !== 'live-http-via-ovdb') fail(`${at}.access_mode`, 'draft-1 must propose HTTP through OVDB');
     let modelId;
     if (source.modelspec_url !== undefined) {
       text(source.modelspec_url, `${at}.modelspec_url`);
@@ -401,7 +404,8 @@ export function validateSourceDiscoveries(value, checksum) {
       modelId = match[1];
     }
     return {
-      id, modelId,
+      id, modelId, format: source.format, access_mode: source.access_mode,
+      ...(source.query_activation === undefined ? {} : { query_activation: source.query_activation }),
       title: text(source.title, `${at}.title`),
       description: text(source.description, `${at}.description`),
       publisher: text(source.publisher, `${at}.publisher`),

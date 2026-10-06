@@ -284,6 +284,15 @@ Directory databases that use it. When the registry entry has the optional `homep
 the model page also links it as **Website**. Every page is static HTML and works without
 JavaScript.
 
+The homepage and Registry link to `/registry/sources/`, which lists every source
+discovery in the pinned Directory index, including records without a ModelSpec
+link. All entries are inactive; HTTP access is proposed and BigQuery queries are
+blocked. Search and access filters use the rendered metadata locally. Each card
+has a same-tab **View source in OVDB Directory** action. Declared model links use
+that registry target's title and status and do not establish native-field bindings
+or activate source access. Related discoveries on model pages remain filtered by
+explicit model ID.
+
 Requires Node.js 22 or newer.
 
 ```sh
@@ -334,16 +343,21 @@ an `index.json` on `main`, a production build fails; that is expected.
 
 Everything else is a **non-production** build:
 
-- `--use-fixture` reads `fixtures/*.fixture.json`: verbatim copies of real indexes
-  with a top-level `_fixture` marker naming where each was copied from (the ModelSpec
-  one has `homepage` added by hand to Chinook, noted in its marker).
-  `--use-fixture --fixture-set two-databases` swaps the Directory fixture for a
-  derived one in which a second database names the same model by address, and
-  `--fixture-set two-by-address` for one in which both databases do. An index carrying
-  `_fixture` is refused by every other build; fixture mode refuses an index without
-  it and any index variable. Regenerate with
-  `npm run fixtures -- --modelspec <url> --directory <url> --meaninggraph <url>` (the
-  copies were made from commit-pinned raw URLs; the checksums are verified first).
+- `--use-fixture` reads `fixtures/*.fixture.json`, marked nonproduction. The
+  supported cohort preserves the original Chinook database/model and Chinook/core
+  graphs, adds exact registered ECB/GeoNames/ROR targets from pinned upstream indexes,
+  and includes the exact 19-source Directory metadata envelope. Derived provenance
+  and selected IDs are recorded in `_fixture`; list checksums are recomputed.
+  `--use-fixture --fixture-set two-databases` adds a coherent global second-host
+  database with the same model address; `--fixture-set two-by-address` also names
+  the original database by model address. All variants keep the same source checksum.
+  An index carrying `_fixture` is refused by every other build; fixture mode refuses
+  an index without it and any index variable. Reproduce this supported cohort with
+  `npm run fixtures -- --supported-cohort`; its default upstream inputs are the
+  reviewed commit-pinned URLs in `tools/make-fixtures.mjs`. It validates all inputs
+  and both derived variants before writing. Explicit `--modelspec`, `--directory`
+  and `--meaninggraph` inputs select alternate fixture metadata and record their
+  actual input provenance.
 - Any other https index or base URL, or a local file, is also non-production.
 - A non-production build goes to its own directory and carries a red banner on every
   page, `<meta name="modelspec-build-source">` on every page and a `build-info.json`

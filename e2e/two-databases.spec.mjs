@@ -45,5 +45,5 @@ test('both databases that name the Chinook model are listed, each with its own l
 
 test('the registry page counts both databases', async ({ page }) => {
   await page.goto('/registry/');
-  await expect(page.locator('.reg-model')).toContainText('1 meaning graph, 2 databases');
+  await expect(page.locator('.reg-model').filter({ has: page.getByRole('link', { name: 'Chinook music store', exact: true }) })).toContainText('1 meaning graph, 2 databases');
 });

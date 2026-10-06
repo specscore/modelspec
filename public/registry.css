@@ -166,3 +166,15 @@
     text-transform: uppercase; color: var(--ink-faint);
   }
 }
+
+/* Discovery cards and controls wrap long metadata at phone widths. */
+.reg-source-card { min-width: 0; }
+.reg-source-card h2 { font-size: 1.3rem; min-width: 0; }
+.reg-source-card .reg-row-head > h2 { flex: 1 1 18rem; }
+.reg-source-controls { display: flex; flex-wrap: wrap; align-items: end; gap: .75rem; margin-bottom: 1rem; }
+.reg-source-controls > div { display: grid; gap: .3rem; flex: 1 1 16rem; min-width: 0; }
+.reg-source-controls label { font-weight: 600; }
+.reg-source-controls input, .reg-source-controls select, .reg-source-controls button { font: inherit; color: var(--ink); background: var(--card); border: 1px solid var(--line); border-radius: 6px; padding: .65rem; min-width: 0; width: 100%; }
+.reg-source-controls button { width: auto; cursor: pointer; }
+.reg-source-controls [hidden], .reg-source-controls[hidden], .reg-source-card[hidden] { display: none; }
+.reg a:focus-visible, .reg-source-controls :focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }

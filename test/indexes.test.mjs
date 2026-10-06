@@ -18,7 +18,7 @@ test('the committed fixtures validate and carry the fixture marker', async () =>
   assert.deepEqual(byAddress.databases.map(d => d.model.address), ['modelspec://github.com/datatug/chinookdb/chinook', 'modelspec://github.com/datatug/chinookdb/chinook']);
   assert.equal(ms.models[0].address, 'modelspec://github.com/datatug/chinookdb/chinook');
   assert.equal(ms.models[0].entities.length, 11);
-  assert.deepEqual(mg.graphs.map(g => g.id), ['chinook', 'core']);
+  assert.deepEqual(mg.graphs.map(g => g.id), ['chinook', 'core', 'ecb-daily', 'geonames', 'ror']);
   assert.equal(dir.databases.length, 1);
   assert.equal(two.databases.length, 2);
   assert.ok(ms.fixture && mg.fixture && dir.fixture && two.fixture);

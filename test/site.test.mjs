@@ -16,7 +16,7 @@ test('a build is public/ plus registry/ plus build-info.json, and the landing pa
   try {
     const data = sampleData();
     const result = await buildSite({ root, config: productionConfig(root), data });
-    assert.equal(result.pages, 3);
+    assert.equal(result.pages, 4);
     const dist = join(root, 'dist');
     assert.deepEqual((await readdir(dist)).sort(), ['.assetsignore', MANIFEST_FILE, BUILD_MARKER, 'build-info.json', 'favicon.svg', 'index.html', 'registry', 'registry.css', 'script.js', 'style.css']);
     assert.equal(await read(dist, 'index.html'), await read(root, 'public', 'index.html'));
@@ -28,7 +28,7 @@ test('a build is public/ plus registry/ plus build-info.json, and the landing pa
     const info = JSON.parse(await read(dist, 'build-info.json'));
     assert.equal(info.production, true);
     assert.equal(info.outDir, 'dist');
-    assert.equal(info.pages, 3);
+    assert.equal(info.pages, 4);
     assert.deepEqual(info.models.map(m => m.id), ['chinook']);
     assert.equal(info.commit, null, 'a build without BUILD_COMMIT has no commit');
   } finally { await cleanup(); }

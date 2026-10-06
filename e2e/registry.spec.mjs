@@ -33,10 +33,11 @@ test('landing, Registry in the header, the registry, the Chinook model page', as
   await expect(page.locator('.reg-draft')).toContainText('The registry is new');
   await expect(page.locator('.reg-draft').getByRole('link', { name: 'github.com/modelspec-org/registry' })).toHaveAttribute('href', 'https://github.com/modelspec-org/registry');
   const card = page.locator('.reg-model');
-  await expect(card).toHaveCount(1);
-  await expect(card).toContainText(model.address);
-  await expect(card).toContainText(`${model.entities.length} entities, ${propertyCount} properties`);
-  await card.getByRole('link', { name: model.title }).click();
+  await expect(card).toHaveCount(fixture('modelspec-registry-index').models.length);
+  const chinookCard = card.filter({ has: page.getByRole('link', { name: model.title, exact: true }) });
+  await expect(chinookCard).toContainText(model.address);
+  await expect(chinookCard).toContainText(`${model.entities.length} entities, ${propertyCount} properties`);
+  await chinookCard.getByRole('link', { name: model.title }).click();
   await expect(page).toHaveURL(new RegExp(`${MODEL_PAGE}$`));
   await expect(page.getByRole('heading', { level: 1 })).toContainText(model.title);
   await noHorizontalScroll(page);
@@ -199,7 +200,7 @@ test('build-info.json marks the build as a non-production fixture build, and is 
   expect(info.production).toBe(false);
   expect(info.fixture).toBe(true);
   expect(info.outDir).toBe('dist-e2e');
-  expect(info.models.map(m => m.id)).toEqual(['chinook']);
+  expect(info.models.map(m => m.id)).toEqual(fixture('modelspec-registry-index').models.map(m => m.id));
   // it is uploaded on purpose: the deploy workflow compares the live one with the current commit and indexes
   const served = await request.get('/build-info.json');
   expect(served.status()).toBe(200);
@@ -258,7 +259,7 @@ test.describe('without JavaScript', () => {
 
   test('the registry pages are static HTML', async ({ page }) => {
     await page.goto('/registry/');
-    await expect(page.locator('.reg-model h3 a')).toHaveAttribute('href', MODEL_PAGE);
+    await expect(page.locator('.reg-model h3 a').filter({ hasText: model.title })).toHaveAttribute('href', MODEL_PAGE);
     await page.goto(`${MODEL_PAGE}#property-Customer-Country`);
     await expect(page.locator('#property-Customer-Country')).toBeInViewport({ ratio: 1 });
     await expect(page.locator('#meaning-graphs .reg-graph-link')).toHaveAttribute('href', `${MEANINGGRAPH_BASE_URL}/graphs/chinook/`);
