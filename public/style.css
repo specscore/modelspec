@@ -88,6 +88,9 @@ em { font-style: italic; color: var(--accent); }
 /* ---------- layout helpers ---------- */
 section { position: relative; z-index: 1; }
 
+/* Keep the blueprint grid in the margins, away from reading content. */
+.hero, .band, .cta { background-color: var(--paper); }
+
 .band {
   max-width: var(--maxw);
   margin: 0 auto;
