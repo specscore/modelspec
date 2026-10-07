@@ -21,7 +21,9 @@ test('live search is accessible, bounded to ModelSpec, and leaves browsing avail
   await expect(page.locator('.registry-search-fallback a')).toHaveAttribute('href', '/registry/');
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth > innerWidth);
   expect(overflow).toBe(false);
-  await page.screenshot({path: `/private/tmp/registry-search-modelspec-${testInfo.project.name}.png`, fullPage: true});
+  const screenshot = testInfo.outputPath('registry-search.png');
+  await page.screenshot({path: screenshot, fullPage: true});
+  await testInfo.attach('registry search', {path: screenshot, contentType: 'image/png'});
 });
 
 test('newer query wins; empty results and outages have distinct messages', async ({page}) => {
