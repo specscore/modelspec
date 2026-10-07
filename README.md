@@ -10,6 +10,8 @@ programming languages, API layers, and deployment platforms.
 Website: <https://modelspec.org> (preview).
 Repository: <https://github.com/specscore/modelspec> — the canonical home.
 
+Production builds show registry search on `/registry/` using the reviewed VM pilot at `https://search.openvaultdb.com/v1/registry-search`. This public-site pilot does not change the Cloud gateway prerequisite for the DataTug launch. A production override requires both `REGISTRY_SEARCH_MODE=vm-pilot` and that exact `REGISTRY_SEARCH_ENDPOINT`; fixture builds retain their local endpoint.
+
 Although this repository is maintained under the SpecScore GitHub organization,
 ModelSpec is an independent specification. Any project can adopt it without adopting
 SpecScore, [OpenVaultDB](https://openvaultdb.com/), GraphSpec, or any specific backend.
