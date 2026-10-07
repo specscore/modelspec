@@ -411,6 +411,19 @@ function renderComponent(component, localEntities, localComponents) {
       </section>`;
 }
 
+function renderCollection(collection) {
+  const id = anchorId('collection', collection.name);
+  const rows = collection.fields.map(field => {
+    const fieldId = anchorId('collection-field', collection.name, field.name);
+    return `<tr id="${esc(fieldId)}"><th scope="row" data-label="Field"><a href="#${esc(fieldId)}"><code>${esc(field.name)}</code></a></th><td data-label="Type">${esc(field.type)}</td><td data-label="Binding">${field.bind ? `<code>${esc(field.bind)}</code>` : '—'}</td></tr>`;
+  }).join('\n');
+  return `<section class="reg-entity reg-collection" id="${esc(id)}" aria-labelledby="heading-${esc(id)}">
+    <h3 id="heading-${esc(id)}"><a href="#${esc(id)}">${esc(collection.name)}</a> <span class="reg-pill">${esc(collection.kind)}</span></h3>
+    ${collection.source ? `<p>Source entity: <code>${esc(collection.source)}</code></p>` : ''}
+    ${rows ? `<table class="reg-props reg-fields"><caption class="reg-sr">Fields of ${esc(collection.name)}</caption><thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Binding</th></tr></thead><tbody>${rows}</tbody></table>` : '<p class="reg-none">No fields.</p>'}
+  </section>`;
+}
+
 function renderGraphRow(graph, ctx) {
   const pills = [graph.kind, graph.status].filter(Boolean).map(v => `<span class="reg-pill">${esc(v)}</span>`).join('');
   const desc = graph.description ? `<p class="reg-row-desc">${esc(excerpt(graph.description, 220))}</p>` : '';
@@ -455,6 +468,12 @@ export function renderModelPage(model, data, ctx, shell) {
       ${model.components.map(c => renderComponent(c, localEntities, localComponents)).join('\n      ')}
     </section>
     `;
+  const collectionsSection = (model.collections ?? []).length === 0 ? '' : `<section class="reg-section" id="collections" aria-labelledby="collections-heading">
+      <h2 id="collections-heading">Collections <span class="reg-count">${model.collections.length}</span></h2>
+      <p class="reg-section-note">Native collections declared by this model.</p>
+      <ul class="reg-entity-index" aria-label="Collections">${model.collections.map(c => `<li><a href="#${esc(anchorId('collection', c.name))}">${esc(c.name)}</a></li>`).join('')}</ul>
+      ${model.collections.map(renderCollection).join('\n')}
+    </section>`;
   const graphRows = graphs.length === 0
     ? '<p class="reg-none">No graph in the MeaningGraph registry binds meanings to this model yet.</p>'
     : `<ul class="reg-rows">
@@ -480,7 +499,7 @@ export function renderModelPage(model, data, ctx, shell) {
       <h1>${esc(model.title)} ${statusPill(model.status)}</h1>
       <p class="reg-lede">${esc(model.description)}</p>
       <ul class="reg-jump" aria-label="On this page">
-        <li><a href="#entities">Entities</a></li>${model.components.length > 0 ? '\n        <li><a href="#components">Components</a></li>' : ''}
+        <li><a href="#entities">Entities</a></li>${model.components.length > 0 ? '\n        <li><a href="#components">Components</a></li>' : ''}${(model.collections ?? []).length > 0 ? '\n        <li><a href="#collections">Collections</a></li>' : ''}
         <li><a href="#meaning-graphs">Meaning graphs</a></li>
         <li><a href="#databases">Databases</a></li>
         <li><a href="#source-discoveries">Source discoveries</a></li>
@@ -506,7 +525,7 @@ export function renderModelPage(model, data, ctx, shell) {
       <ul class="reg-entity-index" aria-label="Entities">${entityIndex}</ul>
       ${entities}
     </section>
-    ${componentsSection}<section class="reg-section" id="meaning-graphs" aria-labelledby="meaning-graphs-heading">
+    ${componentsSection}${collectionsSection}<section class="reg-section" id="meaning-graphs" aria-labelledby="meaning-graphs-heading">
       <h2 id="meaning-graphs-heading">Meaning graphs for this model <span class="reg-count">${graphs.length}</span></h2>
       <p class="reg-section-note">From the MeaningGraph registry: graphs whose meaning files bind concepts to this model's entities and properties.</p>
       ${graphRows}
