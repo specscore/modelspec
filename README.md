@@ -286,14 +286,12 @@ Directory databases that use it. When the registry entry has the optional `homep
 the model page also links it as **Website**. Every page is static HTML and works without
 JavaScript.
 
-The homepage and Registry link to `/registry/sources/`, which lists every source
-discovery in the pinned Directory index, including records without a ModelSpec
-link. All entries are inactive; HTTP access is proposed and BigQuery queries are
-blocked. Search and access filters use the rendered metadata locally. Each card
-has a same-tab **View source in OVDB Directory** action. Declared model links use
-that registry target's title and status and do not establish native-field bindings
-or activate source access. Related discoveries on model pages remain filtered by
-explicit model ID.
+The homepage and Registry direct public-source discovery to the OVDB Directory's
+Explore section. The old `/registry/sources/` route remains a bookmark migration
+notice with a same-tab Directory link; it no longer lists or filters sources.
+Model pages preserve related source evidence, filtered by explicit model ID.
+These metadata links do not establish native-field bindings or activate source
+access. Source metadata and pinned-index validation remain unchanged.
 
 Requires Node.js 22 or newer.
 
