@@ -16,6 +16,8 @@ test('live search is accessible, bounded to ModelSpec, and leaves browsing avail
   const input = page.getByRole('searchbox', {name: 'Name or identifier'});
   await input.fill('Artist');
   await expect(page.locator('.registry-result-title')).toHaveText('Artist');
+  await expect(page.locator('.results-label')).toHaveText('1 matching published entry');
+  expect(await page.locator('.registry-result-link').evaluate(link => getComputedStyle(link).textDecorationLine)).toBe('none');
   await expect(page.locator('.registry-result-origin')).toHaveText('Public registry');
   await expect(page.locator('.registry-result-field')).toHaveText(['ArtistId', 'Name', 'CreatedAt', 'UpdatedAt']);
   await expect(page.locator('.registry-result-field-more')).toHaveText('+1');
@@ -25,6 +27,7 @@ test('live search is accessible, bounded to ModelSpec, and leaves browsing avail
   expect(bodies.at(-1)).toEqual({q: 'Artist', domain: 'modelspec', page: 1});
   await input.press('ArrowDown');
   await expect(page.locator('.registry-search-results a')).toBeFocused();
+  expect(await page.locator('.registry-result-link').evaluate(link => getComputedStyle(link).outlineStyle)).not.toBe('none');
   await expect(page.locator('.registry-search-fallback a')).toHaveAttribute('href', '/registry/');
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth > innerWidth);
   expect(overflow).toBe(false);

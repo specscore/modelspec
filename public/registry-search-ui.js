@@ -107,7 +107,7 @@
       if (found > 0 && !results.children.length) throw new Error('unsafe response');
       panel.hidden = false;
       input.setAttribute('aria-expanded', 'true');
-      label.textContent = found === 0 ? 'No published entries match' : found + ' matching published ' + (found === 1 ? 'meaning' : 'meanings');
+      label.textContent = found === 0 ? 'No published entries match' : found + ' matching published ' + (found === 1 ? 'entry' : 'entries');
       status.textContent = found === 0 ? 'No published entries match. Try another term or browse the registry.'
         : found + ' published result' + (found === 1 ? '' : 's') + '.';
     }
