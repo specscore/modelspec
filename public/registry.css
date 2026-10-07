@@ -4,6 +4,7 @@
    ============================================================ */
 
 .reg {
+  background: var(--paper);
   position: relative;
   z-index: 1;
   max-width: var(--maxw);
@@ -85,16 +86,31 @@
 
 /* facts and small definition lists */
 .reg-facts, .reg-mini { margin: 0; }
+.reg-facts {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: .25rem clamp(1rem, 3vw, 1.5rem);
+  line-height: 1.7;
+}
 .reg-facts > div {
   display: grid; grid-template-columns: 10.5rem 1fr; gap: .25rem 1.25rem;
-  padding: .7rem 0; border-top: 1px solid var(--line);
+  padding: 1rem 0; border-top: 1px solid var(--line);
 }
-.reg-facts > div:last-child { border-bottom: 1px solid var(--line); }
+.reg-facts > div:first-child { border-top: 0; }
 .reg-facts dt, .reg-mini dt {
   font-family: var(--font-mono); font-size: .72rem; letter-spacing: .08em;
   text-transform: uppercase; color: var(--ink-faint); padding-top: .15rem;
 }
 .reg-facts dd, .reg-mini dd { margin: 0; }
+.reg-facts > div > * { min-width: 0; }
+.reg-facts dt {
+  font-family: var(--font-body); font-size: .95rem; font-weight: 600;
+  letter-spacing: 0; text-transform: none; color: var(--ink-soft);
+}
+.reg-facts a { color: #87500b; }
+.reg-facts .reg-hint, .reg-facts .reg-file-kind { color: var(--ink-soft); }
+.reg-facts .reg-address, .reg-facts .reg-commit { font-size: .9rem; }
 .reg-files { list-style: none; margin: 0; padding: 0; display: grid; gap: .3rem; }
 .reg-file-kind { font-family: var(--font-mono); font-size: .72rem; color: var(--ink-faint); }
 
