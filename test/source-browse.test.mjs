@@ -5,7 +5,7 @@ import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { checksumOf, COHORT_INPUTS, supportedCohort, markAsFixture, deriveTwoDatabases, deriveTwoByAddress } from '../tools/make-fixtures.mjs';
 import { validateDirectoryIndex, validateModelspecIndex, validateMeaningGraphIndex } from '../src/indexes.mjs';
-import { extractShell, renderSourcesPage, renderModelPage } from '../src/render.mjs';
+import { extractShell, renderSourcesPage, renderModelPage, renderRegistryPage } from '../src/render.mjs';
 import { buildSite, loadData } from '../src/site.mjs';
 import { distProblems } from '../scripts/check-build.mjs';
 import { deploy } from '../scripts/deploy.mjs';
@@ -19,26 +19,29 @@ const shell = extractShell(await readFile(new URL('../public/index.html', import
 const clone = value => structuredClone(value);
 const changed = mutate => { const json = clone(raw.directory); mutate(json.sources); json.sourcesChecksum = checksumOf(json.sources); return json; };
 
-// Generate expectations from the exact pinned descriptive fixture envelope.
-test('all pinned discoveries render exact ID/action/status/explicit model-link sets', () => {
-  assert.equal(raw.directory.sources.length, 19);
-  assert.equal(raw.directory.sourcesChecksum, 'sha256:3495119b41585f8fd7b15c1ab6d2bb0723cef6be3d370ba119bd00dc7bda706a');
-  const html = renderSourcesPage(data, productionConfig('.'), shell);
-  assert.match(html, /canonical" href="https:\/\/modelspec.org\/registry\/sources\/"/);
+test('source discovery belongs to Directory while model-specific evidence stays local', () => {
+  const ctx = productionConfig('.');
+  const html = renderSourcesPage(data, ctx, shell);
+  assert.match(html, /class="reg-discovery-link" href="https:\/\/directory\.openvaultdb\.com\/#explore"/);
+  assert.doesNotMatch(html, /data-source-id=|data-source-controls|source-search|reg-source-action/);
+  assert.doesNotMatch(html, /<a[^>]*href="\/registry\/sources\/"/);
   assert.match(html, /name="modelspec-build-source" content="production"/);
-  assert.ok(html.includes(raw.directory.sourcesChecksum));
-  assert.deepEqual([...html.matchAll(/data-source-id="([^"]+)"/g)].map(m => m[1]).sort(), raw.directory.sources.map(s => s.id).sort());
-  assert.deepEqual([...html.matchAll(/class="reg-source-action" href="([^"]+)"/g)].map(m => m[1]).sort(), raw.directory.sources.map(s => `https://directory.openvaultdb.com/sources/${s.id}/`).sort());
-  assert.equal((html.match(/>View source in OVDB Directory<\/a>/g) ?? []).length, raw.directory.sources.length);
-  assert.equal((html.match(/No ModelSpec link declared/g) ?? []).length, raw.directory.sources.filter(s => !s.modelspec_url).length);
-  assert.equal((html.match(/Declared model link:/g) ?? []).length, raw.directory.sources.filter(s => s.modelspec_url).length);
-  assert.equal((html.match(/>Inactive<\/span>/g) ?? []).length, raw.directory.sources.length);
-  assert.doesNotMatch(html, /reg-source-action[^>]*target=/);
+  const registry = renderRegistryPage(data, ctx, shell);
+  assert.match(registry, /href="https:\/\/directory\.openvaultdb\.com\/#explore"/);
+  assert.doesNotMatch(registry, /Source discoveries \(19\)|href="\/registry\/sources\/"/);
   for (const model of data.modelspec.models) {
     const related = data.directory.sources.filter(s => s.modelId === model.id);
     const detail = renderModelPage(model, data, config(), shell);
     assert.equal((detail.match(/class="reg-source-link"/g) ?? []).length, related.length);
+    for (const source of related) assert.ok(detail.includes(`https://directory.openvaultdb.com/sources/${source.id}/`));
   }
+});
+
+test('configured Directory destination is used by generated shells and bookmark notice', () => {
+  const ctx = { ...config(), ovdbDirectoryBaseUrl: 'http://127.0.0.1:4011/' };
+  const html = renderSourcesPage(data, ctx, shell);
+  assert.match(html, /class="reg-discovery-link" href="http:\/\/127\.0\.0\.1:4011\/#explore"/);
+  assert.doesNotMatch(html, /https:\/\/directory\.openvaultdb\.com/);
 });
 
 test('every linked and unlinked source rejects invalid consumed metadata', () => {
@@ -51,30 +54,6 @@ test('every linked and unlinked source rejects invalid consumed metadata', () =>
   }
   assert.throws(() => validateDirectoryIndex(changed(sources => sources[1].id = sources[0].id), fx), /duplicates/);
   assert.throws(() => validateDirectoryIndex({ ...raw.directory, sourcesChecksum: checksumOf([]) }, fx), /does not match/);
-});
-
-test('target status/title come from registry, escaped text cannot introduce bindings or executable markup', () => {
-  const promoted = clone(data);
-  const model = promoted.modelspec.models.find(m => m.id === 'ecb-daily');
-  model.status = 'accepted'; model.title = 'Accepted registry title';
-  const source = promoted.directory.sources.find(s => s.modelId === model.id);
-  source.title = '<img src=x onerror=alert(1)> 雪'; source.publisher = '<script>oops</script>'; source.description = '<b>native</b>';
-  const html = renderSourcesPage(promoted, config(), shell);
-  assert.match(html, /Accepted registry title<\/a> <span[^>]*>accepted/);
-  assert.match(html, /&lt;img src=x onerror=alert\(1\)&gt; 雪/);
-  assert.doesNotMatch(html, /<script>oops|<img src=x/);
-  assert.match(html, /does not establish accepted native-field bindings or activate source access/);
-  assert.equal(source.status, 'inactive');
-});
-
-test('legacy absent and explicit empty envelopes render truthful empty state', () => {
-  for (const dir of [{ ...raw.directory, sources: undefined, sourcesChecksum: undefined }, { ...raw.directory, sources: [], sourcesChecksum: checksumOf([]) }]) {
-    const parsed = validateDirectoryIndex(dir, fx);
-    const html = renderSourcesPage({ ...data, directory: parsed }, config(), shell);
-    assert.match(html, /No source discoveries in this index/);
-    assert.doesNotMatch(html, /data-source-id=/);
-    if (dir.sourcesChecksum) assert.ok(html.includes(dir.sourcesChecksum));
-  }
 });
 
 test('fixture generator preserves envelope and reproduces committed derived variants and supported cohort', async () => {

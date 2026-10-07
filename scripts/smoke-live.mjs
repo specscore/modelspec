@@ -23,13 +23,9 @@ async function main() {
   const response = await fetch(`${SITE_URL}/registry/sources/`, { signal: AbortSignal.timeout(20_000) });
   if (!response.ok) throw new Error('Source discoveries page cannot be read');
   const html = await response.text();
-  const ids = [...html.matchAll(/data-source-id="([^"]+)"/g)].map(match => match[1]);
-  const expected = built.sourceDiscoveries.map(source => source.id);
-  if (JSON.stringify(ids.sort()) !== JSON.stringify(expected.sort())) throw new Error('Live source discovery IDs differ from the build');
-  const actions = [...html.matchAll(/class="reg-source-action" href="([^"]+)"/g)].map(match => match[1]).sort();
-  const destinations = expected.map(id => `${built.ovdbDirectoryBaseUrl}/sources/${id}/`).sort();
-  if (JSON.stringify(actions) !== JSON.stringify(destinations)) throw new Error('Live source discovery actions differ from the build');
-  if (!html.includes(built.checksums.ovdbDirectorySources ?? 'No source discoveries in this index')) throw new Error('Source provenance is missing');
+  const destination = `${built.ovdbDirectoryBaseUrl.replace(/\/+$/, '')}/#explore`;
+  if (!html.includes(`class="reg-discovery-link" href="${destination}"`)) throw new Error('Live discovery notice does not link to OVDB Directory');
+  if (/data-source-id=|data-source-controls|id="source-search"/.test(html)) throw new Error('Live discovery notice still duplicates the source catalogue');
   const line = `Deployed and confirmed: ${SITE_URL} serves commit ${built.commit.slice(0, 12)}.`;
   console.log(line);
   if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, `${line}\n`);
