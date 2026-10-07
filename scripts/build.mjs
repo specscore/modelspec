@@ -8,6 +8,7 @@
 import { resolveBuildConfig, ROOT } from '../src/config.mjs';
 import { INDEXES, envWithPins } from '../src/index-commits.mjs';
 import { buildSite } from '../src/site.mjs';
+import { searchUiConfig } from '../src/registry-search-ui.mjs';
 
 async function main() {
   const argv = process.argv.slice(2);
@@ -15,6 +16,8 @@ async function main() {
   const { env, heads } = await envWithPins({ env: process.env, argv });
   if (heads) console.log(`Reading the indexes at the current commits: ${Object.entries(INDEXES).map(([key, { repo }]) => `${repo}@${heads[key].slice(0, 12)}`).join(', ')}.`);
   const config = resolveBuildConfig(argv, env);
+  config.searchUi = searchUiConfig(env, { production: config.production, fixture: config.mode === 'fixture' });
+  config.requireSearchPins = config.production;
   if (config.mode !== 'production') {
     console.warn(`WARNING: ${config.mode} build, not made from the three production indexes. It is written to ${config.outName}/ and can not be deployed.`);
   }

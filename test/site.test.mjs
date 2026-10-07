@@ -18,7 +18,7 @@ test('a build is public/ plus registry/ plus build-info.json, and the landing pa
     const result = await buildSite({ root, config: productionConfig(root), data });
     assert.equal(result.pages, 4);
     const dist = join(root, 'dist');
-    assert.deepEqual((await readdir(dist)).sort(), ['.assetsignore', MANIFEST_FILE, BUILD_MARKER, 'build-info.json', 'favicon.svg', 'index.html', 'registry', 'registry.css', 'script.js', 'style.css']);
+    assert.deepEqual((await readdir(dist)).sort(), ['.assetsignore', MANIFEST_FILE, BUILD_MARKER, 'build-info.json', 'favicon.svg', 'index.html', 'registry', 'registry-search-ui.css', 'registry-search-ui.js', 'registry-search.json', 'registry.css', 'script.js', 'style.css']);
     assert.equal(await read(dist, 'index.html'), await read(root, 'public', 'index.html'));
     for (const file of ['style.css', 'script.js', 'favicon.svg', 'registry.css']) assert.equal(await read(dist, file), await read(root, 'public', file));
     assert.ok(existsSync(join(dist, 'registry', 'index.html')));

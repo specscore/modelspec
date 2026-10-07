@@ -224,6 +224,28 @@ function component(value, path, seen) {
   return { name, fields };
 }
 
+function collection(value, path, seen, entityNames) {
+  object(value, path);
+  const name = pattern(value.name, `${path}.name`, NAME, 'letters, digits and underscores');
+  if (seen.has(name)) fail(`${path}.name`, `duplicates collection ${name}`);
+  seen.add(name);
+  if (!['editable', 'computed'].includes(value.kind)) fail(`${path}.kind`, 'must be editable or computed');
+  const source = value.source === undefined ? undefined : pattern(value.source, `${path}.source`, NAME, 'an entity name');
+  if (source && !entityNames.has(source)) fail(`${path}.source`, `names unknown entity ${source}`);
+  const query = value.query === undefined ? undefined : text(value.query, `${path}.query`);
+  if (value.kind === 'computed' && !query) fail(`${path}.query`, 'is required for a computed collection');
+  const fieldNames = new Set();
+  const fields = list(value.fields, `${path}.fields`).map((field, i) => {
+    const at = `${path}.fields[${i}]`;
+    object(field, at);
+    const fieldName = pattern(field.name, `${at}.name`, NAME, 'letters, digits and underscores');
+    if (fieldNames.has(fieldName)) fail(`${at}.name`, `duplicates field ${fieldName}`);
+    fieldNames.add(fieldName);
+    return {name: fieldName, type: text(field.type, `${at}.type`), ...(field.bind === undefined ? {} : {bind: text(field.bind, `${at}.bind`)})};
+  });
+  return {name, kind: value.kind, ...(source ? {source} : {}), ...(query ? {query} : {}), fields};
+}
+
 /** Validate an already parsed ModelSpec registry index and return the normalised form. */
 export function validateModelspecIndex(json, options = {}) {
   const head = envelope(json, MODELSPEC_FORMAT, 'models', options);
@@ -239,6 +261,8 @@ export function validateModelspecIndex(json, options = {}) {
     object(m.files, `${at}.files`);
     const names = new Set();
     const componentNames = new Set();
+    const collectionNames = new Set();
+    const entities = list(m.entities, `${at}.entities`).map((e, j) => entity(e, `${at}.entities[${j}]`, names));
     return {
       id,
       title: text(m.title, `${at}.title`),
@@ -256,8 +280,9 @@ export function validateModelspecIndex(json, options = {}) {
       maintainers: m.maintainers === undefined ? [] : list(m.maintainers, `${at}.maintainers`).map((h, j) => pattern(h, `${at}.maintainers[${j}]`, HANDLE, 'a GitHub handle')),
       moduleVersion: optionalText(m.module_version, `${at}.module_version`),
       modelspecVersion: optionalText(m.modelspec, `${at}.modelspec`),
-      entities: list(m.entities, `${at}.entities`).map((e, j) => entity(e, `${at}.entities[${j}]`, names)),
+      entities,
       components: m.components === undefined ? [] : list(m.components, `${at}.components`).map((c, j) => component(c, `${at}.components[${j}]`, componentNames)),
+      collections: m.collections === undefined ? [] : list(m.collections, `${at}.collections`).map((c, j) => collection(c, `${at}.collections[${j}]`, collectionNames, names)),
     };
   });
   return { ...head, models };

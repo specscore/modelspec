@@ -20,6 +20,8 @@ const env = {
   MODELSPEC_REGISTRY_INDEX_URL: '',
   MEANINGGRAPH_REGISTRY_INDEX_URL: '',
   OVDB_DIRECTORY_INDEX_URL: '',
+  REGISTRY_SEARCH_ENDPOINT: 'http://127.0.0.1:8787/v1/registry-search',
+  REGISTRY_SEARCH_MODE: 'fixture',
 };
 
 const server = (port, inspector, out, extraBuildArgs = '') => ({

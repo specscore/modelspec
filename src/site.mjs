@@ -8,6 +8,8 @@ import { cp, lstat, mkdir, readdir, readFile, rm, writeFile } from 'node:fs/prom
 import { dirname, join, relative, resolve, sep } from 'node:path';
 import { OUT_NAMES } from './config.mjs';
 import { MANIFEST_FILE, writeManifest } from './build-manifest.mjs';
+import { registrySearchExport } from './registry-search-export.mjs';
+import { renderSearchPanel } from './registry-search-ui.mjs';
 import { loadIndex, validateDirectoryIndex, validateMeaningGraphIndex, validateModelspecIndex } from './indexes.mjs';
 import { assertChinookEverywhere, extractShell, renderLanding, renderRegistryPages } from './render.mjs';
 
@@ -158,6 +160,9 @@ export async function buildSite({ root, config, data, readOptions = {}, log = ()
   assertChinookEverywhere(indexes);
   const shell = extractShell(template);
   const registryPages = renderRegistryPages(indexes, config, shell);
+  const searchPanel = renderSearchPanel('modelspec', config.searchUi, '/registry/');
+  if (searchPanel && !registryPages.get('registry/index.html').includes('<section class="reg-section" id="models"')) throw new Error('Registry page has no search insertion point');
+  if (searchPanel) registryPages.set('registry/index.html', registryPages.get('registry/index.html').replace('<section class="reg-section" id="models"', `${searchPanel}<section class="reg-section" id="models"`));
   const landing = renderLanding(template, config);
   const info = buildInfo(config, indexes, root, registryPages.size + 1);
 
@@ -172,6 +177,7 @@ export async function buildSite({ root, config, data, readOptions = {}, log = ()
     await writeFile(join(out, path), html);
   }
   await writeFile(join(out, BUILD_INFO_FILE), `${JSON.stringify(info, null, 2)}\n`);
+  await writeFile(join(out, 'registry-search.json'), `${JSON.stringify(registrySearchExport(indexes, config, config.requireSearchPins === true))}\n`);
   // Last: the hash of every file above, checked again right before the upload (scripts/check-build.mjs).
   await writeManifest(out);
   log(`Built ${registryPages.size + 1} pages into ${out}`);

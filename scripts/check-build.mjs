@@ -87,7 +87,7 @@ export async function distProblems(root = ROOT) {
   } catch {
     problems.push('public/ cannot be read');
   }
-  const expected = new Set([...publicFiles, BUILD_INFO_FILE, BUILD_MARKER, MANIFEST_FILE, '.assetsignore']);
+  const expected = new Set([...publicFiles, BUILD_INFO_FILE, BUILD_MARKER, MANIFEST_FILE, '.assetsignore', 'registry-search.json']);
   const stray = files.filter(file => !expected.has(file) && !file.startsWith('registry/'));
   if (stray.length > 0) problems.push(`it contains files that are not part of the site and would be deployed: ${stray.slice(0, 8).join(', ')}`);
   for (const file of publicFiles) {
