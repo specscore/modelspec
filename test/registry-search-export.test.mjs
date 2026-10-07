@@ -56,11 +56,19 @@ test('component cycles and unresolved component references fail export', () => {
   assert.throws(() => registrySearchExport(sampleData({modelspec: unresolved}), config()), /unresolved component Missing/);
 });
 
-test('registry export excludes inactive Directory source discoveries and public UI needs an approved origin', () => {
+test('registry export excludes inactive Directory sources and production search uses only the reviewed VM pilot', () => {
   const data = sampleData();
   const result = registrySearchExport(data, config());
   assert.equal(result.documents.some(doc => doc.kind.includes('source')), false);
   assert.equal(result.documents.length, 7);
-  assert.equal(searchUiConfig({}, {production: true, fixture: false}), null);
+  const pilot = {endpoint: 'https://search.openvaultdb.com/v1/registry-search', mode: 'vm-pilot'};
+  assert.deepEqual(searchUiConfig({}, {production: true, fixture: false}), pilot);
+  assert.equal(searchUiConfig({}, {production: false, fixture: true}), null);
+  assert.deepEqual(searchUiConfig({REGISTRY_SEARCH_ENDPOINT: pilot.endpoint, REGISTRY_SEARCH_MODE: pilot.mode}, {production: true, fixture: false}), pilot);
   assert.throws(() => searchUiConfig({REGISTRY_SEARCH_MODE: 'cloud', REGISTRY_SEARCH_ENDPOINT: 'https://search.example/v1/registry-search'}, {production: true, fixture: false}), /not been approved/);
+  for (const endpoint of ['https://search.example/v1/registry-search', 'https://search.openvaultdb.com.evil.test/v1/registry-search', 'http://127.0.0.1:8787/v1/registry-search', 'https://user:pass@search.openvaultdb.com/v1/registry-search', 'https://search.openvaultdb.com/v1/registry-search?token=secret']) {
+    assert.throws(() => searchUiConfig({REGISTRY_SEARCH_ENDPOINT: endpoint, REGISTRY_SEARCH_MODE: 'vm-pilot'}, {production: true, fixture: false}));
+  }
+  assert.throws(() => searchUiConfig({REGISTRY_SEARCH_MODE: 'vm-pilot'}, {production: true, fixture: false}), /must be set together/);
+  assert.throws(() => searchUiConfig({REGISTRY_SEARCH_ENDPOINT: pilot.endpoint}, {production: true, fixture: false}), /must be set together/);
 });

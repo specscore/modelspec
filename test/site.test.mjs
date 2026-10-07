@@ -5,6 +5,7 @@ import { lstat, mkdir, readdir, readFile, symlink, writeFile } from 'node:fs/pro
 import { join } from 'node:path';
 import { test } from 'node:test';
 import { OUT_NAMES } from '../src/config.mjs';
+import { searchUiConfig } from '../src/registry-search-ui.mjs';
 import { MANIFEST_FILE } from '../src/build-manifest.mjs';
 import { ASSETSIGNORE_TEXT, BUILD_MARKER, buildSite, loadData, prepareOutput } from '../src/site.mjs';
 import { REPO, config, directoryJson, graphsJson, modelspecJson, productionConfig, read, sampleData, tempRoot } from './helpers.mjs';
@@ -15,13 +16,17 @@ test('a build is public/ plus registry/ plus build-info.json, and the landing pa
   const { root, cleanup } = await tempRoot();
   try {
     const data = sampleData();
-    const result = await buildSite({ root, config: productionConfig(root), data });
+    const result = await buildSite({ root, config: { ...productionConfig(root), searchUi: searchUiConfig({}, { production: true, fixture: false }) }, data });
     assert.equal(result.pages, 4);
     const dist = join(root, 'dist');
     assert.deepEqual((await readdir(dist)).sort(), ['.assetsignore', MANIFEST_FILE, BUILD_MARKER, 'build-info.json', 'favicon.svg', 'index.html', 'registry', 'registry-search-ui.css', 'registry-search-ui.js', 'registry-search.json', 'registry.css', 'script.js', 'style.css']);
     assert.equal(await read(dist, 'index.html'), await read(root, 'public', 'index.html'));
     for (const file of ['style.css', 'script.js', 'favicon.svg', 'registry.css']) assert.equal(await read(dist, file), await read(root, 'public', file));
     assert.ok(existsSync(join(dist, 'registry', 'index.html')));
+    const registryIndex = await read(dist, 'registry', 'index.html');
+    assert.match(registryIndex, /data-endpoint="https:\/\/search\.openvaultdb\.com\/v1\/registry-search"/);
+    assert.ok(registryIndex.indexOf('data-registry-search') < registryIndex.indexOf('id="models"'));
+    assert.match(registryIndex, /href="\/registry\/">browse published entries/);
     assert.ok(existsSync(join(dist, 'registry', 'models', 'chinook', 'index.html')));
     assert.equal(await read(dist, '.assetsignore'), ASSETSIGNORE_TEXT);
     assert.equal(ASSETSIGNORE_TEXT, `${BUILD_MARKER}\n${MANIFEST_FILE}\n`, 'only the marker and the manifest stay out of the upload: build-info.json is served, the deploy workflow compares it');
