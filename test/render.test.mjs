@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { test } from 'node:test';
-import { assertChinookEverywhere, anchorId, esc, extractShell, homepageLabel, renderBanner, renderLanding, renderModelPage, renderRegistryPage, safeUrl } from '../src/render.mjs';
+import { assertChinookEverywhere, anchorId, codeGrapherUrl, esc, extractShell, homepageLabel, renderBanner, renderLanding, renderModelPage, renderRegistryPage, safeUrl } from '../src/render.mjs';
 import { REPO, COMMIT, config, directoryJson, graphsJson, modelspecJson, modelspecWithComponents, sampleData } from './helpers.mjs';
 
 const template = await readFile(`${REPO}/public/index.html`, 'utf8');
@@ -39,6 +39,19 @@ test('the model page carries the title, address, repository, pinned commit, lice
   assert.match(model, /<dt>Licence<\/dt><dd>MIT<\/dd>/);
   assert.match(model, /href="https:\/\/github.com\/someone"/);
   assert.match(model, /draft/);
+});
+
+test('CodeGrapher actions use the registered repository, file and commit', () => {
+  const entry = sampleData().modelspec.models[0];
+  const repoUrl = `https://codegrapher.dev/github.com/acme/shop?branch=${COMMIT}`;
+  const fileUrl = `https://codegrapher.dev/github.com/acme/shop/model/shop.modelspec.hcl?branch=${COMMIT}`;
+  assert.equal(codeGrapherUrl(entry), repoUrl);
+  assert.equal(codeGrapherUrl(entry, 'model/a b#c.hcl'), `https://codegrapher.dev/github.com/acme/shop/model/a%20b%23c.hcl?branch=${COMMIT}`);
+  const {index, model} = render();
+  assert.ok(index.includes(`href="${repoUrl}"`));
+  assert.ok(model.includes(`href="${repoUrl}"`));
+  assert.ok(model.includes(`href="${fileUrl}"`));
+  assert.equal(codeGrapherUrl({...entry, repository: 'https://git.example.org/acme/shop'}), null);
 });
 
 test('entities and properties have anchors, and a reference links to its entity anchor', () => {

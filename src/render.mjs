@@ -53,6 +53,16 @@ export const databaseUrl = (base, database) => {
 export const commitUrl = model => `${model.repository}/commit/${model.commit}`;
 export const fileUrl = (model, path) => `${model.repository}/blob/${model.commit}/${encodePath(path)}`;
 
+/** CodeGrapher view of the registry's pinned GitHub source. Other forges have no viewer route yet. */
+export function codeGrapherUrl(model, path = '') {
+  const repository = new URL(model.repository);
+  if (repository.protocol !== 'https:' || repository.hostname !== 'github.com') return null;
+  const parts = repository.pathname.split('/').filter(Boolean);
+  if (parts.length !== 2) return null;
+  const file = path ? `/${encodePath(path)}` : '';
+  return `https://codegrapher.dev/github.com/${parts.map(encodeURIComponent).join('/')}${file}?branch=${encodeURIComponent(model.commit)}`;
+}
+
 /** `org/repo` for GitHub, `host/path` for anything else. */
 export function repositoryLabel(repository) {
   const url = new URL(repository);
@@ -247,7 +257,7 @@ function renderModelCard(model, data) {
           <p class="reg-model-desc">${esc(excerpt(model.description, 260))}</p>
           <dl class="reg-mini">
             <div><dt>Address</dt><dd><code>${esc(model.address)}</code></dd></div>
-            <div><dt>Repository</dt><dd>${externalLink(`${model.repository}/tree/${model.commit}`, `${repositoryLabel(model.repository)}@${model.commit.slice(0, 7)}`)}</dd></div>
+            <div><dt>Repository</dt><dd>${externalLink(`${model.repository}/tree/${model.commit}`, `${repositoryLabel(model.repository)}@${model.commit.slice(0, 7)}`)}${codeGrapherUrl(model) ? ` · <a class="reg-codegrapher" href="${safeUrl(codeGrapherUrl(model))}" target="_blank" rel="noreferrer">CodeGrapher ↗</a>` : ''}</dd></div>
             <div><dt>Shape</dt><dd>${plural(model.entities.length, 'entity', 'entities')}, ${plural(properties, 'property', 'properties')}${components}</dd></div>
             <div><dt>Used by</dt><dd>${plural(graphs.length, 'meaning graph')}, ${plural(databases.length, 'database')}</dd></div>
           </dl>
@@ -430,7 +440,7 @@ export function renderModelPage(model, data, ctx, shell) {
   const propertyCount = model.entities.reduce((n, e) => n + e.properties.length, 0);
   const files = [['source', model.files.source], ['JSON', model.files.json]]
     .filter(([, path]) => path)
-    .map(([kind, path]) => `<li>${externalLink(fileUrl(model, path), path, 'reg-file')} <span class="reg-file-kind">${esc(kind)}</span></li>`)
+    .map(([kind, path]) => `<li>${externalLink(fileUrl(model, path), path, 'reg-file')} <span class="reg-file-kind">${esc(kind)}</span>${codeGrapherUrl(model, path) ? ` <a class="reg-codegrapher" href="${safeUrl(codeGrapherUrl(model, path))}" target="_blank" rel="noreferrer">View in CodeGrapher ↗</a>` : ''}</li>`)
     .join('');
   const maintainers = model.maintainers.length === 0 ? '' : `<div><dt>Maintainers</dt><dd>${model.maintainers.map(h => externalLink(`https://github.com/${h}`, h)).join(', ')}</dd></div>`;
   const website = model.homepage === undefined ? '' : `\n        <div><dt>Website</dt><dd>${externalLink(model.homepage, homepageLabel(model.homepage), 'reg-homepage')}</dd></div>`;
@@ -482,7 +492,7 @@ export function renderModelPage(model, data, ctx, shell) {
       <dl class="reg-facts">
         <div><dt>Status</dt><dd>${esc(model.status)} <span class="reg-hint">(the registry is a draft)</span></dd></div>
         <div><dt>Address</dt><dd><code class="reg-address">${esc(model.address)}</code></dd></div>
-        <div><dt>Repository</dt><dd>${externalLink(model.repository, repositoryLabel(model.repository), 'reg-repo')}</dd></div>${website}
+        <div><dt>Repository</dt><dd>${externalLink(model.repository, repositoryLabel(model.repository), 'reg-repo')}${codeGrapherUrl(model) ? ` · <a class="reg-codegrapher" href="${safeUrl(codeGrapherUrl(model))}" target="_blank" rel="noreferrer">Explore in CodeGrapher ↗</a>` : ''}</dd></div>${website}
         <div><dt>Pinned commit</dt><dd>${externalLink(commitUrl(model), model.commit, 'reg-commit')}</dd></div>
         <div><dt>Model files</dt><dd><ul class="reg-files">${files}</ul></dd></div>
         <div><dt>Licence</dt><dd>${esc(model.licence)}</dd></div>
