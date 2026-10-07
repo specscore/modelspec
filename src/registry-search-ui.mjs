@@ -31,17 +31,17 @@ export function searchUiConfig(env, { production, fixture }) {
   return { endpoint: url.href, mode };
 }
 
-export function renderSearchPanel(domain, config, browseUrl) {
+export function renderSearchPanel(domain, config, browseUrl, {includeAssets = true} = {}) {
   if (!config) return '';
   const options = KINDS[domain].map(([value, label]) => `<option value="${value}">${label}</option>`).join('');
-  return `<section class="registry-search" data-registry-search data-domain="${domain}" data-endpoint="${config.endpoint}" aria-labelledby="registry-search-heading">
-    <h2 id="registry-search-heading">Search the public registry</h2>
-    <form role="search" autocomplete="off"><label for="registry-search-query">Name or identifier</label>
-      <div class="registry-search-controls"><input id="registry-search-query" name="q" type="search" minlength="1" maxlength="120" placeholder="Start typing to search" aria-controls="registry-search-results" aria-describedby="registry-search-status">
-      <label for="registry-search-kind">Kind</label><select id="registry-search-kind" name="kind">${options}</select></div>
-    </form>
-    <p id="registry-search-status" role="status" aria-live="polite">Type to search published entries.</p>
-    <ul id="registry-search-results" class="registry-search-results" aria-label="Search results"></ul>
+  return `<section id="registry-search" class="registry-search" data-registry-search data-domain="${domain}" data-endpoint="${config.endpoint}" aria-labelledby="registry-search-heading">
+    <div class="registry-search-heading"><p class="eyebrow">Find a published definition</p><h2 id="registry-search-heading">Search the public registry</h2></div>
+    <div class="search-wrap"><form class="search-form" role="search" autocomplete="off"><svg class="search-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.5"/><path d="m16 16 5 5"/></svg>
+      <input id="registry-search-query" name="q" type="search" minlength="1" maxlength="120" aria-label="Name or identifier" placeholder="Search an entity or field…" aria-controls="registry-search-results" aria-describedby="registry-search-status" aria-expanded="false">
+      <button type="submit" aria-label="Search"><span aria-hidden="true">→</span></button></form>
+    <div class="registry-search-filter"><label for="registry-search-kind">Kind</label><select id="registry-search-kind" name="kind">${options}</select></div>
+    <div id="registry-search-results" class="search-results" hidden></div></div>
+    <p id="registry-search-status" class="registry-search-status" role="status" aria-live="polite">Type to search published entries.</p>
     <p class="registry-search-fallback">You can always <a href="${browseUrl}">browse published entries</a>.</p>
-  </section><link rel="stylesheet" href="/registry-search-ui.css"><script src="/registry-search-ui.js" defer></script>`;
+  </section>${includeAssets ? '<link rel="stylesheet" href="/registry-search-ui.css"><script src="/registry-search-ui.js" defer></script>' : ''}`;
 }
