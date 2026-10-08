@@ -53,6 +53,10 @@ declares names, types, keys, and references; it does not say what a name means o
 which database holds the data. See
 [decision 0017](spec/decisions/0017-one-question-per-layer.md).
 
+Published models are listed in the
+[ModelSpec registry](https://github.com/modelspec-org/registry). Shared definitions of
+what data means belong to MeaningGraph, not to a ModelSpec catalog.
+
 ## Why ModelSpec Exists
 
 Applications usually define the same data model many times:
@@ -136,7 +140,6 @@ ModelSpec keeps the original design principles that motivated the project:
 - Logical models separated from physical projections.
 - Advisory storage projections rather than app-owned storage decisions.
 - Generators for GraphQL, Go, TypeScript, SQLite, PostgreSQL, Firestore, InGitDB, and [OpenVaultDB](https://openvaultdb.com/) schemas. Planned; none is implemented.
-- A registry of published models. Shared definitions of what data means belong to MeaningGraph.
 - Go-inspired composition with simple embedded components.
 
 ## Example

@@ -43,8 +43,9 @@ entities of that model. Using a model inside a vault for schema validation, migr
 planning, backend mapping, GraphQL generation, DTQL typing metadata, DALGO metadata,
 and backend generators is the intended integration. None of it is implemented.
 
-GraphSpec is not one of those three layers. It describes how one application's
-objects behave, and it takes their structure from ModelSpec, as described below.
+GraphSpec is not one of those three layers. It describes what an application's
+objects do and how they are connected, and it takes their structure from ModelSpec,
+as described below.
 
 SpecScore validates ModelSpec documents and may provide linting, validation, and
 semantic checks. SpecScore does not define ModelSpec semantics.
