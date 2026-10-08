@@ -24,6 +24,12 @@ format: https://specscore.md/decisions-index-specification
 | [0014](0014-module-qualified-references.md) | Module-Qualified Cross-Module References | Approved | 2026-07-08 | model,references,modules,composition | — |
 | [0015](0015-concept-namespaces-and-reserved-names.md) | Concept Namespaces And Reserved Names | Approved | 2026-07-08 | model,namespaces,references,collections,recordsets | — |
 | [0016](0016-modelspec-supersedes-polymodel.md) | ModelSpec Supersedes PolyModel | Approved | 2026-08-22 | governance,naming,supersession,public-surface | — |
+| [0017](0017-one-question-per-layer.md) | One Question Per Layer | Draft | 2026-10-08 | architecture,boundaries,meaninggraph,openvaultdb | — |
+| [0018](0018-entity-becomes-record.md) | Entity Becomes Record | Draft | 2026-10-08 | model,terminology,record | — |
+| [0019](0019-collection-and-recordset-removed-three-words-reserved.md) | Collection And Recordset Removed, Three Words Reserved | Draft | 2026-10-08 | model,grammar,collection,recordset,projection | — |
+| [0020](0020-field-is-the-member-word.md) | Field Is The Member Word | Draft | 2026-10-08 | model,terminology,field | — |
+| [0021](0021-published-model-pins-the-models-it-refers-to.md) | A Published Model Pins The Models It Refers To | Draft | 2026-10-08 | model,references,modules,publishing | — |
+| [0022](0022-prose-now-format-change-on-the-owners-word.md) | Prose Now, Format Change On The Owner's Word | Draft | 2026-10-08 | governance,sequencing,compatibility | — |
 
 ## Open Questions
 
