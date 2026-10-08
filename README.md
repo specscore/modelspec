@@ -136,7 +136,7 @@ ModelSpec keeps the original design principles that motivated the project:
 - Logical models separated from physical projections.
 - Advisory storage projections rather than app-owned storage decisions.
 - Generators for GraphQL, Go, TypeScript, SQLite, PostgreSQL, Firestore, InGitDB, and [OpenVaultDB](https://openvaultdb.com/) schemas. Planned; none is implemented.
-- A future catalog for canonical entities, reusable modules, and dataset mappings.
+- A registry of published models. Shared definitions of what data means belong to MeaningGraph.
 - Go-inspired composition with simple embedded components.
 
 ## Example
@@ -195,7 +195,8 @@ projection "sqlite" {
 ```
 
 The `projection` block at the end is an example no tool reads: the specification does
-not define what goes inside it.
+not define what goes inside it, and the reference CLI will not export a file that
+contains one.
 
 ## [OpenVaultDB](https://openvaultdb.com/)
 

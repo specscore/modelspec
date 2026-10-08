@@ -336,7 +336,7 @@ or uniqueness constraints. Backend-specific index syntax remains a projection de
 
 The `index` block below is shown by example. Its attributes are not defined, the JSON
 format has no place for an entity's indexes, and the reference CLI records the block
-without reading its content.
+without reading its content and will not export a file that contains one.
 
 ```hcl
 entity "User" {

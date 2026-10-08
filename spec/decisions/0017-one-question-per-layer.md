@@ -48,7 +48,8 @@ One question per layer. The wording put to the owner:
 
 The owner's answer, 8 October 2026: "Approve".
 
-The rule that chooses a fact's home:
+The proposal spells out "chosen by how far it holds" in its section 5. These three
+lines are the proposal's, not on the card the owner answered:
 
 - What data means goes in MeaningGraph.
 - What is true of the data in every database that holds it goes in ModelSpec.

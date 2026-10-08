@@ -15,11 +15,12 @@ status: Draft
 
 ## Context
 
-Decisions [0018](0018-entity-becomes-record.md),
-[0019](0019-collection-and-recordset-removed-three-words-reserved.md) and
-[0020](0020-field-is-the-member-word.md) change keywords that every model uses. The
-change is small at its centre and wide at its edge: registered models are pinned by
-commit in the registry, and readers in many repositories parse them independently.
+Decisions [0018](0018-entity-becomes-record.md) and
+[0020](0020-field-is-the-member-word.md) change keywords that every model uses, and
+[decision 0019](0019-collection-and-recordset-removed-three-words-reserved.md)
+changes the grammar every reader parses. The change is small at its centre and wide
+at its edge: registered models are pinned by commit in the registry, and readers in
+many repositories parse them independently.
 
 Two things pulled in opposite directions when the decisions were approved. A launch
 was in preparation, and a rename across many repositories shortly before a launch is
@@ -50,7 +51,7 @@ The phases, as the proposal names them:
 |---|---|---|
 | 1. Say what is true | Prose in the specification and on modelspec.org. The approved decisions are recorded. No syntax. | Now, with the change that adds this file. |
 | 2. The ModelSpec format | The grammar, the reference CLI, which reads both spellings and gains a rewrite command, its corpus, and the JSON Schema of decision 0010. | On the owner's word that the launch is done. |
-| 3. The neighbours follow | Readers, then writers, in other repositories. The registered models are regenerated and pinned anew. | On the owner's word, after Phase 2. |
+| 3. The neighbours follow | Readers, then writers, in this repository's site code and in other repositories. The registered models are regenerated and pinned anew. | On the owner's word, after Phase 2. |
 
 The rename is staged, in four steps:
 
@@ -104,8 +105,9 @@ cutover would leave pinned models unreadable until every pin had moved.
 - The specification keeps describing the grammar that tools read today: `entity`,
   `property`, `collection` and `recordset`.
 - Decisions 0002, 0003, 0004, 0007, 0009, 0014 and 0015 stay approved and unedited
-  until their successors take effect. The `Supersedes` field of each successor, and
-  the move of a succeeded decision to the archive, are recorded then.
+  until their successors take effect. How each supersession is then recorded is the
+  named unknown above: the `Supersedes` field archives a whole decision, and most of
+  these are succeeded in part.
 - Until Phase 2 a reader must check a decision's "Takes effect" section before
   treating it as the grammar.
 

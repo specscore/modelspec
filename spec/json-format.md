@@ -19,11 +19,11 @@ A ModelSpec JSON AST serialization MUST be a JSON object with these top-level fi
 | `module` | Yes | Module identity and version metadata. |
 | `components` | No | Reusable field groups. |
 | `enums` | No | Named controlled vocabularies. |
-| `entities` | No | Logical application data concepts; `key` may declare record identity. |
+| `entities` | No | Named structures of typed properties; `key` may declare record identity. |
 | `collections` | No | Storage-neutral data sources or collection projections. |
 | `recordsets` | No | Strict tabular result shapes. |
 | `projections` | No | Advisory target-specific mapping hints. |
-| `migrations` | No | Semantic migration metadata. |
+| `migrations` | No | Descriptive migration metadata. |
 
 The `modelspec` field MUST be the string `1.0-draft` for this draft serialization.
 
@@ -235,6 +235,8 @@ Migration metadata is descriptive in v0:
 ```
 
 ModelSpec does not execute migrations in v0.
+
+The shape of a migration object is likewise shown by example and is not defined.
 
 ## Validation Requirements
 

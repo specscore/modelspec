@@ -13,7 +13,7 @@ A projection maps ModelSpec concepts into a target representation.
 This chapter states a direction. The `projection` block is shown by example: its
 attributes and its mapping to the JSON `projections` object are not defined, no
 generator exists, and the reference CLI records the block without reading its
-content.
+content and will not export a file that contains one.
 
 Targets may include:
 

@@ -51,17 +51,16 @@ Two parts. The wording put to the owner:
 The owner's answer, 8 October 2026: part a, "Remove both"; part b, "Reserve all
 three".
 
-Where the jobs go:
+The card says where the jobs go: "A stored set of rows is what OVDB calls a
+recordset, and the shape of a query's result is a record type with no key", and a
+feature specification that says what it reads "names the record type, and the
+recordset once a database exists". A record type is today's entity
+([decision 0018](0018-entity-becomes-record.md)).
 
-- A named, stored set of rows is what OpenVaultDB calls a recordset. A database's
-  description already lists its recordsets.
-- The shape of a query's result is an entity with no key, which ModelSpec already
-  allows.
-- The order of columns, and a column name that repeats, are facts about one physical
-  result. The database's own description carries them.
-- A feature specification that says which stored set it reads names the entity, by
-  the two-part address `module.Name`. Once a database exists it can also name the
-  database and one of its recordsets.
+From the proposal's section 3, not on the card the owner answered: the order of
+columns, and a column name that repeats, are facts about one physical result and not
+about the shape; and a feature specification names the entity by the two-part
+address that already works, `module.Name`.
 
 `projection`, `index` and `migration` stay reserved so that a later version can
 define them. Until then a model has no place to say where its rows should be stored.
@@ -96,20 +95,25 @@ query metadata on computed collections and recordsets, and with both gone nothin
 a model carries a query. It is not reversed: ModelSpec gains no query language.
 
 Those decisions stay approved and unedited, and this file's `Supersedes` field is
-empty, because they are in force until the grammar changes. The supersession is
-recorded when this decision takes effect.
+empty at approval, because they are in force until the grammar changes and three of
+them are succeeded only in part. How the supersession is recorded is settled when
+the first successor takes effect (decision 0022).
 
 Recorder's notes, not part of the owner's answer. The proposal's author read the
 approval as covering the supersession named on the card, and told the owner so as a
 reading to correct; no correction is recorded. The card named 0003, 0007, 0009 and
 0015; that 0004 loses its subject is stated in the proposal's migration section and
 its hand-off. [Decision 0008](0008-migration-capabilities-out-of-scope.md) is not
-named and what it decides stands: ModelSpec executes no migrations.
+named and what it decides stands: ModelSpec executes no migrations. Two of the three
+rules of [decision 0002](0002-property-field-column.md), that a collection has fields
+and a recordset has columns, lose their blocks by this decision; the cards name 0002
+under D4 only ([decision 0020](0020-field-is-the-member-word.md)).
 
 ## Rationale
 
 Part a. A construct that the reference CLI reads and no model uses costs every other
-reader: two block types, two more member words and two more name scopes. Each job has
+reader: two block types, a member word of its own for the recordset, and two more
+name scopes. Each job has
 a better home. OpenVaultDB already describes stored sets of rows, next to an actual
 database, where the statement can be checked. A keyless entity already describes the
 shape of a result.

@@ -41,8 +41,8 @@ The owner's answer, 8 October 2026: "Use field for both".
 
 The same day he described the idea behind it: "My original idea was to use different
 member names on each level", so that "when you name field 'Gender' you know what
-level it is". The levels are MeaningGraph, ModelSpec and OpenVaultDB; the words are
-property, field and column.
+level it is". The proposal sets the idea out as one word per level: property in
+MeaningGraph, field in ModelSpec, column in OpenVaultDB.
 
 | | In force today | When this decision takes effect |
 |---|---|---|
@@ -59,7 +59,8 @@ recorded here.
 ### Takes effect
 
 Phase 2 for the grammar, the reference CLI, its corpus and the JSON form. Phase 3 for
-the readers and writers in other repositories. Neither has started. Both wait for the
+the readers and writers, in this repository's site code and in other repositories.
+Neither has started. Both wait for the
 owner's word
 ([decision 0022](0022-prose-now-format-change-on-the-owners-word.md)).
 
@@ -73,8 +74,9 @@ entity has properties. The other two rules of 0002, that a collection has fields
 a recordset has columns, lose their blocks by decision 0019.
 
 Decision 0002 stays approved and unedited, and this file's `Supersedes` field is
-empty, because 0002 is in force until the grammar changes. The supersession is
-recorded when this decision takes effect.
+empty at approval, because 0002 is in force until the grammar changes. How the
+supersession is recorded is settled when the first successor takes effect (decision
+0022).
 
 ## Rationale
 
@@ -111,7 +113,8 @@ same thing in one language, with no difference in what they mean.
   Readers accept both spellings until the last registered model is pinned anew
   (decision 0022).
 - The JSON key changes under the new format identifier that decision 0018 fixes.
-- Readers and writers in other repositories change in Phase 3.
+- Readers and writers change in Phase 3, in this repository's site code and in other
+  repositories.
 
 ## Observed Consequences
 

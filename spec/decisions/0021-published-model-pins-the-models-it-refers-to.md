@@ -36,16 +36,20 @@ as a whole is about relationships between two databases and belongs to the tools
 that use them; it is to be recorded there. This file records only the part of D9 that
 amends decision 0014.
 
-Named unknowns. The name and format of the file, and how the reference CLI reads it,
-are not decided: they need a specification, which the approval authorises writing. A
-rule for comparing keys of different types across two models, such as a `uuid` and a
-string, is not defined either.
+Named unknowns. The name and format of the file, where exactly it sits, how the
+reference CLI reads it and what the checks verify are not decided: they need a
+specification, which the approval authorises writing. The proposal's section 8
+suggests the file sits in the model's own repository, and that the check is local to
+each reference: the entity that is referred to, and its key, must exist at the
+pinned commit, so two models may refer to each other. A rule for comparing keys of
+different types across two models, such as a `uuid` and a string, is not defined
+either.
 
 ## Decision
 
 A published model that refers to another model names that model and the commit it is
-pinned to, in a short file beside the model, in the same repository. The wording put
-to the owner, from the D9 card:
+pinned to, in a short file beside the model. The wording put to the owner, from the
+D9 card:
 
 > The syntax exists (decision 0014). The CLI's publishing checks and the registry
 > refuse it today. Publishing one needs the model to name the other model and its
@@ -82,8 +86,9 @@ form, its read-only meaning, the dependency it implies and the diagnostic for an
 unresolved name.
 
 Decision 0014 stays approved and unedited, and this file's `Supersedes` field is
-empty, because 0014 is in force as written until the file exists. The amendment is
-recorded when this decision takes effect.
+empty at approval, because 0014 is in force as written until the file exists and is
+amended, not replaced. How the amendment is recorded is settled when the first
+successor takes effect (decision 0022).
 
 Recorder's note, not part of the owner's answer. The proposal's author read the
 approval as covering the amendment named on the card, and told the owner so as a
@@ -111,8 +116,9 @@ refused, or two readers may resolve one name to two models.
 ### Put the address in the model's source
 
 An import statement or a URL-style reference. Declined: decision 0014 already
-declined both, because they put packaging into the language, and nothing here changes
-that reasoning.
+declined both, the import because it adds grammar and aliasing questions without
+adding power, and the URL-style reference because it bakes packaging into the
+language. Nothing here changes that reasoning.
 
 ### State a relationship between two databases as a foreign key
 
@@ -124,13 +130,9 @@ one deployment, where two databases that hold the same data could not share it.
 
 - The publish profile and the registry's converter must accept a qualified name from
   another repository once the file exists.
-- The check stays local to each reference: the entity that is referred to, and its
-  key, must exist at the pinned commit. Two models may refer to each other.
 - ModelSpec gains no way to add a reference to somebody else's entity from outside.
   A qualified reference stays read-only, as decision 0014 says, and is written on the
   referring side.
-- A model that refers to a model nobody has published cannot be published until that
-  model is.
 
 ## Observed Consequences
 

@@ -41,7 +41,7 @@ cases.
 
 The `migration` block below is shown by example. Its attributes and its mapping to the
 JSON `migrations` object are not defined, and the reference CLI records the block
-without reading its content.
+without reading its content and will not export a file that contains one.
 
 ```hcl
 migration "2026-07-08-user-display-name" {

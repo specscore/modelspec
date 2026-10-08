@@ -63,15 +63,15 @@ changed none of them: the JSON format identifier `1.0-draft-2`, the search kind
 | JSON key | `entities` | `records` |
 | JSON format identifier | `1.0-draft` | `1.0-draft-2` |
 | Word in prose | entity | record type |
-| Registry page anchor | `#entity-Name` | `#record-Name`, with the old anchor kept as an alias |
+| Registry page anchor | `#entity-Name` | `#record-Name` |
 | Search kind | `model_entity` | `model_record` |
 | Addresses | `modelspec://host/org/repo/module`, `module.Name` | Unchanged |
 
 ### Takes effect
 
 Phase 2 for the grammar, the reference CLI, its corpus and the JSON form. Phase 3 for
-the readers and writers in other repositories, and for pinning the registered models
-anew. Neither has started. Both wait for the owner's word
+the readers and writers, in this repository's site code and in other repositories,
+and for pinning the registered models anew. Neither has started. Both wait for the owner's word
 ([decision 0022](0022-prose-now-format-change-on-the-owners-word.md)).
 
 Until then `entity` is the grammar in force and the specification describes it.
@@ -88,14 +88,16 @@ The card also named part of SpecScore decision 0011, which reserves the kind wor
 repository and needs its own successor there.
 
 Decision 0014 stays approved and unedited, and this file's `Supersedes` field is
-empty, because 0014 is in force until the grammar changes. The supersession is
-recorded when this decision takes effect.
+empty at approval, because 0014 is in force until the grammar changes and only part
+of it is succeeded. How the supersession is recorded is settled when the first
+successor takes effect (decision 0022).
 
 Recorder's notes, not part of the owner's answer. The proposal's author read the
 approval as covering the supersession named on the card, and told the owner so as a
 reading to correct; no correction is recorded. The rename also reaches the word
 `entity` where decisions 0009 and 0015 spell it; the card did not name them for this
-decision.
+decision. The proposal's migration section keeps the old page anchor, `#entity-Name`,
+as an alias; the card names the new anchor only.
 
 ## Rationale
 
@@ -105,8 +107,9 @@ is: the type of one record. The specification already speaks of an entity's
 is a record, and Java, C# and Pascal declare record types with that keyword.
 
 The cost is that "record" also means one row elsewhere, in OpenVaultDB's API among
-others. So the declaration is called a record type in prose, every time, and
-OpenVaultDB's files spell the mapping key `record_type`.
+others. So the declaration is called a record type in prose, every time, and the
+proposal has OpenVaultDB's files spell their mapping key `record_type` once that
+format changes.
 
 Addresses carry no kind word, so no address changes and no binding in a meaning file
 has to be rewritten for this rename.
@@ -175,7 +178,8 @@ concept is what data people expect, and ModelSpec's text would still claim meani
   which vocabulary it holds. HCL has no version marker: the keyword tells a reader
   which vocabulary it sees.
 - SpecScore decision 0011 needs a successor in the SpecScore repository.
-- Readers and writers in other repositories change in Phase 3.
+- Readers and writers change in Phase 3, in this repository's site code and in other
+  repositories.
 
 ## Observed Consequences
 

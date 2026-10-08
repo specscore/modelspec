@@ -2,8 +2,9 @@
 
 ModelSpec is an open specification language for application data models.
 
-The specification defines the logical model that generators, validators, and storage
-systems consume. It is storage-agnostic, language-agnostic, and backend-agnostic.
+The specification defines the logical model that validators read today, and that
+generators and storage systems are meant to consume. It is storage-agnostic,
+language-agnostic, and backend-agnostic.
 
 ## Contents
 
@@ -15,7 +16,7 @@ systems consume. It is storage-agnostic, language-agnostic, and backend-agnostic
 | [projections.md](projections.md) | Logical-to-physical projection model and advisory backend mapping hints. |
 | [migration-metadata.md](migration-metadata.md) | Versioning and migration metadata carried by a model. |
 | [out-of-scope.md](out-of-scope.md) | Boundaries that ModelSpec intentionally does not cross. |
-| [decisions/](decisions/README.md) | Architectural decisions retained from the original design. |
+| [decisions/](decisions/README.md) | Architectural decisions. |
 
 ## Design Principles
 
@@ -42,6 +43,9 @@ entities of that model. Using a model inside a vault for schema validation, migr
 planning, backend mapping, GraphQL generation, DTQL typing metadata, DALGO metadata,
 and backend generators is the intended integration. None of it is implemented.
 
+GraphSpec is not one of those three layers. It describes how one application's
+objects behave, and it takes their structure from ModelSpec, as described below.
+
 SpecScore validates ModelSpec documents and may provide linting, validation, and
 semantic checks. SpecScore does not define ModelSpec semantics.
 
@@ -63,7 +67,7 @@ when they start.
 | Decision | Succeeds, when it takes effect |
 |---|---|
 | [0018 Entity Becomes Record](decisions/0018-entity-becomes-record.md) | Part of 0014. |
-| [0019 Collection And Recordset Removed, Three Words Reserved](decisions/0019-collection-and-recordset-removed-three-words-reserved.md) | 0003, and part of 0007, 0009 and 0015. 0004 loses its subject. |
+| [0019 Collection And Recordset Removed, Three Words Reserved](decisions/0019-collection-and-recordset-removed-three-words-reserved.md) | 0003, and part of 0007, 0009 and 0015. 0004 loses its subject, and so do two of the three rules of 0002. |
 | [0020 Field Is The Member Word](decisions/0020-field-is-the-member-word.md) | Part of 0002. |
 | [0021 A Published Model Pins The Models It Refers To](decisions/0021-published-model-pins-the-models-it-refers-to.md) | Amends 0014. |
 
