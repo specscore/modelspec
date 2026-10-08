@@ -1,5 +1,11 @@
 # OpenVaultDB Integration
 
+This page describes the intended integration. None of it is implemented: no
+OpenVaultDB code loads a model to validate writes, plan a migration or choose a
+backend mapping. What exists today is narrower. A database published to the OVDB
+Directory names the ModelSpec model it follows, and `ovdb publisher check` verifies
+that the recordsets it lists are the entities of that model.
+
 ## Role
 
 OpenVaultDB is the cleanest early consumer of ModelSpec.

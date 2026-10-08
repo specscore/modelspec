@@ -209,6 +209,10 @@ Projection objects are advisory target-specific mapping hints:
 Consumers MAY ignore projection hints. OpenVaultDB has final authority over backend
 choice and backend mapping.
 
+The shape of a projection object is shown by example and is not defined. The
+reference CLI checks only that `projections` and `migrations` are objects and carries
+them through unchanged.
+
 ## Migration Metadata
 
 Migration metadata is descriptive in v0:

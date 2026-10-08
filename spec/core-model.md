@@ -4,13 +4,30 @@
 
 Define the core ModelSpec language for logical application data models.
 
+## Shape, Not Meaning
+
+ModelSpec answers one question about data: what shape it has. Two adjacent open
+formats answer the other two
+([decision 0017](decisions/0017-one-question-per-layer.md)):
+
+| Question | Answered by | Example |
+|---|---|---|
+| What does the data mean? | MeaningGraph | What an invoice is, and what it is called in another language. |
+| What shape does it have? | ModelSpec | An `Invoice` has a `total` of type `decimal`, a key, and a reference to a `Customer`. |
+| Where is it? | OpenVaultDB | Which database holds invoice rows, in which table, and how to reach it. |
+
+A model declares names, types, keys, and references. It does not say what a name
+means, and it does not say which database holds the data. A MeaningGraph meaning file
+points at an entity or a property by its ModelSpec address, and a database's
+description names the model it follows. A model points at neither.
+
 ## Structural Concepts
 
 ModelSpec has five foundational structural concepts:
 
 | Concept | Purpose |
 |---|---|
-| Entity | Logical business concept and semantic anchor; a key may declare record identity. |
+| Entity | Named structure of typed properties; a key may declare record identity. |
 | Component | Reusable group of fields with no independent identity. |
 | Enum | Named, reusable controlled vocabulary of values. |
 | Collection | Named data source or storage-neutral container projection. |
@@ -25,10 +42,11 @@ five kind tokens (`entities`, `components`, `enums`, `collections`,
 
 ## Entity
 
-An Entity is a logical business concept and semantic anchor. It owns canonical
-properties and may embed components. An entity may declare record identity with
-a key; when no key is present, the model makes no claim that its records have a
-stable identity.
+An Entity is a named structure: typed properties, an optional key, and references
+to other entities. It may embed components. An entity states the shape of a record;
+what the record means is stated in MeaningGraph, not here. An entity may declare
+record identity with a key; when no key is present, the model makes no claim that
+its records have a stable identity.
 
 ```hcl
 entity "User" {
@@ -47,8 +65,11 @@ entity "User" {
 }
 ```
 
-An Entity is not a table, collection, class, or API resource. Those are projections.
-An entity can describe rows from a source table with no declared primary key:
+An Entity is not itself a table, collection, class, or API resource. It is the shape
+those follow, in every database or program that holds the data. An entity can be
+written from an existing table, one property per column; the registered models of
+SQL databases, such as Chinook, are written that way. An entity can describe rows
+from a source table with no declared primary key:
 
 ```hcl
 entity "Discount" {
@@ -74,7 +95,7 @@ ModelSpec keeps three attribute terms because each layer has a different job:
 
 | Term | Owner | Meaning |
 |---|---|---|
-| Property | Entity | Canonical semantic attribute. |
+| Property | Entity | Named, typed member of an entity. |
 | Field | Collection or Component | Storage-neutral data field, including schemaless-capable containers. |
 | Column | Recordset | Strict ordered tabular result attribute. |
 
@@ -290,7 +311,7 @@ The initial type vocabulary includes:
 - `any`
 
 Future versions should add localized values, map types, nested document shapes,
-semantic formats, and richer constraints where they describe data semantics rather
+value formats, and richer constraints where they describe the data itself rather
 than UI or storage implementation details.
 
 ## Constraints
@@ -305,13 +326,17 @@ Initial constraints include:
 - `enum`
 - `format`
 
-Constraints are semantic validation rules. Backend-specific tuning belongs in
+Constraints are validation rules on values. Backend-specific tuning belongs in
 projections.
 
 ## Indexes
 
 Indexes are part of the application data model when they express lookup requirements
 or uniqueness constraints. Backend-specific index syntax remains a projection detail.
+
+The `index` block below is shown by example. Its attributes are not defined, the JSON
+format has no place for an entity's indexes, and the reference CLI records the block
+without reading its content.
 
 ```hcl
 entity "User" {

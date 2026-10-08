@@ -42,6 +42,17 @@ ModelSpec intentionally does not define:
 
 Those concerns belong in adjacent specifications and application architecture.
 
+Indexes, projections, and migration metadata are shown in the specification by
+example. Their content is not yet defined, and no tool reads it.
+
+## Shape, Not Meaning
+
+ModelSpec answers one question about data: what shape it has. MeaningGraph says what
+the data means, and [OpenVaultDB](https://openvaultdb.com/) says where it is. A model
+declares names, types, keys, and references; it does not say what a name means or
+which database holds the data. See
+[decision 0017](spec/decisions/0017-one-question-per-layer.md).
+
 ## Why ModelSpec Exists
 
 Applications usually define the same data model many times:
@@ -82,7 +93,8 @@ Storage schemas are necessary, but they are not the application model.
 
 A relational table layout, Firestore collection hierarchy, SQLite DDL file, and Git
 record layout each encode operational tradeoffs. They should be projections of the
-application model, not the only place where application meaning exists.
+application model, not the only place where the application's data model is written
+down.
 
 For example, the same logical model:
 
@@ -120,10 +132,10 @@ ModelSpec keeps the original design principles that motivated the project:
 
 - Composition over inheritance.
 - Reusable components instead of deep type hierarchies.
-- Entity semantics separated from storage containers.
+- Entity structure separated from storage containers.
 - Logical models separated from physical projections.
 - Advisory storage projections rather than app-owned storage decisions.
-- Generators for GraphQL, Go, TypeScript, SQLite, PostgreSQL, Firestore, InGitDB, and [OpenVaultDB](https://openvaultdb.com/) schemas.
+- Generators for GraphQL, Go, TypeScript, SQLite, PostgreSQL, Firestore, InGitDB, and [OpenVaultDB](https://openvaultdb.com/) schemas. Planned; none is implemented.
 - A future catalog for canonical entities, reusable modules, and dataset mappings.
 - Go-inspired composition with simple embedded components.
 
@@ -182,12 +194,18 @@ projection "sqlite" {
 }
 ```
 
+The `projection` block at the end is an example no tool reads: the specification does
+not define what goes inside it.
+
 ## [OpenVaultDB](https://openvaultdb.com/)
 
-[OpenVaultDB](https://openvaultdb.com/) consumes ModelSpec directly.
+[OpenVaultDB](https://openvaultdb.com/) says where data is. A database published to
+the OVDB Directory names the ModelSpec model it follows, and `ovdb publisher check`
+verifies that the recordsets it lists are the entities of that model.
 
-Applications publish a ModelSpec module. A user's vault loads the current ModelSpec
-and the target ModelSpec, then uses them for:
+The intended integration goes further, and none of it is implemented. An application
+would publish a ModelSpec module; a user's vault would load the current ModelSpec and
+the target ModelSpec, then use them for:
 
 - schema validation
 - migration planning
@@ -256,8 +274,9 @@ GraphSpec consumes ModelSpec for structure; ModelSpec does not depend on GraphSp
 HCL is the intended authored source format for ModelSpec.
 
 Tooling should parse HCL into a ModelSpec AST. Validators, generators, and consumers
-can then ingest serialized AST forms, with JSON as the first machine-readable
-serialization and YAML as a possible secondary serialization. See
+can then ingest the serialized AST. JSON is the machine-readable serialization; YAML
+is not supported in v0
+([decision 0011](spec/decisions/0011-yaml-serialization-out-of-v0.md)). See
 [spec/hcl-authoring.md](spec/hcl-authoring.md),
 [spec/json-format.md](spec/json-format.md), and
 [docs/format-analysis.md](docs/format-analysis.md).

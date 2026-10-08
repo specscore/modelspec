@@ -5,8 +5,9 @@
 Define the migration metadata ModelSpec should carry so consumers can plan changes
 between model versions.
 
-ModelSpec does not execute migrations. Consumers such as OpenVaultDB use ModelSpec to
-compare current and target models and produce migration plans.
+ModelSpec does not execute migrations. The intent is that a consumer such as
+OpenVaultDB compares a current and a target model and produces a migration plan. No
+consumer does so today.
 
 Migrations are the responsibility of the store implementation driver. ModelSpec does
 not include migration capabilities beyond descriptive metadata in v0.
@@ -38,6 +39,10 @@ For example:
 ModelSpec should allow authors to provide migration metadata that distinguishes these
 cases.
 
+The `migration` block below is shown by example. Its attributes and its mapping to the
+JSON `migrations` object are not defined, and the reference CLI records the block
+without reading its content.
+
 ```hcl
 migration "2026-07-08-user-display-name" {
   from = "1.2.0"
@@ -56,7 +61,8 @@ migration "2026-07-08-user-display-name" {
 
 ## OpenVaultDB Consumption
 
-OpenVaultDB loads the current ModelSpec and target ModelSpec, then uses them to plan:
+This is the intended use and is not implemented. OpenVaultDB would load the current
+ModelSpec and the target ModelSpec, then use them to plan:
 
 - schema changes
 - data transformations
@@ -65,7 +71,7 @@ OpenVaultDB loads the current ModelSpec and target ModelSpec, then uses them to 
 - validation checks
 - rollback or compensating actions
 
-OpenVaultDB remains responsible for user approval, permissions, audit events,
+OpenVaultDB would remain responsible for user approval, permissions, audit events,
 checkpointing, and execution.
 
 ## Boundary

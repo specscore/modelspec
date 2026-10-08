@@ -23,14 +23,24 @@ systems consume. It is storage-agnostic, language-agnostic, and backend-agnostic
 - Keep the logical model independent from storage layout.
 - Prefer composition over inheritance.
 - Make projections explicit and reviewable.
-- Treat backend mappings as generated or advisory, not as the semantic source of truth.
+- Treat backend mappings as generated or advisory, not as the source of truth for the model.
 - Keep ModelSpec independent from OpenVaultDB, SpecScore, GraphSpec, and any single generator.
 
 ## Relationship To Adjacent Projects
 
-OpenVaultDB consumes ModelSpec directly for schema validation, migration planning,
-backend mapping, GraphQL generation, DTQL typing metadata, DALGO metadata, and backend
-generators.
+ModelSpec says what shape data has. MeaningGraph says what the data means, and
+OpenVaultDB says where it is
+([decision 0017](decisions/0017-one-question-per-layer.md)).
+
+MeaningGraph binds meanings to models: a meaning file points at a ModelSpec entity or
+property by its address. ModelSpec never references MeaningGraph and states no
+meaning of its own.
+
+OpenVaultDB describes databases: a published database names the model it follows, and
+`ovdb publisher check` verifies that the recordsets the publisher lists are the
+entities of that model. Using a model inside a vault for schema validation, migration
+planning, backend mapping, GraphQL generation, DTQL typing metadata, DALGO metadata,
+and backend generators is the intended integration. None of it is implemented.
 
 SpecScore validates ModelSpec documents and may provide linting, validation, and
 semantic checks. SpecScore does not define ModelSpec semantics.
@@ -40,6 +50,22 @@ relationships, commands, events, lifecycle — and references ModelSpec models,
 components, and enums for structure instead of redefining it. ModelSpec never
 references GraphSpec; see
 [decision 0012](decisions/0012-graphspec-is-a-consumer.md).
+
+## Approved Changes Not Yet In Force
+
+Decisions 0018 to 0020 are approved and change the grammar. Decision 0021 is approved
+and changes how a published model's references are resolved. None of them is in
+force. This specification describes the grammar that tools read today, and the
+decisions they succeed stand as written until each change takes effect.
+[Decision 0022](decisions/0022-prose-now-format-change-on-the-owners-word.md) says
+when they start.
+
+| Decision | Succeeds, when it takes effect |
+|---|---|
+| [0018 Entity Becomes Record](decisions/0018-entity-becomes-record.md) | Part of 0014. |
+| [0019 Collection And Recordset Removed, Three Words Reserved](decisions/0019-collection-and-recordset-removed-three-words-reserved.md) | 0003, and part of 0007, 0009 and 0015. 0004 loses its subject. |
+| [0020 Field Is The Member Word](decisions/0020-field-is-the-member-word.md) | Part of 0002. |
+| [0021 A Published Model Pins The Models It Refers To](decisions/0021-published-model-pins-the-models-it-refers-to.md) | Amends 0014. |
 
 ## Open Questions
 
