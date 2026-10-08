@@ -1,5 +1,10 @@
 # Catalog Vision
 
+This page is an early vision and predates MeaningGraph. What it calls canonical
+entities and shared semantics, that is what data means, is MeaningGraph's subject
+([decision 0017](../spec/decisions/0017-one-question-per-layer.md)). Published models
+are listed in the [ModelSpec registry](https://github.com/modelspec-org/registry).
+
 ## Overview
 
 The ModelSpec catalog is a future ecosystem for discovering, sharing, versioning, and

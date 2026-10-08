@@ -4,9 +4,10 @@
 
 Define the first human-authored ModelSpec source format.
 
-HCL is the intended authored source format for ModelSpec modules. JSON and YAML are
-serializations of the parsed ModelSpec AST; they are not the preferred authoring
-surface.
+HCL is the intended authored source format for ModelSpec modules. JSON is the
+serialization of the parsed ModelSpec AST; it is not the preferred authoring
+surface. YAML is not a ModelSpec serialization in v0
+([decision 0011](decisions/0011-yaml-serialization-out-of-v0.md)).
 
 ## Direction
 
@@ -35,7 +36,7 @@ in a physical source schema. If present, an entity key must be a non-empty list
 of distinct properties or fields provided by components it uses.
 
 Tooling should parse HCL into a ModelSpec AST. That AST should then be serializable to
-JSON for machine ingestion and to YAML if a consumer needs a YAML representation.
+JSON for machine ingestion. No YAML form is defined.
 
 ## Block Style
 

@@ -143,7 +143,7 @@
             <li>GraphQL</li>
             <li>Go · TypeScript</li>
           </ul>
-          <p class="drift-note">One logical model. Generated representations.</p>
+          <p class="drift-note">One logical model. Representations generated from it, once generators exist.</p>
         </div>
       </div>
     </section>
@@ -156,7 +156,7 @@
         <p class="section-sub">
           A table layout, a Firestore collection hierarchy and a SQLite DDL file each
           encode operational tradeoffs. They are worth having — but they should not be
-          the only place your application's meaning exists.
+          the only place your application's data model is written down.
         </p>
       </div>
 
@@ -190,15 +190,16 @@
         <p class="section-label">03 — Core concepts</p>
         <h2>A small, honest vocabulary.</h2>
         <p class="section-sub">
-          Entities carry identity. Components are reusable groups with none. Enums are
-          named vocabularies. Projections map the logical model onto a target.
+          Entities are named structures of typed properties, with an optional key.
+          Components are reusable groups of fields. Enums are named vocabularies. The
+          projection block is an example no tool reads.
         </p>
       </div>
 
       <div class="concept-grid">
         <article class="card reveal">
           <h3>Entity</h3>
-          <p>An identity-bearing object — <code>User</code>, <code>Order</code>, <code>Invoice</code>. Its identity is declared, not inferred.</p>
+          <p>A named structure of typed properties — <code>User</code>, <code>Order</code>, <code>Invoice</code>. A key is optional: without one, the model makes no claim of record identity.</p>
           <pre><code><span class="k">entity</span> <span class="s">"User"</span> {
   <span class="k">key</span> = [<span class="s">"id"</span>]
 
@@ -225,12 +226,16 @@
           <pre><code><span class="k">entity</span> <span class="s">"Invoice"</span> {
   <span class="k">key</span> = [<span class="s">"id"</span>]
   <span class="k">use</span> = [<span class="s">"Auditable"</span>]
+
+  <span class="k">property</span> <span class="s">"id"</span> {
+    type = <span class="s">"uuid"</span>
+  }
 }</code></pre>
         </article>
 
         <article class="card reveal">
           <h3>Projection</h3>
-          <p>An advisory mapping of the logical model onto one storage target. Add a target without touching the model.</p>
+          <p><em>An example no tool reads.</em> The specification shows this block but does not define what goes inside it. The reference CLI records it without reading its content, and will not export a file that contains one.</p>
           <pre><code><span class="k">projection</span> <span class="s">"sqlite"</span> {
   <span class="k">collection</span> <span class="s">"users"</span> {
     source = <span class="s">"User"</span>
@@ -307,9 +312,14 @@
 
       <p class="import-lead reveal">
         The same logical model — <code>User</code> → <code>Orders</code> → <code>OrderItems</code> —
-        becomes a nested Firestore path or three flat PostgreSQL tables without the model
-        definition changing. Models can also reference concepts in other modules by
-        qualified name, so a shared vocabulary can be defined once and reused.
+        can become a nested Firestore path or three flat PostgreSQL tables without the model
+        definition changing. No generator does this yet. Models can also reference concepts
+        in other modules by qualified name, so a shared vocabulary can be defined once and reused.
+      </p>
+      <p class="drift-note">
+        The <code>projection</code> block at the end of the file is an example no tool reads:
+        the specification does not define what goes inside it, and the reference CLI will not
+        export a file that contains one.
       </p>
     </section>
 
@@ -329,9 +339,10 @@
         <article class="card reveal">
           <h3>OpenVaultDB</h3>
           <p>
-            Consumes ModelSpec directly. An application publishes a module; a user's vault
-            loads the current and target models and uses them for schema validation,
-            migration planning and backend mapping.
+            Says where the data is. A database in the OVDB Directory names the model it
+            follows, and <code>ovdb publisher check</code> verifies its recordsets against
+            that model. A vault that validates writes, plans migrations or maps a backend
+            from a model is planned; no code does it today.
             <a href="https://openvaultdb.com/" rel="noopener">openvaultdb.com&nbsp;↗</a>
           </p>
         </article>
@@ -390,6 +401,7 @@
             <li>Migration metadata</li>
             <li>Storage-neutral schemas</li>
           </ul>
+          <p class="drift-note">Indexes, projections and migration metadata are shown in the specification by example. Their content is not yet defined, and no tool reads it.</p>
         </div>
 
         <div class="nongoals">
@@ -437,7 +449,7 @@
           <li>JSON serialization — first machine format</li>
           <li>YAML serialization — out of scope for v0</li>
           <li>Generators — planned, none built</li>
-          <li>Conformance corpus — planned</li>
+          <li>Reference CLI and its test corpus — released</li>
         </ul>
         <p class="drift-note">
           Decisions are recorded in the open, in the repository, and superseded ones are

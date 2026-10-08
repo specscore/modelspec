@@ -10,6 +10,11 @@ the source of truth.
 
 A projection maps ModelSpec concepts into a target representation.
 
+This chapter states a direction. The `projection` block is shown by example: its
+attributes and its mapping to the JSON `projections` object are not defined, no
+generator exists, and the reference CLI records the block without reading its
+content and will not export a file that contains one.
+
 Targets may include:
 
 - GraphQL schemas
@@ -73,8 +78,9 @@ projection "ingitdb" {
 
 The consuming vault or backend may honor, override, or ignore the suggestion.
 
-This matters most for OpenVaultDB: the app publishes the storage-neutral ModelSpec;
-the user's vault chooses the final backend and owns enforcement.
+This matters most for OpenVaultDB's design: the app publishes the storage-neutral
+ModelSpec, and the user's vault is meant to choose the final backend and own
+enforcement. No vault does either from a model today.
 
 ## Generator Contract
 
