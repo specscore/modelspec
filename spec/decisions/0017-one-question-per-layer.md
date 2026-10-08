@@ -1,11 +1,11 @@
 ---
 format: https://specscore.md/decision-specification
-status: Draft
+status: Approved
 ---
 
 # Decision: One Question Per Layer
 
-**Status:** Draft
+**Status:** Approved
 **Date:** 2026-10-08
 **Owner:** alexander.trakhimenok@gmail.com
 **Tags:** architecture,boundaries,meaninggraph,openvaultdb

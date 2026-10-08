@@ -1,11 +1,11 @@
 ---
 format: https://specscore.md/decision-specification
-status: Draft
+status: Approved
 ---
 
 # Decision: Prose Now, Format Change On The Owner's Word
 
-**Status:** Draft
+**Status:** Approved
 **Date:** 2026-10-08
 **Owner:** alexander.trakhimenok@gmail.com
 **Tags:** governance,sequencing,compatibility

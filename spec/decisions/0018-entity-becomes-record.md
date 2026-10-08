@@ -1,11 +1,11 @@
 ---
 format: https://specscore.md/decision-specification
-status: Draft
+status: Approved
 ---
 
 # Decision: Entity Becomes Record
 
-**Status:** Draft
+**Status:** Approved
 **Date:** 2026-10-08
 **Owner:** alexander.trakhimenok@gmail.com
 **Tags:** model,terminology,record

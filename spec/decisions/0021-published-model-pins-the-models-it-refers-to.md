@@ -1,11 +1,11 @@
 ---
 format: https://specscore.md/decision-specification
-status: Draft
+status: Approved
 ---
 
 # Decision: A Published Model Pins The Models It Refers To
 
-**Status:** Draft
+**Status:** Approved
 **Date:** 2026-10-08
 **Owner:** alexander.trakhimenok@gmail.com
 **Tags:** model,references,modules,publishing

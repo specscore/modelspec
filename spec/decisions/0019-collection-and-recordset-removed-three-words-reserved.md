@@ -1,11 +1,11 @@
 ---
 format: https://specscore.md/decision-specification
-status: Draft
+status: Approved
 ---
 
 # Decision: Collection And Recordset Removed, Three Words Reserved
 
-**Status:** Draft
+**Status:** Approved
 **Date:** 2026-10-08
 **Owner:** alexander.trakhimenok@gmail.com
 **Tags:** model,grammar,collection,recordset,projection
