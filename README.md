@@ -39,14 +39,20 @@ ModelSpec intentionally does not define:
 Those concerns belong in adjacent specifications and application architecture.
 
 The words `projection`, `index` and `migration` are reserved and have no content
-yet. Earlier drafts wrote a record type as `entity` and its fields as `property`;
-the reference CLI 0.2.0 reads both and `modelspec rewrite --write` converts a file.
-So do SpecScore CLI 0.55.0, MeaningGraph CLI 0.3.0, OpenVaultDB's publisher CLI
-0.42.0, CodeGrapher 0.16.0, the public ModelSpec registry's check and the registry
-sites (modelspec.org, meaninggraph.io and the OVDB Directory site). CodeGrapher's web
-client does not read the current spelling yet. The registered models are still written
-in the earlier spelling until each is rewritten and pinned anew, and they stay valid.
-See
+yet.
+
+Earlier drafts wrote a record type as `entity` and its fields as `property`. In a
+model that is being written or registered that spelling is an error: the reference
+CLI from version 0.3.0 reports it as one in `modelspec lint` and refuses the file in
+`modelspec export`, and `modelspec rewrite --write` converts a file. A document that
+a pin names keeps its spelling and stays readable, and a model that refers to one is
+not made invalid by it: the reference CLI keeps a warning for a module that is
+supplied only to resolve references. These readers read both spellings: SpecScore CLI
+0.55.0, MeaningGraph CLI 0.3.0, OpenVaultDB's publisher CLI 0.42.0, CodeGrapher
+0.16.0, the public ModelSpec registry's check and the registry sites (modelspec.org,
+meaninggraph.io and the OVDB Directory site). On 9 October 2026 CodeGrapher's web
+client did not read the current spelling. No registered model is pinned in the
+earlier spelling. See
 [spec/core-model.md](spec/core-model.md#deprecated-spellings).
 
 ## Shape, Not Meaning

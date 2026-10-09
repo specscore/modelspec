@@ -24,7 +24,8 @@ A ModelSpec JSON AST serialization MUST be a JSON object with these top-level fi
 The `modelspec` field MUST be the string `1.0-draft-2` for this draft serialization.
 
 The identifier tells a reader which vocabulary a document holds. The earlier
-identifier, `1.0-draft`, is deprecated and still read; see
+identifier, `1.0-draft`, is deprecated. It is an error in a document that is being
+written or registered, and it is still read in a document that a pin names; see
 [The 1.0-draft Vocabulary](#the-10-draft-vocabulary).
 
 ## Module Metadata
@@ -129,8 +130,7 @@ and order is not semantic.
 ## The 1.0-draft Vocabulary
 
 A document whose `modelspec` field is `1.0-draft` uses the vocabulary of the earlier
-draft. A reader MUST accept it and SHOULD report that the identifier is deprecated
-([decision 0018](decisions/0018-entity-becomes-record.md),
+draft ([decision 0018](decisions/0018-entity-becomes-record.md),
 [decision 0020](decisions/0020-field-is-the-member-word.md)).
 
 | In `1.0-draft` | In `1.0-draft-2` |
@@ -143,9 +143,51 @@ The identifier decides the vocabulary. A `1.0-draft-2` document that carries a
 `1.0-draft` key, or a `1.0-draft` document that carries a `1.0-draft-2` key, is an
 error. Components use `fields` under both identifiers.
 
-A serializer writes `1.0-draft-2` for a source in the current spelling. The reference
-CLI writes `1.0-draft` for a source that holds any deprecated spelling, so that a
-module and its committed JSON stay in step until both are rewritten.
+The two rules of [core-model.md](core-model.md#deprecated-spellings) hold for JSON
+as they do for HCL:
+
+- A checker of a document that is being written, changed or registered MUST report
+  the identifier `1.0-draft` as an error. Such a document is not valid as a new or
+  updated model.
+- A reader of a document that a pin names MUST accept `1.0-draft` and read each key
+  as the one that replaced it in the table above, for as long as the pin stands. It
+  SHOULD report that the identifier is deprecated. That report is not an error.
+
+```json
+{
+  "modelspec": "1.0-draft",
+  "module": { "id": "github.com/acme/billing", "version": "0.2.0" },
+  "entities": {
+    "Invoice": {
+      "key": ["id"],
+      "properties": {
+        "id": { "type": "uuid" },
+        "customer": { "entity": "Customer" }
+      }
+    },
+    "Customer": {
+      "key": ["id"],
+      "properties": {
+        "id": { "type": "uuid" }
+      }
+    }
+  }
+}
+```
+
+Offered as a new or updated model, this document is an error: its identifier is
+`1.0-draft`. Written under `1.0-draft-2` with `records`, `fields` and `record`, it is
+valid. Named by a pin, the same bytes are read as two record types: `Invoice`, with
+the fields `id` and `customer`, the second a reference to the record type
+`Customer`; and `Customer`, with the field `id`.
+
+This section and the schema `schema/modelspec-ast-1.0-draft.schema.json` remain the
+description of the `1.0-draft` form, for the documents that a pin names.
+
+A serializer writes `1.0-draft-2`. A source that holds a deprecated spelling is not
+valid as a new or updated model, so the reference CLI from version 0.3.0 refuses to
+export it, with `modelspec export` and with `modelspec export --check`. The source
+is rewritten first, with `modelspec rewrite --write`, and exported then.
 
 ## Removed And Reserved Fields
 
@@ -158,7 +200,9 @@ an error, under either identifier
 
 A validator consuming the JSON AST serialization MUST check:
 
-- `modelspec` is present and supported.
+- `modelspec` is present and supported: `1.0-draft-2`, or `1.0-draft` in a document
+  that a pin names. In a document that is being written or registered, `1.0-draft`
+  is an error ([The 1.0-draft Vocabulary](#the-10-draft-vocabulary)).
 - `module.id` and `module.version` are present.
 - component, enum, and record type names are unique within their object maps, and
   across the three: they share one namespace.
