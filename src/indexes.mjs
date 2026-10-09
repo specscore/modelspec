@@ -192,9 +192,13 @@ export function normaliseModelAddress(address) {
 // 1.0-draft-2) or `entities` with their `properties` (1.0-draft). Each spelling is read through one of the two
 // functions below; the rest of this file and the renderers work on the earlier names, whichever the index used.
 
-/** Where a list is read from: the current key where the index has it, otherwise the earlier one. The current key wins when both are present. */
+/**
+ * Where a list is read from: the current key where the index has it, otherwise the earlier one. The current key wins
+ * when both are present. A current key that is absent or `null` is "not written", so the earlier key is read; any
+ * other value of the current key (an empty list included) is read as that key, and must be an array.
+ */
 function listKey(value, current, earlier) {
-  return value[current] !== undefined ? current : earlier;
+  return value[current] != null ? current : earlier;
 }
 
 /** The key under which a model entry lists its record types: `records`, else `entities`. */
