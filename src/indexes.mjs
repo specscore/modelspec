@@ -1,5 +1,5 @@
 // Reading and validating the three indexes the registry pages are built from:
-//   modelspec-registry/draft-1   models with their entities and properties
+//   modelspec-registry/draft-1   models with their records and fields (earlier: entities and properties)
 //   meaning-registry/draft-1     MeaningGraph graphs (which model files they bind)
 //   ovdb-directory/draft-1       OVDB Directory databases (which model they use)
 //
@@ -188,6 +188,25 @@ export function normaliseModelAddress(address) {
 
 // ------------------------------------------------------------ ModelSpec registry
 
+// The registry index spells the record types of a model `records` with their `fields` (ModelSpec
+// 1.0-draft-2) or `entities` with their `properties` (1.0-draft). Each spelling is read through one of the two
+// functions below; the rest of this file and the renderers work on the earlier names, whichever the index used.
+
+/** Where a list is read from: the current key where the index has it, otherwise the earlier one. The current key wins when both are present. */
+function listKey(value, current, earlier) {
+  return value[current] !== undefined ? current : earlier;
+}
+
+/** The key under which a model entry lists its record types: `records`, else `entities`. */
+function recordsKey(model) {
+  return listKey(model, 'records', 'entities');
+}
+
+/** The key under which a record type lists its members: `fields`, else `properties`. */
+function fieldsKey(record) {
+  return listKey(record, 'fields', 'properties');
+}
+
 function property(value, path, entityName, seen) {
   object(value, path);
   const name = pattern(value.name, `${path}.name`, NAME, 'letters, digits and underscores');
@@ -207,7 +226,8 @@ function entity(value, path, seen) {
   if (seen.has(name)) fail(`${path}.name`, `duplicates entity ${name}`);
   seen.add(name);
   const names = new Set();
-  const properties = list(value.properties, `${path}.properties`).map((p, i) => property(p, `${path}.properties[${i}]`, name, names));
+  const members = fieldsKey(value);
+  const properties = list(value[members], `${path}.${members}`).map((p, i) => property(p, `${path}.${members}[${i}]`, name, names));
   const key = value.key === undefined ? [] : list(value.key, `${path}.key`).map((k, i) => text(k, `${path}.key[${i}]`));
   // The components the entity embeds (`use`).
   const use = value.use === undefined ? [] : list(value.use, `${path}.use`).map((u, i) => pattern(u, `${path}.use[${i}]`, REFERENCE, 'a component name'));
@@ -262,7 +282,8 @@ export function validateModelspecIndex(json, options = {}) {
     const names = new Set();
     const componentNames = new Set();
     const collectionNames = new Set();
-    const entities = list(m.entities, `${at}.entities`).map((e, j) => entity(e, `${at}.entities[${j}]`, names));
+    const recordTypes = recordsKey(m);
+    const entities = list(m[recordTypes], `${at}.${recordTypes}`).map((e, j) => entity(e, `${at}.${recordTypes}[${j}]`, names));
     return {
       id,
       title: text(m.title, `${at}.title`),

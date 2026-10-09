@@ -126,3 +126,25 @@ export function modelspecWithComponents() {
   ];
   return json;
 }
+
+/**
+ * A ModelSpec registry index in the current spelling: each model's `entities` renamed `records` and each record's
+ * `properties` renamed `fields`. Nothing else changes, the checksum included (the build reads it, it does not compute it).
+ */
+export function currentSpelling(index) {
+  const renamed = (value, from, to) => Object.fromEntries(Object.entries(value).map(([key, item]) => [key === from ? to : key, item]));
+  return { ...index, models: index.models.map(model => renamed({
+    ...model,
+    entities: model.entities.map(record => renamed(record, 'properties', 'fields')),
+  }, 'entities', 'records')) };
+}
+
+/** The same index carrying both spellings of every list, with the same content under each. */
+export function bothSpellings(index) {
+  const current = currentSpelling(index);
+  return { ...index, models: index.models.map((model, i) => ({
+    ...model,
+    records: current.models[i].records,
+    entities: model.entities.map((record, j) => ({ ...record, fields: current.models[i].records[j].fields })),
+  })) };
+}
