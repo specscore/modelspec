@@ -67,7 +67,8 @@ became `field`, and two constructs were removed
 | Stage | State |
 |---|---|
 | This specification and the reference CLI describe and read the current spelling, and still read the deprecated one. | Done. |
-| Other readers accept both spellings; then writers emit the current one. | Not done. Until it is, other tools and modelspec.org's registry pages still say "entity" and "property", and other readers accept only the deprecated spelling: the public registry's check refuses a model in the current one. |
+| Other readers accept both spellings. | Done. The public registry's check, and the readers of the registry's index, the OVDB Directory's index and the site code, accept both. |
+| Writers emit the current spelling. | Begun. The registry pages of modelspec.org say "record type" and "field", and answer the anchors `#record-Name` and `#field-Record-member` as well as the earlier `#entity-Name` and `#property-Record-member`. Other writers, the registry's own index among them, follow in their own changes. |
 | Each registered model is rewritten and its pin moved. | Not done. Every registered model is in the deprecated spelling today, and is valid. |
 | A deprecated spelling becomes an error. | Not done. It follows the stage above. The owner's statement of 9 October 2026 about it, and how it was read, is in decision 0022's observed consequences. |
 
@@ -75,9 +76,10 @@ Decision 0022 lists the specification among the writers of its second step. The
 grammar chapters changed earlier, with the reference CLI, because decisions 0018 to
 0020 each place the grammar and the reference CLI in Phase 2.
 
-So a registered model should stay in the deprecated spelling until the registry
-reads the current one. A new model can be written in the current spelling and checked
-with the reference CLI today.
+The readers named above read both spellings, so a registered model is valid in
+either; it stays in the deprecated spelling until it is rewritten and its pin moved.
+A new model can be written in the current spelling and checked with the
+reference CLI today.
 
 [Decision 0021](decisions/0021-published-model-pins-the-models-it-refers-to.md) is
 approved and not in force: resolution of a module-qualified name is still left to the

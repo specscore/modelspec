@@ -40,9 +40,10 @@ Those concerns belong in adjacent specifications and application architecture.
 
 The words `projection`, `index` and `migration` are reserved and have no content
 yet. Earlier drafts wrote a record type as `entity` and its fields as `property`;
-the reference CLI accepts both, and `modelspec rewrite --write` converts a file. Other
-readers, the public registry's check among them, still accept only the earlier
-spelling, so a registered model should keep it for now. See
+the tools that read ModelSpec files, the reference CLI and the public registry's
+check among them, accept both, and `modelspec rewrite --write` converts a file. The
+registered models are still written in the earlier spelling until each is rewritten
+and pinned anew, and they stay valid. See
 [spec/core-model.md](spec/core-model.md#deprecated-spellings).
 
 ## Shape, Not Meaning
@@ -287,13 +288,25 @@ dist/  =  copy of public/            the landing page, style.css, script.js, fav
 
 The registry is new and a draft. `/registry/` lists every model of the
 [ModelSpec registry](https://github.com/modelspec-org/registry); each model page
-shows its entities and properties (anchors `#entity-<Name>`,
-`#property-<Entity>-<Property>`), the components it declares with their fields
-(`#component-<Name>`, `#field-<Component>-<Field>`) and the components each entity
-embeds (`use`), the MeaningGraph graphs that bind it and the OVDB
+shows its record types and their fields (anchors `#record-<Name>` and
+`#field-<Record>-<member>`, under the section `#records`), the components it declares
+with their fields (`#component-<Name>`, `#field-<Component>-<Field>`) and the
+components each record type embeds (`use`), the MeaningGraph graphs that bind it and the OVDB
 Directory databases that use it. When the registry entry has the optional `homepage`,
 the model page also links it as **Website**. Every page is static HTML and works without
 JavaScript.
+
+Other sites link to the anchors that the pages carried before the rename:
+`#entity-<Name>`, `#property-<Record>-<member>` and `#entities`. They keep opening on
+the same record type, field row and section for ever. An element has one id, so each
+of them is an empty element (`<span class="reg-alias" id="...">`) that is the first
+child of the element it stands for. The search export still names those anchors.
+
+A record type and a component of one model must not share a name: the specification
+refuses such a model, and so does the build, because `#field-<Record>-<member>` would
+equal `#field-<Component>-<Field>`. An index entry may leave `collections` out or
+empty; ModelSpec removed the collection, and the build refuses an entry that lists
+one.
 
 The homepage and Registry direct public-source discovery to the OVDB Directory's
 Explore section. The old `/registry/sources/` route remains a bookmark migration
