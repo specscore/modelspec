@@ -52,7 +52,7 @@ have a query, while an editable collection should not require one.
 
 ## Observed Consequences
 
-None observed yet.
+2026-10-09 — Succeeded in whole by decision 0019, which took effect in the specification's grammar chapters: `collection` is removed. This file's headers do not record it: SpecScore accepts a `Supersedes` link only on a successor that is not yet approved, and the successors were approved before they took effect.
 
 ## Affected Features
 

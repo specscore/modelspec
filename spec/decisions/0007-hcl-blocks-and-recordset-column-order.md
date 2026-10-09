@@ -69,7 +69,7 @@ Recordset column validation must allow duplicate names while preserving order.
 
 ## Observed Consequences
 
-None observed yet.
+2026-10-09 — Succeeded in part by decision 0019, which took effect in the specification's grammar chapters: recordsets are removed, so the rule for recordset column arrays no longer applies. Singular named blocks, and object maps for uniquely named concepts, stand. Decisions 0018 and 0020 change the words in this decision's examples: `property "email"` is now `field "email"`. This file's headers do not record it: SpecScore accepts a `Supersedes` link only on a successor that is not yet approved, and the successors were approved before they took effect.
 
 ## Affected Features
 

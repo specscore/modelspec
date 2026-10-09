@@ -163,7 +163,7 @@ it.
 
 ## Observed Consequences
 
-None observed yet.
+2026-10-09 — In force. The specification's chapters no longer define `collection` or `recordset` and mark `projection`, `index` and `migration` as reserved, and the reference CLI refuses all five from version 0.2.0 (modelspec-org/cli). No registered model was affected. The specification's own example model declared a collection and a recordset and was rewritten. The named unknown above was not settled in Phase 2: `records` is reserved beside the five names of decision 0015, as a choice of the implementing session, and the final list is an open question in `spec/hcl-authoring.md`.
 
 ## Affected Features
 

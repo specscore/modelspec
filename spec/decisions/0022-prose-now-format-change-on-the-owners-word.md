@@ -113,7 +113,13 @@ cutover would leave pinned models unreadable until every pin had moved.
 
 ## Observed Consequences
 
-None observed yet.
+2026-10-09 — The owner lifted the condition that the format change wait for the launch. His message: "Can you do other phases or do I need new session? You don't need to depend on DataTug lifecycle". The session recording this reads it as releasing Phase 2 and, after it, Phase 3. Phase 2 started the same day.
+
+2026-10-09 — The session had told the owner: "One approval comes later, and only if you want it: making the old spelling an error. That step is not due until every registered model has been rewritten and re-pinned, and I will ask then." He answered: "yes, you can and should make the old spelling an error". The session recording this reads it as approval of step 4 in its place in the order, after the registered models are pinned anew. It put that reading to him the same day. His next message was "proceed", which does not say whether the reading is right.
+
+2026-10-09 — How a succession is recorded, the named unknown above, was decided by the implementing session. SpecScore refuses a `Supersedes` link on a successor that is already approved (rule `D-immutability-once-accepted`), so decisions 0018 to 0021 keep an empty header. Each succession is a dated entry in the succeeded decision's observed consequences, and the succeeded decisions stay listed as Approved. SpecScore would have allowed marking 0003 or 0004 Deprecated, which moves the file to an archive. That was not done, because the body of decision 0019, which cannot be edited, links to those files.
+
+2026-10-09 — Phase 2 met its exit condition with reference CLI version 0.2.0 (modelspec-org/cli). All nine registered models, read at their pinned commits, lint clean in the deprecated spelling under both profiles, and `modelspec rewrite` converts them and both application pilots with no manual edit. Run as a dry run, it changed no file. Making the deprecated spelling an error later is one constant in the CLI, plus about a hundred expected verdicts in its test corpus.
 
 ## Affected Features
 

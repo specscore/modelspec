@@ -77,7 +77,7 @@ dynamic expressions.
 
 ## Observed Consequences
 
-None observed yet.
+2026-10-09 — Succeeded in part by decision 0019, which took effect in the specification's grammar chapters: `collection`, `recordset` and `column` are removed, and `projection` is a reserved word with no content. Decisions 0018 and 0020 change two words this decision lists, though their cards did not name it: `entity` and `property` are now deprecated spellings of `record` and `field`. The blocks are `record`, `component`, `enum` and `field`. The constrained grammar, with no dynamic expressions, stands. This file's headers do not record it: SpecScore accepts a `Supersedes` link only on a successor that is not yet approved, and the successors were approved before they took effect.
 
 ## Affected Features
 

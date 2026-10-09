@@ -84,7 +84,7 @@ name compete with domain vocabulary.
 
 ## Observed Consequences
 
-None observed yet.
+2026-10-09 — Succeeded in part by decision 0019, which took effect in the specification's grammar chapters: the scopes for collections and recordsets are gone. Decision 0018 changes a word this decision lists, though its card did not name it: the shared namespace now holds record types, components and enums. `records` is reserved beside the five names of this decision; that is a choice of the implementing session, and which names stay reserved is an open question in `spec/hcl-authoring.md`. This file's headers do not record it: SpecScore accepts a `Supersedes` link only on a successor that is not yet approved, and the successors were approved before they took effect.
 
 ## Affected Features
 

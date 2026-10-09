@@ -183,7 +183,7 @@ concept is what data people expect, and ModelSpec's text would still claim meani
 
 ## Observed Consequences
 
-None observed yet.
+2026-10-09 — In force for the grammar and the JSON form. The specification's chapters describe `record`, and the reference CLI reads both spellings from version 0.2.0 (modelspec-org/cli). Its Go API dropped the kind `entity` without an alias, so a program that imports it fails to compile until it is changed. Other readers and writers, and the registered models, follow in Phase 3. The named unknown above was not settled in Phase 2: `records` is reserved beside the five names of decision 0015, as a choice of the implementing session, and the final list is an open question in `spec/hcl-authoring.md`.
 
 ## Affected Features
 

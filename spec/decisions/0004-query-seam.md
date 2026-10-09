@@ -54,7 +54,7 @@ generators can add richer validation later.
 
 ## Observed Consequences
 
-None observed yet.
+2026-10-09 — This decision has no subject left. Decision 0019 removed computed collections and recordsets, the only constructs that carried a query. It is not reversed: ModelSpec has no query language.
 
 ## Affected Features
 
