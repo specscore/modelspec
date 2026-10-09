@@ -84,6 +84,84 @@ test('the two levels are chosen separately: records with properties, entities wi
   assert.deepEqual(validateModelspecIndex(other).models[0].entities.map(e => [e.name, e.properties.length]), [['Album', 2]]);
 });
 
+// One rule at each level: a current key (`records`, `fields`) that is absent or `null` is "not written" and the
+// earlier key is read; a current key that is present with an array, an empty array included, wins; any other value
+// of it is refused, and the message names it.
+const OTHER_TYPES = ['text', '', 0, 5, false, true, {}];
+const names = list => list.map(item => item.name);
+/** Chinook's first model with `edit` applied, validated; returns what the site reads of it. */
+function readModel(edit) {
+  const index = modelspecJson();
+  edit(index.models[0]);
+  return validateModelspecIndex(index).models[0];
+}
+
+test('records at the model level: absent or null reads entities; an array, empty included, wins', () => {
+  assert.deepEqual(names(readModel(m => { m.records = undefined; }).entities), ['Artist', 'Album']);
+  assert.deepEqual(names(readModel(m => { m.records = null; }).entities), ['Artist', 'Album'], 'null is not written');
+  assert.deepEqual(readModel(m => { m.records = []; }).entities, [], 'an empty array is written and wins over a full entities');
+  assert.deepEqual(names(readModel(m => { m.records = [{ name: 'Order', fields: [] }]; }).entities), ['Order']);
+  // entities is read, and held to its own contract, only where records is not written
+  assert.deepEqual(readModel(m => { m.records = null; m.entities = []; }).entities, []);
+  assert.throws(() => readModel(m => { m.records = null; delete m.entities; }), /models\[0\]\.entities must be an array/);
+  assert.throws(() => readModel(m => { m.records = null; m.entities = null; }), /models\[0\]\.entities must be an array/);
+  assert.throws(() => readModel(m => { m.records = null; m.entities = 'text'; }), /models\[0\]\.entities must be an array/);
+  // entities is not read where records is written
+  assert.deepEqual(readModel(m => { m.records = []; m.entities = null; }).entities, []);
+  assert.deepEqual(readModel(m => { m.records = []; delete m.entities; }).entities, []);
+  assert.deepEqual(names(readModel(m => { m.records = [{ name: 'Order', fields: [] }]; m.entities = 'text'; }).entities), ['Order']);
+});
+
+test('records at the model level: any other type is refused, with or without entities, and the message names records', () => {
+  for (const records of OTHER_TYPES) {
+    assert.throws(() => readModel(m => { m.records = records; }), /models\[0\]\.records must be an array/, JSON.stringify(records));
+    assert.throws(() => readModel(m => { m.records = records; delete m.entities; }), /models\[0\]\.records must be an array/, JSON.stringify(records));
+  }
+});
+
+test('fields at the record level: absent or null reads properties; an array, empty included, wins', () => {
+  const read = record => readModel(m => { m.entities = [record]; }).entities[0].properties.map(p => p.name);
+  const current = readModel(m => { m.records = [{ name: 'A', fields: [{ name: 'f', type: 'int' }], properties: [{ name: 'p', type: 'int' }] }]; delete m.entities; });
+  assert.deepEqual(current.entities[0].properties.map(p => p.name), ['f']);
+  assert.deepEqual(read({ name: 'A', fields: undefined, properties: [{ name: 'p', type: 'int' }] }), ['p']);
+  assert.deepEqual(read({ name: 'A', fields: null, properties: [{ name: 'p', type: 'int' }] }), ['p'], 'null is not written');
+  assert.deepEqual(read({ name: 'A', fields: [], properties: [{ name: 'p', type: 'int' }] }), [], 'an empty array is written and wins over full properties');
+  assert.deepEqual(read({ name: 'A', fields: [{ name: 'f', type: 'int' }], properties: [{ name: 'p', type: 'int' }] }), ['f']);
+  assert.deepEqual(read({ name: 'A', fields: null, properties: [] }), []);
+  assert.throws(() => read({ name: 'A', fields: null }), /entities\[0\]\.properties must be an array/);
+  assert.throws(() => read({ name: 'A', fields: null, properties: null }), /entities\[0\]\.properties must be an array/);
+  assert.throws(() => read({ name: 'A', fields: null, properties: 'text' }), /entities\[0\]\.properties must be an array/);
+  // properties is not read where fields is written
+  assert.deepEqual(read({ name: 'A', fields: [], properties: null }), []);
+  assert.deepEqual(read({ name: 'A', fields: [] }), []);
+  assert.deepEqual(read({ name: 'A', fields: [{ name: 'f', type: 'int' }], properties: 'text' }), ['f']);
+});
+
+test('fields at the record level: any other type is refused, with or without properties, and the message names fields', () => {
+  for (const fields of OTHER_TYPES) {
+    assert.throws(() => readModel(m => { m.entities = [{ name: 'A', fields, properties: [{ name: 'p', type: 'int' }] }]; }), /models\[0\]\.entities\[0\]\.fields must be an array/, JSON.stringify(fields));
+    assert.throws(() => readModel(m => { m.entities = [{ name: 'A', fields }]; }), /models\[0\]\.entities\[0\]\.fields must be an array/, JSON.stringify(fields));
+    assert.throws(() => readModel(m => { m.records = [{ name: 'A', fields }]; delete m.entities; }), /models\[0\]\.records\[0\]\.fields must be an array/, JSON.stringify(fields));
+  }
+});
+
+test('a null current key publishes the bytes of the earlier one; an empty current array publishes what an empty earlier array does', async () => {
+  const sample = richSample();
+  const original = await build(sample);
+  const nulled = structuredClone(sample);
+  for (const model of nulled.models) {
+    model.records = null;
+    for (const record of model.entities) record.fields = null;
+  }
+  assert.deepEqual(await build(nulled), original);
+  const emptied = modelspecJson();
+  for (const model of emptied.models) model.records = [];
+  const bare = modelspecJson();
+  for (const model of bare.models) model.entities = [];
+  assert.deepEqual(await build(emptied), await build(bare));
+  assert.notDeepEqual(await build(emptied), await build(modelspecJson()), 'the empty array is not ignored');
+});
+
 test('an index with neither key, or a key that is not a list, is refused and the message names the key read', () => {
   const none = modelspecJson();
   delete none.models[0].entities;

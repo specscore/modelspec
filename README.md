@@ -328,7 +328,7 @@ npm run deploy          # production build, guard, wrangler deploy with pinned -
 
 | Variable | Default | What |
 |---|---|---|
-| `MODELSPEC_REGISTRY_INDEX_URL` | `https://raw.githubusercontent.com/modelspec-org/registry/main/index.json` | models with their entities and properties, or their records and fields: both spellings are read, the current one first (`modelspec-registry/draft-1`) |
+| `MODELSPEC_REGISTRY_INDEX_URL` | `https://raw.githubusercontent.com/modelspec-org/registry/main/index.json` | models with their entities and properties, or their records and fields: both spellings are read, the current one first; a current key that is absent or `null` counts as not written, an empty array is written and wins (`modelspec-registry/draft-1`) |
 | `MEANINGGRAPH_REGISTRY_INDEX_URL` | `https://raw.githubusercontent.com/meaninggraph/registry/main/index.json` | graphs and the model files they bind (`meaning-registry/draft-1`) |
 | `OVDB_DIRECTORY_INDEX_URL` | `https://raw.githubusercontent.com/openvaultdb/directory/main/index.json` | databases and the model they use (`ovdb-directory/draft-1`) |
 | `MEANINGGRAPH_BASE_URL` | `https://meaninggraph.io` | links to `/graphs/<graph>/` |
