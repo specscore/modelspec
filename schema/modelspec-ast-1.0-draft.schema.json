@@ -76,7 +76,7 @@
   "$defs": {
     "conceptName": {
       "type": "string",
-      "pattern": "^[^.]*[^.\\s][^.]*$",
+      "pattern": "^\\s*[^.\\s][^.]*$",
       "description": "A name that is not blank and holds no dot.",
       "not": {
         "enum": [
@@ -96,7 +96,7 @@
     },
     "reference": {
       "type": "string",
-      "pattern": "^[^.]*[^.\\s][^.]*(\\.[^.]*[^.\\s][^.]*)?$",
+      "pattern": "^\\s*[^.\\s][^.]*(\\.\\s*[^.\\s][^.]*)?$",
       "description": "A concept name of the same module, or `<module>.<Name>` for a concept of another module."
     },
     "enumValues": {
