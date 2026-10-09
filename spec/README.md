@@ -83,9 +83,10 @@ with the reference CLI today.
 approved and not in force: resolution of a module-qualified name is still left to the
 consumer, as decision 0014 says.
 
-Earlier decisions that these changes succeed stay in the decisions index as Approved,
-because SpecScore cannot link an approved successor to them. Each carries a dated
-entry in its observed consequences:
+Earlier decisions that these changes succeed stay in the decisions index as Approved.
+SpecScore cannot link an approved successor to them, and they were not moved to an
+archive; decision 0022's observed consequences give the reason. Each carries a dated
+entry in its own observed consequences:
 
 | Decision | What became of it |
 |---|---|

@@ -202,3 +202,19 @@ for (const vocabulary of VOCABULARIES) {
 test('every refusal is refused for its own reason: the unchanged document is valid in each vocabulary', () => {
   for (const vocabulary of VOCABULARIES) assert.equal(verdict(vocabulary.schema, documentOf(vocabulary)).valid, true, vocabulary.schema);
 });
+
+test('a reference may name a concept whose name holds white space, bare or module-qualified (decision 0014 rules out only the dots)', () => {
+  for (const vocabulary of VOCABULARIES) {
+    for (const target of ['Order Item', ' Order', 'Order\tItem', 'core.Shared Space', 'core-kit.Space']) {
+      const document = documentOf(vocabulary);
+      document[vocabulary.group].Customer[vocabulary.fields].extra = { [vocabulary.reference]: target };
+      const { valid, errors } = verdict(vocabulary.schema, document);
+      assert.equal(valid, true, `${vocabulary.schema}: ${JSON.stringify(target)} must be accepted, got ${valid ? '' : JSON.stringify(errors)}`);
+    }
+    for (const target of ['.Order', 'core.', 'a.b.Order', '.', ' ', '', 'a. ', ' .a']) {
+      const document = documentOf(vocabulary);
+      document[vocabulary.group].Customer[vocabulary.fields].extra = { [vocabulary.reference]: target };
+      assert.equal(verdict(vocabulary.schema, document).valid, false, `${vocabulary.schema}: ${JSON.stringify(target)} must be refused`);
+    }
+  }
+});

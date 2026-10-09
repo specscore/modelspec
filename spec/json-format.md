@@ -167,6 +167,8 @@ A validator consuming the JSON AST serialization MUST check:
 - each field has exactly one of `type`, `component` and `record`.
 - a `key` is a non-empty list of distinct names of fields of its record type.
 - enum value lists are non-empty and free of duplicate values.
+- a reference is a concept name, or `<module>.<Name>` with exactly one dot
+  ([decision 0014](decisions/0014-module-qualified-references.md)).
 - references resolve, including `use`, `component`, `enum`, and `record`.
   Module-qualified references are preserved verbatim in the serialization
   and MUST resolve within the consumer-provided module set; an unknown module is the

@@ -96,7 +96,7 @@
     },
     "reference": {
       "type": "string",
-      "pattern": "^[^.\\s]+(\\.[^.\\s]+)?$",
+      "pattern": "^[^.]*[^.\\s][^.]*(\\.[^.]*[^.\\s][^.]*)?$",
       "description": "A concept name of the same module, or `<module>.<Name>` for a concept of another module."
     },
     "enumValues": {
