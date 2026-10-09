@@ -23,8 +23,8 @@ test('esc and safeUrl', () => {
 });
 
 test('anchor ids keep safe characters and encode the rest', () => {
-  assert.equal(anchorId('entity', 'Artist'), 'entity-Artist');
-  assert.equal(anchorId('property', 'Album', 'ArtistId'), 'property-Album-ArtistId');
+  assert.equal(anchorId('record', 'Artist'), 'record-Artist');
+  assert.equal(anchorId('field', 'Album', 'ArtistId'), 'field-Album-ArtistId');
   assert.equal(anchorId('x', 'a b"c'), 'x-a_20b_22c');
 });
 
@@ -54,23 +54,23 @@ test('CodeGrapher actions use the registered repository, file and commit', () =>
   assert.equal(codeGrapherUrl({...entry, repository: 'https://git.example.org/acme/shop'}), null);
 });
 
-test('entities and properties have anchors, and a reference links to its entity anchor', () => {
+test('record types and fields have anchors, and a reference links to its record type anchor', () => {
   const { model } = render();
-  assert.match(model, /<section class="reg-entity" id="entity-Artist"/);
-  assert.match(model, /<section class="reg-entity" id="entity-Album"/);
-  assert.match(model, /<tr id="property-Album-ArtistId">/);
-  assert.match(model, /<tr id="property-Artist-ArtistId">/);
-  assert.match(model, /reference <span class="reg-arrow" aria-label="to">→<\/span> <a href="#entity-Artist">Artist<\/a>/);
+  assert.match(model, /<section class="reg-entity" id="record-Artist"/);
+  assert.match(model, /<section class="reg-entity" id="record-Album"/);
+  assert.match(model, /<tr id="field-Album-ArtistId">/);
+  assert.match(model, /<tr id="field-Artist-ArtistId">/);
+  assert.match(model, /reference <span class="reg-arrow" aria-label="to">→<\/span> <a href="#record-Artist">Artist<\/a>/);
   assert.match(model, /reg-pill--key">key</);
   assert.match(model, /<td data-label="Required">yes<\/td>/);
 });
 
-test('a reference to an entity outside the model is shown but not linked', () => {
+test('a reference to a record type outside the model is shown but not linked', () => {
   const json = modelspecJson();
   json.models[0].entities[1].properties[1].references = 'other.Person';
   const { model } = render(sampleData({ modelspec: json }));
   assert.match(model, /→<\/span> other\.Person</);
-  assert.doesNotMatch(model, /href="#entity-other/);
+  assert.doesNotMatch(model, /href="#(record|entity)-other/);
 });
 
 test('meaning graphs and databases link to the other sites and show canonical URL, publisher and status', () => {
@@ -125,7 +125,7 @@ test('the registry page lists every model, says it is a draft and links the regi
   assert.match(index, /href="\/registry\/models\/chinook\/"/);
   assert.match(index, /<code>modelspec:\/\/github\.com\/acme\/shop\/shop<\/code>/);
   assert.match(index, /1 meaning graph, 2 databases/);
-  assert.match(index, /2 entities, 4 properties/);
+  assert.match(index, /2 record types, 4 fields/);
 });
 
 test('the shared three-layers copy is on the registry page, ModelSpec first, with the Chinook sentence', () => {
@@ -168,13 +168,13 @@ test('generated pages reuse the landing header and footer, with the Registry lin
   assert.match(model, /<link rel="stylesheet" href="\/registry\.css">/);
 });
 
-test('two entities whose names render to one anchor fail the build', () => {
+test('two record types whose names render to one anchor fail the build', () => {
   const ms = modelspecJson();
   // Both are valid names, but the model page must still stop on a duplicated id.
   ms.models[0].entities[0].properties.push({ name: 'x', type: 'int' });
   const data = sampleData({ modelspec: ms });
   data.modelspec.models[0].entities.push({ name: 'Artist', key: [], use: [], properties: [] });
-  assert.throws(() => renderModelPage(data.modelspec.models[0], data, ctx, shell), /duplicate element id "entity-Artist"/);
+  assert.throws(() => renderModelPage(data.modelspec.models[0], data, ctx, shell), /duplicate element id "record-Artist"/);
 });
 
 test('the landing page: production output is public/index.html unchanged', () => {
@@ -221,7 +221,7 @@ test('extractShell fails loudly when the landing page loses a part it reuses', (
   assert.throws(() => extractShell(template.replace('<a href="/registry/">Registry</a>', '')), /Registry link/);
 });
 
-test('components: the section, every field, the entity use lists and the component-typed properties', () => {
+test('components: the section, every field, the record types\' use lists and the component-typed fields', () => {
   const data = sampleData({ modelspec: modelspecWithComponents() });
   const html = renderModelPage(data.modelspec.models[0], data, ctx, shell);
   assert.match(html, /<section class="reg-section" id="components"/);
@@ -229,15 +229,15 @@ test('components: the section, every field, the entity use lists and the compone
   assert.match(html, /<section class="reg-entity reg-component" id="component-Auditable"/);
   assert.match(html, /<tr id="field-Auditable-createdAt">/);
   assert.match(html, /<tr id="field-Auditable-createdBy">/);
-  assert.match(html, /<a href="#entity-Artist">Artist<\/a>/);
+  assert.match(html, /<a href="#record-Artist">Artist<\/a>/);
   assert.match(html, /<section class="reg-entity reg-component" id="component-Empty"[\s\S]*No fields\./);
   assert.match(html, /<a href="#components">Components<\/a>/);
   // use: a declared component links to its section, one of another module is shown but not linked
   assert.match(html, /<p class="reg-entity-use">Uses components: <a href="#component-Auditable"><code>Auditable<\/code><\/a>, <code>Elsewhere\.Tagged<\/code><\/p>/);
   assert.doesNotMatch(html, /href="#component-Elsewhere/);
-  // a property embedding a component
-  assert.match(html, /<tr id="property-Artist-Audit">[\s\S]*?component <span class="reg-arrow" aria-label="to">→<\/span> <a href="#component-Auditable">Auditable<\/a>/);
-  assert.match(renderRegistryPage(data, ctx, shell), /2 entities, 5 properties, 2 components/);
+  // a field embedding a component
+  assert.match(html, /<tr id="field-Artist-Audit">[\s\S]*?component <span class="reg-arrow" aria-label="to">→<\/span> <a href="#component-Auditable">Auditable<\/a>/);
+  assert.match(renderRegistryPage(data, ctx, shell), /2 record types, 5 fields, 2 components/);
 });
 
 test('a model without components has no Components section and no use lines', () => {

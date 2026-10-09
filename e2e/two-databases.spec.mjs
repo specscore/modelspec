@@ -37,7 +37,7 @@ test('both databases that name the Chinook model are listed, each with its own l
   await expect(two.locator('.reg-pill--status')).toHaveText(second.status);
   await expect(two).toContainText('model address');
 
-  // the model itself is the same page: one graph, the same entities
+  // the model itself is the same page: one graph, the same record types
   await expect(page.locator('#meaning-graphs .reg-row')).toHaveCount(1);
   await expect(page.locator('.reg-entity')).toHaveCount(11);
   await noHorizontalScroll(page);

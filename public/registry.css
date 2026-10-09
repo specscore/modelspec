@@ -133,7 +133,7 @@
 .reg-layer-list strong { color: var(--ink); font-weight: 600; }
 .reg .layers-note { margin: 1.25rem 0 0; color: var(--ink); }
 
-/* entities */
+/* record types */
 .reg-entity-index { list-style: none; display: flex; flex-wrap: wrap; gap: .45rem; padding: 0; margin: 0 0 1.75rem; }
 .reg-entity {
   background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
@@ -155,9 +155,14 @@
 .reg-props .reg-prop-name:hover code { border-color: var(--accent); }
 .reg-arrow { color: var(--ink-faint); }
 
-/* the target of a link to an entity or property */
+/* the target of a link to a record type or a field */
 .reg-entity:target { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent); }
 .reg-props tr:target th, .reg-props tr:target td { background: #fff6c9; }
+/* A link written before the rename (#entity-Name, #property-Record-member) targets an empty .reg-alias element inside
+   the record type or row; the same highlight goes to the element that holds it. Separate rules: a browser that does not
+   know :has() drops these two and still scrolls to the place. */
+.reg-entity:has(> .reg-alias:target) { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent); }
+.reg-props tr:has(.reg-alias:target) th, .reg-props tr:has(.reg-alias:target) td { background: #fff6c9; }
 
 /* meaning graphs and databases */
 .reg-rows { list-style: none; margin: 0; padding: 0; display: grid; gap: .9rem; }
@@ -168,7 +173,7 @@
 .reg-row-desc { color: var(--ink-soft); font-size: .94rem; margin: .5rem 0 0; }
 .reg-row .reg-mini { margin-top: .6rem; }
 
-/* narrow screens: property rows become small stacked blocks, nothing scrolls sideways */
+/* narrow screens: field rows become small stacked blocks, nothing scrolls sideways */
 @media (max-width: 640px) {
   .reg-facts > div, .reg-mini > div { grid-template-columns: 1fr; }
   .reg-layers { padding: 1.1rem; }

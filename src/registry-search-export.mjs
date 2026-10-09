@@ -65,13 +65,6 @@ export function registrySearchExport(data, config, requirePins = false) {
         expandComponent(componentName, `use/component/${componentName}`, []);
       }
     }
-    for (const collection of model.collections ?? []) {
-      const nativeCollection = `${nativeModel}/collection/${collection.name}`;
-      add('model_collection', nativeCollection, collection.name, collection.name, `${model.id}.${collection.name}`, `${baseUrl}#${anchorId('collection', collection.name)}`, {parent_id: publicId('model', nativeModel), parent_label: model.title});
-      for (const field of collection.fields) {
-        add('model_field', `${nativeCollection}/${field.name}`, field.name, field.name, `${model.id}.${collection.name}.${field.name}`, `${baseUrl}#${anchorId('collection-field', collection.name, field.name)}`, {parent_id: publicId('model_collection', nativeCollection), parent_label: collection.name});
-      }
-    }
   }
   documents.sort((a, b) => a.id.localeCompare(b.id));
   if (new Set(documents.map(doc => doc.id)).size !== documents.length) throw new Error('Duplicate search document ID');

@@ -6,9 +6,13 @@ import { DIRECTORY_BASE_URL, MEANINGGRAPH_BASE_URL } from '../playwright.config.
 // Expected values come from the fixtures the site was built from, not from the test.
 const fixture = name => JSON.parse(readFileSync(new URL(`../fixtures/${name}.fixture.json`, import.meta.url), 'utf8'));
 const model = fixture('modelspec-registry-index').models.find(m => m.id === 'chinook');
+// The fixture is read under either spelling (`records` and `fields`, or `entities` and `properties`), so the next fixture
+// refresh, which carries the current one, does not change what these tests expect.
+const recordTypes = model.records ?? model.entities;
+const fieldsOf = record => record.fields ?? record.properties;
 const graph = fixture('meaninggraph-registry-index').graphs.find(g => g.id === 'chinook');
 const database = fixture('ovdb-directory-index').databases.find(d => (d.recordId ?? d.id) === 'chinook');
-const propertyCount = model.entities.reduce((n, e) => n + e.properties.length, 0);
+const fieldCount = recordTypes.reduce((n, record) => n + fieldsOf(record).length, 0);
 
 const MODEL_PAGE = '/registry/models/chinook/';
 const HIGHLIGHT = 'rgb(255, 246, 201)';
@@ -36,7 +40,7 @@ test('landing, Registry in the header, the registry, the Chinook model page', as
   await expect(card).toHaveCount(fixture('modelspec-registry-index').models.length);
   const chinookCard = card.filter({ has: page.getByRole('link', { name: model.title, exact: true }) });
   await expect(chinookCard).toContainText(model.address);
-  await expect(chinookCard).toContainText(`${model.entities.length} entities, ${propertyCount} properties`);
+  await expect(chinookCard).toContainText(`${recordTypes.length} record types, ${fieldCount} fields`);
   await chinookCard.getByRole('link', { name: model.title }).click();
   await expect(page).toHaveURL(new RegExp(`${MODEL_PAGE}$`));
   await expect(page.getByRole('heading', { level: 1 })).toContainText(model.title);
@@ -84,51 +88,99 @@ test('the model page links the model\'s Website, shown as the URL without scheme
   await expect(page.getByRole('link', { name: 'chinookdb.com/model' })).toHaveCount(0);
 });
 
-test('every entity and property of the model is on the page', async ({ page }) => {
+test('every record type and field of the model is on the page', async ({ page }) => {
   await page.goto(MODEL_PAGE);
-  await expect(page.locator('.reg-entity')).toHaveCount(model.entities.length);
-  await expect(page.locator('.reg-props tbody tr')).toHaveCount(propertyCount);
-  const customer = model.entities.find(e => e.name === 'Customer');
-  const country = customer.properties.find(p => p.name === 'Country');
-  const row = page.locator('#property-Customer-Country');
+  await expect(page.locator('.reg-entity')).toHaveCount(recordTypes.length);
+  await expect(page.locator('.reg-props tbody tr')).toHaveCount(fieldCount);
+  const customer = recordTypes.find(e => e.name === 'Customer');
+  const country = fieldsOf(customer).find(p => p.name === 'Country');
+  const row = page.locator('#field-Customer-Country');
   await expect(row).toContainText(country.type);
-  await expect(page.locator('#entity-Customer .reg-entity-key')).toContainText(customer.key.join(', '));
-  await expect(page.locator('#property-Customer-CustomerId .reg-pill--key')).toHaveText('key');
+  await expect(page.locator('#record-Customer .reg-entity-key')).toContainText(customer.key.join(', '));
+  await expect(page.locator('#field-Customer-CustomerId .reg-pill--key')).toHaveText('key');
+  await expect(page.locator('#records h2')).toContainText('Record types');
+  await expect(page.locator('#records .reg-props').first().locator('thead th').first()).toHaveText('Field');
   await noHorizontalScroll(page);
 });
 
-test('a link to a property opens on its row, highlighted', async ({ page }) => {
-  await page.goto(`${MODEL_PAGE}#property-Customer-Country`);
-  const row = page.locator('#property-Customer-Country');
-  await expect(row).toBeInViewport({ ratio: 1 });
-  await expect(row.locator('th')).toHaveCSS('background-color', HIGHLIGHT);
-  expect((await row.boundingBox()).y).toBeGreaterThanOrEqual(0);
-});
+// Every link ever made to the page is tried in both forms: the current anchor, and the one written before the rename.
+const FIELD_ANCHORS = { current: '#field-Customer-Country', earlier: '#property-Customer-Country' };
+const RECORD_ANCHORS = { current: '#record-Album', earlier: '#entity-Album' };
 
-test('a link to an entity opens on that entity', async ({ page }) => {
-  await page.goto(`${MODEL_PAGE}#entity-Album`);
-  const entity = page.locator('#entity-Album');
-  await expect(entity).toBeInViewport({ ratio: 0.5 });
-  await expect(entity).toHaveCSS('border-top-color', 'rgb(194, 116, 26)');
-});
+for (const [form, anchor] of Object.entries(FIELD_ANCHORS)) {
+  test(`a link to a field opens on its row, highlighted: ${form} anchor ${anchor}`, async ({ page }) => {
+    await page.goto(`${MODEL_PAGE}${anchor}`);
+    // both ids exist, once each, and the earlier one is inside the row of the current one
+    await expect(page.locator(anchor)).toHaveCount(1);
+    const row = page.locator('#field-Customer-Country');
+    await expect(row.locator('#property-Customer-Country')).toHaveCount(1);
+    await expect(row).toBeInViewport({ ratio: 1 });
+    await expect(row.locator('th')).toHaveCSS('background-color', HIGHLIGHT);
+    expect((await row.boundingBox()).y).toBeGreaterThanOrEqual(0);
+  });
+}
 
-test('a reference property links to the entity it references', async ({ page }) => {
-  await page.goto(`${MODEL_PAGE}#property-Album-ArtistId`);
-  const row = page.locator('#property-Album-ArtistId');
+for (const [form, anchor] of Object.entries(RECORD_ANCHORS)) {
+  test(`a link to a record type opens on that record type, highlighted: ${form} anchor ${anchor}`, async ({ page }) => {
+    await page.goto(`${MODEL_PAGE}${anchor}`);
+    await expect(page.locator(anchor)).toHaveCount(1);
+    const record = page.locator('#record-Album');
+    await expect(record.locator('#entity-Album')).toHaveCount(1);
+    await expect(record).toBeInViewport({ ratio: 0.5 });
+    await expect(record).toHaveCSS('border-top-color', 'rgb(194, 116, 26)');
+    // the heading is at the top of the record type, below the sticky header, not scrolled past
+    expect((await record.locator('h3').boundingBox()).y).toBeGreaterThanOrEqual(0);
+  });
+}
+
+for (const anchor of ['#records', '#entities']) {
+  test(`the section of record types opens from ${anchor}`, async ({ page }) => {
+    await page.goto(`${MODEL_PAGE}${anchor}`);
+    await expect(page.locator(anchor)).toHaveCount(1);
+    await expect(page.locator('#records #entities')).toHaveCount(1);
+    await expect(page.locator('#records h2')).toBeInViewport({ ratio: 1 });
+  });
+}
+
+test('a reference field links to the record type it references', async ({ page }) => {
+  await page.goto(`${MODEL_PAGE}#field-Album-ArtistId`);
+  const row = page.locator('#field-Album-ArtistId');
   // the page scrolls smoothly to the anchor: let it settle before clicking inside it
   await expect(row).toBeInViewport({ ratio: 1 });
   const link = row.getByRole('link', { name: 'Artist', exact: true });
-  await expect(link).toHaveAttribute('href', '#entity-Artist');
+  await expect(link).toHaveAttribute('href', '#record-Artist');
   await link.click();
-  await expect(page).toHaveURL(/#entity-Artist$/);
-  await expect(page.locator('#entity-Artist')).toBeInViewport({ ratio: 0.5 });
+  await expect(page).toHaveURL(/#record-Artist$/);
+  await expect(page.locator('#record-Artist')).toBeInViewport({ ratio: 0.5 });
 });
 
-test('the entity chips jump to their entity', async ({ page }) => {
+test('the record type chips jump to their record type', async ({ page }) => {
   await page.goto(MODEL_PAGE);
   await page.locator('.reg-entity-index').getByRole('link', { name: 'PlaylistTrack' }).click();
-  await expect(page).toHaveURL(/#entity-PlaylistTrack$/);
-  await expect(page.locator('#entity-PlaylistTrack')).toBeInViewport({ ratio: 0.5 });
+  await expect(page).toHaveURL(/#record-PlaylistTrack$/);
+  await expect(page.locator('#record-PlaylistTrack')).toBeInViewport({ ratio: 0.5 });
+});
+
+test('every earlier anchor of the page stands inside the element of its current one', async ({ page }) => {
+  await page.goto(MODEL_PAGE);
+  const wrong = await page.evaluate(() => {
+    const bad = [];
+    for (const alias of document.querySelectorAll('.reg-alias')) {
+      const earlier = alias.id;
+      const current = earlier === 'entities' ? 'records'
+        : earlier.startsWith('entity-') ? `record-${earlier.slice(7)}`
+          : earlier.startsWith('property-') ? `field-${earlier.slice(9)}` : null;
+      const holder = current && document.getElementById(current);
+      if (!holder || alias.parentElement !== holder && alias.parentElement.parentElement !== holder) bad.push(earlier);
+    }
+    return bad;
+  });
+  expect(wrong).toEqual([]);
+  const counts = await page.evaluate(() => ({
+    entity: document.querySelectorAll('[id^="entity-"]').length, record: document.querySelectorAll('[id^="record-"]').length,
+    property: document.querySelectorAll('[id^="property-"]').length, field: document.querySelectorAll('.reg-props:not(.reg-fields) [id^="field-"]').length,
+  }));
+  expect(counts).toEqual({ entity: recordTypes.length, record: recordTypes.length, property: fieldCount, field: fieldCount });
 });
 
 test('Meaning graphs for this model: the Chinook graph, linked to MeaningGraph', async ({ page }) => {
@@ -180,7 +232,7 @@ test('the landing section opens the Chinook model page', async ({ page }) => {
   await page.goto('/');
   await page.locator('#layers .layers-note').getByRole('link', { name: 'modelled in ModelSpec' }).click();
   await expect(page).toHaveURL(new RegExp(`${MODEL_PAGE}$`));
-  await expect(page.locator('#entities')).toBeVisible();
+  await expect(page.locator('#records')).toBeVisible();
 });
 
 test('every page of a fixture build carries the banner at the very top and the source meta tag', async ({ page }) => {
@@ -260,8 +312,8 @@ test.describe('without JavaScript', () => {
   test('the registry pages are static HTML', async ({ page }) => {
     await page.goto('/registry/');
     await expect(page.locator('.reg-model h3 a').filter({ hasText: model.title })).toHaveAttribute('href', MODEL_PAGE);
-    await page.goto(`${MODEL_PAGE}#property-Customer-Country`);
-    await expect(page.locator('#property-Customer-Country')).toBeInViewport({ ratio: 1 });
+    await page.goto(`${MODEL_PAGE}#field-Customer-Country`);
+    await expect(page.locator('#field-Customer-Country')).toBeInViewport({ ratio: 1 });
     await expect(page.locator('#meaning-graphs .reg-graph-link')).toHaveAttribute('href', `${MEANINGGRAPH_BASE_URL}/graphs/chinook/`);
     await expect(page.locator('#databases .reg-database-link')).toHaveAttribute('href', `${DIRECTORY_BASE_URL}${database.directoryPath}`);
     await expect(page.locator('.reg-crumbs').getByRole('link', { name: 'Registry' })).toHaveAttribute('href', '/registry/');
