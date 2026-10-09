@@ -12,9 +12,10 @@
 //   - every generated page must say it was built from production;
 //   - dist/ must match the manifest of file hashes the build wrote last: a file added,
 //     removed or changed after the build is refused;
-//   - dist/ must be public/ plus the generated registry/ pages and nothing else
-//     (no second build, no staging directory, no stale file): the landing page and
-//     every static asset must be byte-identical to public/.
+//   - dist/ must be public/ plus the generated registry/ pages plus schema/ and nothing
+//     else (no second build, no staging directory, no stale file): the landing page and
+//     every static asset must be byte-identical to public/, and schema/ must hold exactly
+//     the repository's schema/*.schema.json, byte-identical.
 //
 // `wrangler dev` only warns, so a fixture build can be served locally.
 
@@ -25,6 +26,7 @@ import { DEFAULTS, DEPLOY_DIR_NAME, ROOT } from '../src/config.mjs';
 import { MANIFEST_FILE, manifestProblems } from '../src/build-manifest.mjs';
 import { INDEXES, isProductionIndexUrl } from '../src/index-commits.mjs';
 import { ASSETSIGNORE_TEXT, BUILD_INFO_FILE, BUILD_INFO_FORMAT, BUILD_MARKER } from '../src/site.mjs';
+import { SCHEMA_DIR, schemaFileNames } from '../src/schema-files.mjs';
 import { SOURCE_META } from '../src/render.mjs';
 
 async function walk(dir, base = dir) {
@@ -80,7 +82,7 @@ export async function distProblems(root = ROOT) {
   }
   if (!files.includes(BUILD_MARKER)) problems.push(`${BUILD_MARKER} is missing: ${dist} was not created by this build`);
 
-  // dist/ is public/ plus registry/ plus the four files the build writes, and nothing else.
+  // dist/ is public/ plus registry/ plus schema/ plus the four files the build writes, and nothing else.
   let publicFiles = [];
   try {
     publicFiles = await walk(join(root, 'public'));
@@ -88,7 +90,7 @@ export async function distProblems(root = ROOT) {
     problems.push('public/ cannot be read');
   }
   const expected = new Set([...publicFiles, BUILD_INFO_FILE, BUILD_MARKER, MANIFEST_FILE, '.assetsignore', 'registry-search.json']);
-  const stray = files.filter(file => !expected.has(file) && !file.startsWith('registry/'));
+  const stray = files.filter(file => !expected.has(file) && !file.startsWith('registry/') && !file.startsWith(`${SCHEMA_DIR}/`));
   if (stray.length > 0) problems.push(`it contains files that are not part of the site and would be deployed: ${stray.slice(0, 8).join(', ')}`);
   for (const file of publicFiles) {
     if (!files.includes(file)) {
@@ -97,6 +99,26 @@ export async function distProblems(root = ROOT) {
     }
     const [built, source] = await Promise.all([readFile(join(dist, file)), readFile(join(root, 'public', file))]);
     if (!same(built, source)) problems.push(`${file} differs from public/${file}: rebuild (the landing page and assets must be exactly public/)`);
+  }
+
+  // schema/ is exactly the repository's schema/*.schema.json, byte for byte, and nothing else
+  let schemaNames = [];
+  try {
+    schemaNames = await schemaFileNames(root);
+  } catch (error) {
+    problems.push(error.message);
+  }
+  const builtSchemas = files.filter(file => file.startsWith(`${SCHEMA_DIR}/`));
+  const wantedSchemas = new Set(schemaNames.map(name => `${SCHEMA_DIR}/${name}`));
+  const strayedSchemas = builtSchemas.filter(file => !wantedSchemas.has(file));
+  if (strayedSchemas.length > 0) problems.push(`${SCHEMA_DIR}/ holds files that are not schemas of this repository and would be deployed: ${strayedSchemas.slice(0, 8).join(', ')}`);
+  for (const file of [...wantedSchemas].sort()) {
+    if (!builtSchemas.includes(file)) {
+      problems.push(`${file} is missing from the build`);
+      continue;
+    }
+    const [built, source] = await Promise.all([readFile(join(dist, file)), readFile(join(root, file))]);
+    if (!same(built, source)) problems.push(`${file} differs from the repository's ${file}: rebuild (the published schemas must be exactly ${SCHEMA_DIR}/*.schema.json)`);
   }
 
   try {

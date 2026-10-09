@@ -1,16 +1,18 @@
 // Assembles the site: dist/ (or another allowed output directory) is a copy of
-// public/ plus the generated registry/ pages and a build-info.json. The landing
+// public/ plus the generated registry/ pages, a copy of schema/*.schema.json at
+// schema/ and a build-info.json. The landing
 // page in public/index.html stays the landing page; the build only rewrites the
 // MeaningGraph and OVDB Directory addresses in it when other base URLs are
 // configured, and adds a banner when the build is not a production build.
 
-import { cp, lstat, mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { copyFile, cp, lstat, mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { dirname, join, relative, resolve, sep } from 'node:path';
 import { OUT_NAMES } from './config.mjs';
 import { MANIFEST_FILE, writeManifest } from './build-manifest.mjs';
 import { registrySearchExport } from './registry-search-export.mjs';
 import { renderSearchPanel } from './registry-search-ui.mjs';
 import { loadIndex, validateDirectoryIndex, validateMeaningGraphIndex, validateModelspecIndex } from './indexes.mjs';
+import { SCHEMA_DIR, schemaFileNames } from './schema-files.mjs';
 import { assertChinookEverywhere, extractShell, renderLanding, renderRegistryPages } from './render.mjs';
 
 export const BUILD_INFO_FORMAT = 'modelspec-build/1';
@@ -26,7 +28,7 @@ export const ASSETSIGNORE_TEXT = `${BUILD_MARKER}\n${MANIFEST_FILE}\n`;
 const MARKER_TEXT = 'Created by the modelspec.org build (scripts/build.mjs). The next build may delete this directory and everything in it.\n';
 
 /** Names in public/ that the build writes itself; a clash would be silently overwritten. */
-const RESERVED = ['registry', BUILD_INFO_FILE, BUILD_MARKER, MANIFEST_FILE, '.assetsignore'];
+const RESERVED = ['registry', SCHEMA_DIR, BUILD_INFO_FILE, BUILD_MARKER, MANIFEST_FILE, '.assetsignore'];
 
 /**
  * The output directory a build may delete and rewrite, or an error. It must be
@@ -158,6 +160,7 @@ export async function buildSite({ root, config, data, readOptions = {}, log = ()
     throw new Error(`public/${name} clashes with a file the build writes: rename it`);
   }
   assertChinookEverywhere(indexes);
+  const schemaNames = await schemaFileNames(root);
   const shell = extractShell(template);
   const registryPages = renderRegistryPages(indexes, config, shell);
   const searchPanel = renderSearchPanel('modelspec', config.searchUi, '/registry/');
@@ -176,6 +179,9 @@ export async function buildSite({ root, config, data, readOptions = {}, log = ()
     await mkdir(dirname(join(out, path)), { recursive: true });
     await writeFile(join(out, path), html);
   }
+  // The JSON Schemas, byte for byte (decision 0010): https://modelspec.org/schema/<name>
+  await mkdir(join(out, SCHEMA_DIR));
+  for (const name of schemaNames) await copyFile(join(resolve(root), SCHEMA_DIR, name), join(out, SCHEMA_DIR, name));
   await writeFile(join(out, BUILD_INFO_FILE), `${JSON.stringify(info, null, 2)}\n`);
   await writeFile(join(out, 'registry-search.json'), `${JSON.stringify(registrySearchExport(indexes, config, config.requireSearchPins === true))}\n`);
   // Last: the hash of every file above, checked again right before the upload (scripts/check-build.mjs).

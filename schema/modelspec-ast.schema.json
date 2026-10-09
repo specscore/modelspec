@@ -1,0 +1,257 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://modelspec.org/schema/modelspec-ast.schema.json",
+  "title": "ModelSpec AST, 1.0-draft-2",
+  "description": "The JSON serialization of a ModelSpec module in the 1.0-draft-2 vocabulary (spec/json-format.md). A schema describes shape only: it cannot say that a reference resolves or that a key names a member, so a document that passes it is not thereby a valid model.",
+  "type": "object",
+  "required": [
+    "modelspec",
+    "module"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "modelspec": {
+      "const": "1.0-draft-2",
+      "description": "The format identifier. It names the vocabulary the document uses."
+    },
+    "module": {
+      "type": "object",
+      "required": [
+        "id",
+        "version"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Stable, globally meaningful identity of the module."
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The module's short name, used in module-qualified references."
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1,
+          "description": "An immutable published version."
+        }
+      }
+    },
+    "components": {
+      "type": "object",
+      "propertyNames": {
+        "$ref": "#/$defs/conceptName"
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/component"
+      }
+    },
+    "enums": {
+      "type": "object",
+      "propertyNames": {
+        "$ref": "#/$defs/conceptName"
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/enum"
+      }
+    },
+    "records": {
+      "type": "object",
+      "propertyNames": {
+        "$ref": "#/$defs/conceptName"
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/record"
+      }
+    },
+    "collections": false,
+    "recordsets": false,
+    "projections": false,
+    "migrations": false,
+    "entities": false
+  },
+  "$defs": {
+    "conceptName": {
+      "type": "string",
+      "pattern": "^[^.]*[^.\\s][^.]*$",
+      "description": "A name that is not blank and holds no dot.",
+      "not": {
+        "enum": [
+          "records",
+          "entities",
+          "components",
+          "enums",
+          "collections",
+          "recordsets"
+        ]
+      }
+    },
+    "memberName": {
+      "type": "string",
+      "pattern": "\\S",
+      "description": "A name that is not blank."
+    },
+    "reference": {
+      "type": "string",
+      "pattern": "^[^.\\s]+(\\.[^.\\s]+)?$",
+      "description": "A concept name of the same module, or `<module>.<Name>` for a concept of another module."
+    },
+    "enumValues": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "integer"
+          }
+        ]
+      }
+    },
+    "component": {
+      "type": "object",
+      "description": "A reusable group of fields with no identity of its own.",
+      "properties": {
+        "fields": {
+          "type": "object",
+          "propertyNames": {
+            "$ref": "#/$defs/memberName"
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/member"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "enum": {
+      "type": "object",
+      "description": "A named, closed list of values.",
+      "required": [
+        "values"
+      ],
+      "properties": {
+        "values": {
+          "$ref": "#/$defs/enumValues"
+        }
+      },
+      "additionalProperties": false
+    },
+    "record": {
+      "type": "object",
+      "description": "A record type: a named structure of typed members. `key` is optional; without it the model makes no claim of record identity.",
+      "properties": {
+        "key": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        },
+        "use": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/reference"
+          }
+        },
+        "fields": {
+          "type": "object",
+          "propertyNames": {
+            "$ref": "#/$defs/memberName"
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/member"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "member": {
+      "type": "object",
+      "description": "A named, typed member. It has exactly one of `type`, `component` and `record`.",
+      "properties": {
+        "type": {
+          "enum": [
+            "string",
+            "int",
+            "float",
+            "bool",
+            "decimal",
+            "uuid",
+            "date",
+            "time",
+            "datetime",
+            "document",
+            "json",
+            "any"
+          ],
+          "description": "A primitive type."
+        },
+        "component": {
+          "$ref": "#/$defs/reference",
+          "description": "The component whose value the member holds."
+        },
+        "record": {
+          "$ref": "#/$defs/reference",
+          "description": "The record type the member refers to."
+        },
+        "required": {
+          "type": "boolean"
+        },
+        "unique": {
+          "type": "boolean"
+        },
+        "min_len": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "max_len": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "pattern": {
+          "type": "string"
+        },
+        "format": {
+          "type": "string"
+        },
+        "enum": {
+          "description": "The name of an enum, or a literal list of values.",
+          "oneOf": [
+            {
+              "$ref": "#/$defs/reference"
+            },
+            {
+              "$ref": "#/$defs/enumValues"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "oneOf": [
+        {
+          "required": [
+            "type"
+          ]
+        },
+        {
+          "required": [
+            "component"
+          ]
+        },
+        {
+          "required": [
+            "record"
+          ]
+        }
+      ]
+    }
+  }
+}

@@ -1,25 +1,26 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
-import { lstat, mkdir, readdir, readFile, symlink, writeFile } from 'node:fs/promises';
+import { lstat, mkdir, readdir, readFile, rm, symlink, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { test } from 'node:test';
 import { OUT_NAMES } from '../src/config.mjs';
 import { searchUiConfig } from '../src/registry-search-ui.mjs';
 import { MANIFEST_FILE } from '../src/build-manifest.mjs';
+import { schemaFileNames } from '../src/schema-files.mjs';
 import { ASSETSIGNORE_TEXT, BUILD_MARKER, buildSite, loadData, prepareOutput } from '../src/site.mjs';
 import { REPO, config, directoryJson, graphsJson, modelspecJson, productionConfig, read, sampleData, tempRoot } from './helpers.mjs';
 
 const fixtureConfig = (root, name = 'dist-e2e') => ({ ...config(['--use-fixture', '--out', name], {}), outDir: join(root, name) });
 
-test('a build is public/ plus registry/ plus build-info.json, and the landing page is public/index.html', async () => {
+test('a build is public/ plus registry/ plus schema/ plus build-info.json, and the landing page is public/index.html', async () => {
   const { root, cleanup } = await tempRoot();
   try {
     const data = sampleData();
     const result = await buildSite({ root, config: { ...productionConfig(root), searchUi: searchUiConfig({}, { production: true, fixture: false }) }, data });
     assert.equal(result.pages, 4);
     const dist = join(root, 'dist');
-    assert.deepEqual((await readdir(dist)).sort(), ['.assetsignore', MANIFEST_FILE, BUILD_MARKER, 'build-info.json', 'favicon.svg', 'index.html', 'registry', 'registry-search-ui.css', 'registry-search-ui.js', 'registry-search.json', 'registry.css', 'script.js', 'style.css']);
+    assert.deepEqual((await readdir(dist)).sort(), ['.assetsignore', MANIFEST_FILE, BUILD_MARKER, 'build-info.json', 'favicon.svg', 'index.html', 'registry', 'registry-search-ui.css', 'registry-search-ui.js', 'registry-search.json', 'registry.css', 'schema', 'script.js', 'style.css']);
     assert.equal(await read(dist, 'index.html'), await read(root, 'public', 'index.html'));
     for (const file of ['style.css', 'script.js', 'favicon.svg', 'registry.css']) assert.equal(await read(dist, file), await read(root, 'public', file));
     assert.ok(existsSync(join(dist, 'registry', 'index.html')));
@@ -230,4 +231,50 @@ test('build-info.json holds no absolute local path', async () => {
     const text = await read(root, 'dist-e2e', 'build-info.json');
     assert.ok(!text.includes(root) && !/\/Users\/|\/home\/|\/private\//.test(text), text);
   } finally { await cleanup(); }
+});
+
+const SCHEMAS = ['modelspec-ast-1.0-draft-2.schema.json', 'modelspec-ast-1.0-draft.schema.json', 'modelspec-ast.schema.json'];
+
+test('every kind of build publishes each schema/*.schema.json at schema/<same name>, byte for byte, and nothing else of schema/', async () => {
+  assert.deepEqual(await schemaFileNames(REPO), SCHEMAS, 'the three schemas of the repository');
+  const kinds = [
+    ['production', root => productionConfig(root)],
+    ['fixture', root => fixtureConfig(root)],
+    ['nonproduction', () => config([], { MODELSPEC_REGISTRY_INDEX_URL: 'https://raw.githubusercontent.com/x/y/b/index.json' })],
+  ];
+  for (const [kind, make] of kinds) {
+    const { root, cleanup } = await tempRoot();
+    try {
+      // what is not a <name>.schema.json file of schema/ itself is not published; one more schema is
+      await writeFile(join(root, 'schema', 'notes.txt'), 'not published');
+      await writeFile(join(root, 'schema', 'x.schema.json.bak'), 'not published');
+      await mkdir(join(root, 'schema', 'sub'));
+      await writeFile(join(root, 'schema', 'sub', 'inner.schema.json'), '{}');
+      await writeFile(join(root, 'schema', 'extra.schema.json'), '{"odd":  "spacing",\r\n"bytes": [1,2]}');
+      const cfg = make(root);
+      await buildSite({ root, config: cfg, data: sampleData() });
+      const out = join(root, cfg.outName);
+      const published = ['extra.schema.json', ...SCHEMAS];
+      assert.deepEqual((await readdir(join(out, 'schema'))).sort(), published, kind);
+      for (const name of published) assert.ok((await readFile(join(out, 'schema', name))).equals(await readFile(join(root, 'schema', name))), `${kind}: schema/${name} is byte for byte the repository's`);
+      for (const name of SCHEMAS) assert.ok((await readFile(join(out, 'schema', name))).equals(await readFile(join(REPO, 'schema', name))), `${kind}: ${name} equals the real repository file`);
+      const manifest = JSON.parse(await read(out, MANIFEST_FILE));
+      assert.deepEqual(Object.keys(manifest.files).filter(file => file.startsWith('schema/')), published.map(name => `schema/${name}`), `${kind}: the build manifest covers every published schema`);
+    } finally { await cleanup(); }
+  }
+});
+
+test('a build without schema/ or without a schema file, or whose public/ holds a schema entry, fails and leaves nothing to deploy', async () => {
+  for (const [name, change, expected] of [
+    ['no schema/', root => rm(join(root, 'schema'), { recursive: true }), /Cannot read schema\//],
+    ['only a README', async root => { await rm(join(root, 'schema'), { recursive: true }); await mkdir(join(root, 'schema')); await writeFile(join(root, 'schema', 'README.md'), 'x'); }, /holds no \*\.schema\.json file/],
+    ['public/schema', root => mkdir(join(root, 'public', 'schema')), /public\/schema clashes/],
+  ]) {
+    const { root, cleanup } = await tempRoot();
+    try {
+      await change(root);
+      await assert.rejects(buildSite({ root, config: productionConfig(root), data: sampleData() }), expected, name);
+      assert.ok(!existsSync(join(root, 'dist', MANIFEST_FILE)), `${name}: no finished build`);
+    } finally { await cleanup(); }
+  }
 });

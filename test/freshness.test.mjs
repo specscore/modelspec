@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict';
 import {spawnSync} from 'node:child_process';
+import {readFileSync} from 'node:fs';
 import {test} from 'node:test';
 import {REPO} from './helpers.mjs';
+import {SMOKE_PATHS} from '../scripts/smoke-live.mjs';
 import {INDEXES} from '../src/index-commits.mjs';
 import {FreshnessError, MARKER_PATH, checkFreshness, compareBuild, expectOk, fetchJson, markerFacts, printable, shortChecksum, shortCommit, verifyLive} from '../src/freshness.mjs';
 
@@ -206,6 +208,22 @@ test('expectOk retries with growing waits and then fails red', async () => {
   assert.equal(down.ok, false);
   assert.ok(!/\n|::/.test(down.reason));
   assert.deepEqual(waits, [5000, 10000, 15000, 20000, 30000, 30000, 30000], 'about two and a half minutes in all');
+});
+
+test('the smoke check fetches the landing page, the registry pages and the published schema, each with the expectOk retries', async () => {
+  assert.deepEqual(SMOKE_PATHS, ['/', '/registry/', '/registry/sources/', '/schema/modelspec-ast.schema.json']);
+  const script = readFileSync(new URL('../scripts/smoke-live.mjs', import.meta.url), 'utf8');
+  assert.match(script, /for \(const path of SMOKE_PATHS\) \{\s*const page = await expectOk\(\{ url: `\$\{SITE_URL\}\$\{path\}` \}\);/, 'every path goes through expectOk');
+  const url = `https://site.test${SMOKE_PATHS[3]}`;
+  const waits = [];
+  const sleep = async ms => { waits.push(ms); };
+  assert.deepEqual(await expectOk({fetch: fakeFetch({[url]: n => (n < 3 ? 503 : {$id: 'x'})}), url, sleep}), {ok: true, reason: ''});
+  assert.deepEqual(waits, [5000, 10000]);
+  waits.length = 0;
+  const missing = await expectOk({fetch: fakeFetch({}), url, sleep});
+  assert.equal(missing.ok, false, 'a schema that is not served fails the smoke check');
+  assert.match(missing.reason, /schema\/modelspec-ast\.schema\.json answered HTTP 404/);
+  assert.equal(waits.length, 7);
 });
 
 test('verifyLive waits with growing waits too', async () => {
