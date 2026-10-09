@@ -142,6 +142,39 @@ for (const anchor of ['#records', '#entities']) {
   });
 }
 
+// An earlier anchor must put the record type, the field row and the section where the current anchor puts them: other sites
+// hold links to the earlier ones, and a link should not land a line lower than it did. The alias is an empty block in the
+// element; its scroll margin reaches back to that element's own top edge (public/registry.css).
+for (const [what, earlier, current, holder] of [
+  ['a record type', '#entity-Album', '#record-Album', '#record-Album'],
+  ['a record type', '#entity-Customer', '#record-Customer', '#record-Customer'],
+  ['a field', '#property-Customer-Country', '#field-Customer-Country', '#field-Customer-Country'],
+  ['a field', '#property-Album-ArtistId', '#field-Album-ArtistId', '#field-Album-ArtistId'],
+  ['the section', '#entities', '#records', '#records'],
+]) {
+  test(`an earlier anchor and the current one scroll ${what} to the same place: ${earlier} and ${current}`, async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' }); // the page scrolls smoothly otherwise; the end point is what is compared
+    await page.goto(MODEL_PAGE);
+    const place = async hash => {
+      await page.evaluate(() => window.scrollTo(0, 0));
+      await page.evaluate(h => { location.hash = h; }, hash);
+      await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
+      return page.evaluate(selector => {
+        const max = document.documentElement.scrollHeight - innerHeight;
+        return { top: document.querySelector(selector).getBoundingClientRect().top, clamped: window.scrollY >= max - 1 };
+      }, holder);
+    };
+    const now = await place(current);
+    const before = await place(earlier);
+    expect(now.clamped || before.clamped, 'the page is long enough to scroll to it').toBe(false);
+    // the scroll position of the earlier anchor equals the current one's, to the pixel
+    expect(Math.abs(before.top - now.top), `top of ${holder}: ${earlier} ${before.top}, ${current} ${now.top}`).toBeLessThanOrEqual(1);
+    // and both are at the line the page's scroll padding sets (90px), not a line lower
+    expect(Math.abs(now.top - 90)).toBeLessThanOrEqual(1);
+    expect(Math.abs(before.top - 90)).toBeLessThanOrEqual(1);
+  });
+}
+
 test('a reference field links to the record type it references', async ({ page }) => {
   await page.goto(`${MODEL_PAGE}#field-Album-ArtistId`);
   const row = page.locator('#field-Album-ArtistId');

@@ -158,6 +158,11 @@
 /* the target of a link to a record type or a field */
 .reg-entity:target { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent); }
 .reg-props tr:target th, .reg-props tr:target td { background: #fff6c9; }
+/* An alias is a block of no height at the top of the content of the element it stands for, and its scroll margin reaches
+   back up to that element's own top edge (the padding, and the border, that lie above the content). A link written before
+   the rename then puts the heading or the row where a link to the current anchor puts it. */
+.reg-entity > .reg-alias { display: block; height: 0; scroll-margin-top: calc(1.15rem + 1px); }
+.reg-props th > .reg-alias { display: block; height: 0; scroll-margin-top: calc(.5rem + .5px); } /* the cell's padding, and half the border shared with the row above */
 /* A link written before the rename (#entity-Name, #property-Record-member) targets an empty .reg-alias element inside
    the record type or row; the same highlight goes to the element that holds it. Separate rules: a browser that does not
    know :has() drops these two and still scrolls to the place. */
@@ -181,6 +186,7 @@
   .reg-props, .reg-props tbody, .reg-props tr, .reg-props th, .reg-props td { display: block; width: 100%; }
   .reg-props tr { border-top: 1px solid var(--line); padding: .5rem 0; }
   .reg-props th, .reg-props td { border-top: 0; padding: .1rem 0; }
+  .reg-props th > .reg-alias { scroll-margin-top: calc(.6rem + 1px); } /* the row's border and padding, and the cell's */
   .reg-props td::before {
     content: attr(data-label); display: inline-block; min-width: 5.2rem;
     font-family: var(--font-mono); font-size: .68rem; letter-spacing: .08em;
