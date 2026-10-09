@@ -118,7 +118,7 @@ same thing in one language, with no difference in what they mean.
 
 ## Observed Consequences
 
-None observed yet.
+2026-10-09 — In force for the grammar and the JSON form. The specification's chapters describe `field` as the one member word, and the reference CLI reads both spellings from version 0.2.0 (modelspec-org/cli). Other readers and writers, and the registered models, follow in Phase 3.
 
 ## Affected Features
 

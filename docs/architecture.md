@@ -20,8 +20,8 @@ SpecScore
  validates ModelSpec
 ```
 
-GraphSpec consumes ModelSpec: graph entities reference ModelSpec models instead of
-defining structure. ModelSpec does not depend on GraphSpec. See
+GraphSpec consumes ModelSpec: graph entities reference ModelSpec record types
+instead of defining structure. ModelSpec does not depend on GraphSpec. See
 [decision 0012](../spec/decisions/0012-graphspec-is-a-consumer.md).
 
 ## Responsibilities
@@ -48,8 +48,8 @@ lifecycle). The dependency arrow never points out of ModelSpec.
 
 ## Design Rule
 
-If a concept changes when the storage backend changes, it probably belongs in a
-projection.
+If a concept changes when the storage backend changes, it belongs with the
+description of that database, not in the model.
 
 If a concept changes when the permission model changes, it probably belongs outside
 ModelSpec.

@@ -79,6 +79,13 @@ test('the guard refuses a dist/ that is not exactly public/ plus registry/', asy
     ['a missing asset', async root => rm(join(root, 'dist', 'style.css')), /style\.css of public\/ is missing/],
     ['a page from another build', async root => writeFile(join(root, 'dist', 'registry', 'index.html'), '<html><meta name="modelspec-build-source" content="fixture"></html>'), /registry\/index\.html was not built from the production indexes/],
     ['no marker', async root => rm(join(root, 'dist', BUILD_MARKER)), /marker|was not created by this build/],
+    ['an extra file in schema/', async root => writeFile(join(root, 'dist', 'schema', 'notes.json'), '{}'), /schema\/ holds files that are not schemas of this repository.*schema\/notes\.json/],
+    ['the schema README published', async root => writeFile(join(root, 'dist', 'schema', 'README.md'), await read(root, 'schema', 'README.md')), /schema\/README\.md/],
+    ['a missing schema', async root => rm(join(root, 'dist', 'schema', 'modelspec-ast.schema.json')), /schema\/modelspec-ast\.schema\.json is missing from the build/],
+    ['an altered schema', async root => writeFile(join(root, 'dist', 'schema', 'modelspec-ast.schema.json'), `${await read(root, 'dist', 'schema', 'modelspec-ast.schema.json')}\n`), /schema\/modelspec-ast\.schema\.json differs from the repository's schema\/modelspec-ast\.schema\.json/],
+    ['a schema that is stale after schema/ changed', async root => writeFile(join(root, 'schema', 'modelspec-ast-1.0-draft.schema.json'), `${await read(root, 'schema', 'modelspec-ast-1.0-draft.schema.json')}\n`), /schema\/modelspec-ast-1\.0-draft\.schema\.json differs/],
+    ['a schema added to schema/ after the build', async root => writeFile(join(root, 'schema', 'new.schema.json'), '{}'), /schema\/new\.schema\.json is missing from the build/],
+    ['a schema removed from schema/ after the build', async root => rm(join(root, 'schema', 'modelspec-ast.schema.json')), /schema\/ holds files that are not schemas of this repository.*schema\/modelspec-ast\.schema\.json/],
     ['a non-page file in registry/', async root => writeFile(join(root, 'dist', 'registry', 'data.json'), '{}'), /not pages/],
   ];
   for (const [name, change, expected] of mutate) {
@@ -278,6 +285,24 @@ test('a build writes the manifest last, and the guard checks it: an extra, a cha
     await writeFile(join(root, 'dist', 'registry', 'index.html'), home);
     await rm(join(root, 'dist', 'favicon.svg'));
     assert.match((await distProblems(root)).join('\n'), /favicon\.svg is in the build manifest but missing/);
+  } finally { await cleanup(); }
+});
+
+test('the manifest covers the schema files, and names one that was added, changed or removed after the build', async () => {
+  const { root, cleanup } = await prodRoot();
+  try {
+    assert.deepEqual(await distProblems(root), []);
+    assert.deepEqual(Object.keys(JSON.parse(await read(root, 'dist', MANIFEST_FILE)).files).filter(file => file.startsWith('schema/')), [
+      'schema/modelspec-ast-1.0-draft-2.schema.json', 'schema/modelspec-ast-1.0-draft.schema.json', 'schema/modelspec-ast.schema.json']);
+    const file = join(root, 'dist', 'schema', 'modelspec-ast.schema.json');
+    const text = await read(file);
+    await writeFile(join(root, 'dist', 'schema', 'extra.schema.json'), '{}');
+    assert.match((await manifestProblems(join(root, 'dist'))).join('\n'), /schema\/extra\.schema\.json is not in the build manifest: a file was added after the build/);
+    await rm(join(root, 'dist', 'schema', 'extra.schema.json'));
+    await writeFile(file, `${text} `);
+    assert.match((await manifestProblems(join(root, 'dist'))).join('\n'), /schema\/modelspec-ast\.schema\.json differs from the build manifest: it was changed after the build/);
+    await rm(file);
+    assert.match((await manifestProblems(join(root, 'dist'))).join('\n'), /schema\/modelspec-ast\.schema\.json is in the build manifest but missing/);
   } finally { await cleanup(); }
 });
 

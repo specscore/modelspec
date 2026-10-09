@@ -63,7 +63,7 @@ The website build or deployment process should publish those files under
 
 ## Observed Consequences
 
-None observed yet.
+2026-10-09 — Published. `schema/` holds three schemas, written by hand and not generated: `modelspec-ast-1.0-draft-2.schema.json` for the current vocabulary, whose identifier decision 0018 fixed; `modelspec-ast-1.0-draft.schema.json` for the deprecated one; and `modelspec-ast.schema.json`, the latest. Every site build copies the same bytes to `/schema/`, and the site serves them from the deploy that follows this change. Publishing a schema for the deprecated vocabulary, and the third URL, are choices of the implementing session.
 
 ## Affected Features
 

@@ -20,16 +20,12 @@ SpecScore, [OpenVaultDB](https://openvaultdb.com/), GraphSpec, or any specific b
 
 ModelSpec defines storage-neutral application data models:
 
-- entities
-- fields and properties
-- relationships
+- record types and their fields
+- keys
+- references between record types
 - reusable components
 - named enumerations
 - constraints
-- indexes
-- projections
-- migration metadata
-- storage-neutral schemas
 
 ModelSpec intentionally does not define:
 
@@ -42,8 +38,12 @@ ModelSpec intentionally does not define:
 
 Those concerns belong in adjacent specifications and application architecture.
 
-Indexes, projections, and migration metadata are shown in the specification by
-example. Their content is not yet defined, and no tool reads it.
+The words `projection`, `index` and `migration` are reserved and have no content
+yet. Earlier drafts wrote a record type as `entity` and its fields as `property`;
+the reference CLI accepts both, and `modelspec rewrite --write` converts a file. Other
+readers, the public registry's check among them, still accept only the earlier
+spelling, so a registered model should keep it for now. See
+[spec/core-model.md](spec/core-model.md#deprecated-spellings).
 
 ## Shape, Not Meaning
 
@@ -136,9 +136,8 @@ ModelSpec keeps the original design principles that motivated the project:
 
 - Composition over inheritance.
 - Reusable components instead of deep type hierarchies.
-- Entity structure separated from storage containers.
-- Logical models separated from physical projections.
-- Advisory storage projections rather than app-owned storage decisions.
+- The shape of a record separated from the place that stores it.
+- Statements about one database kept with that database, not in the model.
 - Generators for GraphQL, Go, TypeScript, SQLite, PostgreSQL, Firestore, InGitDB, and [OpenVaultDB](https://openvaultdb.com/) schemas. Planned; none is implemented.
 - Go-inspired composition with simple embedded components.
 
@@ -157,15 +156,15 @@ component "Auditable" {
   }
 }
 
-entity "User" {
+record "User" {
   key = ["id"]
   use = ["Auditable"]
 
-  property "id" {
+  field "id" {
     type = "uuid"
   }
 
-  property "email" {
+  field "email" {
     type     = "string"
     required = true
     unique   = true
@@ -173,39 +172,25 @@ entity "User" {
   }
 }
 
-entity "Order" {
+record "Order" {
   key = ["id"]
 
-  property "id" {
+  field "id" {
     type = "uuid"
   }
 
-  property "user" {
-    entity   = "User"
+  field "user" {
+    record   = "User"
     required = true
   }
 }
-
-projection "sqlite" {
-  collection "users" {
-    source = "User"
-    index "users_email_unique" {
-      fields = ["email"]
-      unique = true
-    }
-  }
-}
 ```
-
-The `projection` block at the end is an example no tool reads: the specification does
-not define what goes inside it, and the reference CLI will not export a file that
-contains one.
 
 ## [OpenVaultDB](https://openvaultdb.com/)
 
 [OpenVaultDB](https://openvaultdb.com/) says where data is. A database published to
 the OVDB Directory names the ModelSpec model it follows, and `ovdb publisher check`
-verifies that the recordsets it lists are the entities of that model.
+verifies that the recordsets it lists are the record types of that model.
 
 The intended integration goes further, and none of it is implemented. An application
 would publish a ModelSpec module; a user's vault would load the current ModelSpec and
@@ -270,7 +255,7 @@ GraphSpec consumes ModelSpec for structure; ModelSpec does not depend on GraphSp
 - [spec/](spec/README.md): the ModelSpec language specification.
 - [docs/](docs/README.md): architecture, [OpenVaultDB](https://openvaultdb.com/) integration, SpecScore integration, and catalog notes.
 - [examples/](examples/README.md): example ModelSpec modules.
-- [schema/](schema/README.md): planned JSON Schema publication location.
+- [schema/](schema/README.md): the JSON Schemas of the JSON form, also served at `https://modelspec.org/schema/`.
 - `public/`, `src/`, `scripts/`, `tools/`, `fixtures/`, `test/`, `e2e/`: the [modelspec.org](#website-modelspecorg) site and its build.
 
 ## Authored And Machine Formats
@@ -294,6 +279,7 @@ time from three public indexes. It is served by one Cloudflare Worker
 ```text
 dist/  =  copy of public/            the landing page, style.css, script.js, favicon, registry.css
        +  registry/                  /registry/ and /registry/models/<id>/ (generated)
+       +  schema/                    copy of schema/*.schema.json, byte for byte (served at /schema/<name>)
        +  build-info.json            what the build was made from (read by the deploy guard; served at /build-info.json)
        +  .modelspec-build-output    marker: this directory was created by the build
        +  .assetsignore              keeps the marker out of the upload
@@ -315,6 +301,15 @@ notice with a same-tab Directory link; it no longer lists or filters sources.
 Model pages preserve related source evidence, filtered by explicit model ID.
 These metadata links do not establish native-field bindings or activate source
 access. Source metadata and pinned-index validation remain unchanged.
+
+**JSON Schemas.** Every build, production or not, copies each `schema/*.schema.json`
+of this repository, byte for byte, to `schema/<same name>` in its output, so the
+deployed site answers `https://modelspec.org/schema/<name>`
+([decision 0010](spec/decisions/0010-json-schema-publication.md)). Other files of
+`schema/`, `schema/README.md` among them, are not published. A build fails if
+`schema/` holds no `*.schema.json` file, and `public/schema` is refused as a clash.
+The schema files are checked by the unit tests (`test/schema.test.mjs`, ajv, JSON
+Schema 2020-12).
 
 Requires Node.js 22 or newer.
 
@@ -412,9 +407,11 @@ command, so a plain `wrangler deploy`, `wrangler deploy --dry-run` and
 `wrangler versions upload` from this checkout refuse anything but a production
 build of `dist/`: `build-info.json` must say production from the three default
 indexes and links, every generated page must carry the production marker, and
-`dist/` must be exactly `public/` plus the generated `registry/` pages (so the
-landing page is byte-identical to `public/index.html`) with the `.assetsignore` the
-build writes. `wrangler dev` only warns. What it does **not** cover: the guard
+`dist/` must be exactly `public/` plus the generated `registry/` pages plus `schema/`
+(so the landing page is byte-identical to `public/index.html`, and `schema/` holds the
+repository's `schema/*.schema.json`, byte-identical, and nothing else: a missing,
+extra or altered schema file is refused by name) with the `.assetsignore` the build
+writes. `wrangler dev` only warns. What it does **not** cover: the guard
 checks `dist/`, not whatever else wrangler is told to upload, so
 `wrangler deploy --assets <other directory>` (the `dev` script and the browser tests
 use `--assets` on purpose), a `--config <other file>`, and the configuration files
@@ -455,7 +452,7 @@ Values fetched from public URLs are shape-checked before they are printed (a com
 
 **What is uploaded is what was built.** At the end of every build, `dist/` gets a manifest of the SHA-256 of every file the build wrote (`.modelspec-build-manifest.json`, kept out of the upload by `.assetsignore`, like the build marker). `scripts/check-build.mjs`, which `wrangler deploy` runs as its build command, verifies `dist/` against it (an extra, a missing or a changed file is refused, by name). `npm run deploy -- --use-existing-build`, which the workflow runs, uploads a `dist/` it did not build, so before `wrangler` starts it also requires that the marker's `commit` is the commit of `HEAD` and that `git status` shows a clean tree (no tracked change, no untracked file). The build empties its output directory first.
 
-**After the deploy,** `scripts/smoke-live.mjs` fetches the live marker and the pages (`/` and `/registry/`) again, each retried with growing waits (5 to 30 seconds, about two and a half minutes in all), and fails the run red unless the marker records the build just made and the pages answer 200.
+**After the deploy,** `scripts/smoke-live.mjs` fetches the live marker and the pages (`/`, `/registry/` and `/registry/sources/`) and the published schema (`/schema/modelspec-ast.schema.json`) again, each retried with growing waits (5 to 30 seconds, about two and a half minutes in all), and fails the run red unless the marker records the build just made and the pages and the schema answer 200.
 
 **There is no automatic rollback.** A red smoke check, or a deploy that fails part-way, leaves whatever Cloudflare has made live, live. To go back by hand: `npx wrangler rollback` (it makes the previously deployed version of the `modelspec-org` Worker the active deployment at once; `npx wrangler rollback <VERSION_ID>` picks another of the last 100 versions, and `npx wrangler deployments list` shows them), or revert the commit and push, which redeploys. Cloudflare documents rollback for Workers versions; it has not been tried on this Worker with static assets, so check the live site afterwards.
 

@@ -62,8 +62,8 @@ The AST owns semantics. Serializations carry the AST.
 Prefer singular named blocks:
 
 ```hcl
-entity "User" {
-  property "email" {
+record "User" {
+  field "email" {
     type = "string"
   }
 }
@@ -72,8 +72,8 @@ entity "User" {
 over map-style authoring:
 
 ```hcl
-entity "User" {
-  properties = {
+record "User" {
+  fields = {
     email = {
       type = "string"
     }
@@ -86,12 +86,9 @@ validators better source locations.
 
 ## Ordering
 
-Entity and property names are unique, so the JSON AST can represent them as object
-maps.
-
-Recordset columns are different: column order matters, and duplicate column names are
-possible in SQL result sets. The JSON AST should represent recordset columns as an
-array of objects with a `name` field.
+Record type and field names are unique, so the JSON AST represents them as object
+maps, and their order carries no meaning. The lists a model does hold, `key`, `use`
+and an enum's `values`, keep their order.
 
 ## Open Questions
 

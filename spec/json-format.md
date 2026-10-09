@@ -5,7 +5,7 @@
 Define the JSON serialization of the ModelSpec AST.
 
 ModelSpec JSON is a machine-readable serialization for validators, generators, and
-consumers such as OpenVaultDB. HCL remains the intended authored source format.
+consumers. HCL remains the intended authored source format.
 Tooling should parse HCL into a ModelSpec AST and serialize that AST to JSON when
 machine ingestion or API transport needs it.
 
@@ -19,13 +19,13 @@ A ModelSpec JSON AST serialization MUST be a JSON object with these top-level fi
 | `module` | Yes | Module identity and version metadata. |
 | `components` | No | Reusable field groups. |
 | `enums` | No | Named controlled vocabularies. |
-| `entities` | No | Named structures of typed properties; `key` may declare record identity. |
-| `collections` | No | Storage-neutral data sources or collection projections. |
-| `recordsets` | No | Strict tabular result shapes. |
-| `projections` | No | Advisory target-specific mapping hints. |
-| `migrations` | No | Descriptive migration metadata. |
+| `records` | No | Record types: named structures of typed fields; `key` may declare record identity. |
 
-The `modelspec` field MUST be the string `1.0-draft` for this draft serialization.
+The `modelspec` field MUST be the string `1.0-draft-2` for this draft serialization.
+
+The identifier tells a reader which vocabulary a document holds. The earlier
+identifier, `1.0-draft`, is deprecated and still read; see
+[The 1.0-draft Vocabulary](#the-10-draft-vocabulary).
 
 ## Module Metadata
 
@@ -33,7 +33,7 @@ The `module` object identifies the published model:
 
 ```json
 {
-  "modelspec": "1.0-draft",
+  "modelspec": "1.0-draft-2",
   "module": {
     "id": "github.com/acme/todo",
     "name": "Todo",
@@ -82,20 +82,20 @@ Named enums are keyed by enum name:
 }
 ```
 
-A property references a named enum through its `enum` attribute; a literal value list
-in that attribute remains valid for single-use vocabularies.
+A field references a named enum through its `enum` setting; a literal value list
+in that setting remains valid for single-use vocabularies.
 
-## Entities
+## Records
 
-Entities are keyed by entity name:
+Record types are keyed by name:
 
 ```json
 {
-  "entities": {
+  "records": {
     "User": {
       "key": ["id"],
       "use": ["Auditable"],
-      "properties": {
+      "fields": {
         "id": {
           "type": "uuid"
         },
@@ -111,132 +111,48 @@ Entities are keyed by entity name:
 }
 ```
 
-An entity's `key` is optional. When it is omitted, the model does not assert
-stable logical identity for the entity's records; this does not describe or
+A record type's `key` is optional. When it is omitted, the model does not assert
+stable logical identity for its records; this does not describe or
 rule out primary-key or unique constraints in a physical source schema. When
-present, the key must be a non-empty list of distinct property names (including
-properties supplied by components the entity uses).
+present, the key must be a non-empty list of distinct field names (including
+fields supplied by components the record type uses).
 
-Property objects MAY use one of:
+Field objects MUST use exactly one of:
 
 - `type` for primitive types
 - `component` for embedded component values
-- `entity` for relationships to another entity
+- `record` for a reference to another record type
 
-## Collections
+Record types, components, enums, and fields use object maps because names are unique
+and order is not semantic.
 
-Collections are keyed by collection name:
+## The 1.0-draft Vocabulary
 
-```json
-{
-  "collections": {
-    "tasks": {
-      "kind": "editable",
-      "source": "Task",
-      "fields": {
-        "id": {
-          "type": "uuid",
-          "bind": "Task.id"
-        },
-        "ownerId": {
-          "type": "uuid",
-          "bind": "Task.owner"
-        }
-      }
-    }
-  }
-}
-```
+A document whose `modelspec` field is `1.0-draft` uses the vocabulary of the earlier
+draft. A reader MUST accept it and SHOULD report that the identifier is deprecated
+([decision 0018](decisions/0018-entity-becomes-record.md),
+[decision 0020](decisions/0020-field-is-the-member-word.md)).
 
-`kind` MUST be `editable` or `computed` in v0. Computed collections SHOULD carry a
-`query` string or query reference. Query interpretation remains behind the opaque
-query seam.
+| In `1.0-draft` | In `1.0-draft-2` |
+|---|---|
+| top-level `entities` | top-level `records` |
+| `properties` of an entity | `fields` of a record type |
+| member key `entity` | member key `record` |
 
-## Recordsets
+The identifier decides the vocabulary. A `1.0-draft-2` document that carries a
+`1.0-draft` key, or a `1.0-draft` document that carries a `1.0-draft-2` key, is an
+error. Components use `fields` under both identifiers.
 
-Recordsets are keyed by recordset name. `columns` MUST be an ordered array because
-recordset column order is semantic and duplicate column names are allowed.
+A serializer writes `1.0-draft-2` for a source in the current spelling. The reference
+CLI writes `1.0-draft` for a source that holds any deprecated spelling, so that a
+module and its committed JSON stay in step until both are rewritten.
 
-```json
-{
-  "recordsets": {
-    "taskSummary": {
-      "key": ["id"],
-      "query": "from tasks select id, title, completed",
-      "columns": [
-        {
-          "name": "id",
-          "type": "uuid",
-          "bind": "Task.id"
-        },
-        {
-          "name": "title",
-          "type": "string",
-          "bind": "Task.title"
-        }
-      ]
-    }
-  }
-}
-```
+## Removed And Reserved Fields
 
-Entity properties, component fields, collections, and top-level named concepts use
-object maps because names are unique and order is not semantic.
-
-## Projections
-
-Projection objects are advisory target-specific mapping hints:
-
-```json
-{
-  "projections": {
-    "sqlite": {
-      "collections": {
-        "tasks": {
-          "source": "Task",
-          "indexes": {
-            "tasks_owner": {
-              "fields": ["ownerId"]
-            }
-          }
-        }
-      }
-    }
-  }
-}
-```
-
-Consumers MAY ignore projection hints. OpenVaultDB has final authority over backend
-choice and backend mapping.
-
-The shape of a projection object is shown by example and is not defined. The
-reference CLI checks only that `projections` and `migrations` are objects and carries
-them through unchanged.
-
-## Migration Metadata
-
-Migration metadata is descriptive in v0:
-
-```json
-{
-  "migrations": {
-    "2026-07-08-task-title-rename": {
-      "from": "0.1.0",
-      "to": "0.2.0",
-      "renames": [
-        {
-          "from": "Task.name",
-          "to": "Task.title"
-        }
-      ]
-    }
-  }
-}
-```
-
-ModelSpec does not execute migrations in v0.
-
-The shape of a migration object is likewise shown by example and is not defined.
+The top-level fields `collections` and `recordsets` are removed, and `projections` and
+`migrations` are reserved with no content. A document that carries any of the four is
+an error, under either identifier
+([decision 0019](decisions/0019-collection-and-recordset-removed-three-words-reserved.md)).
 
 ## Validation Requirements
 
@@ -244,31 +160,52 @@ A validator consuming the JSON AST serialization MUST check:
 
 - `modelspec` is present and supported.
 - `module.id` and `module.version` are present.
-- component, enum, entity, collection, recordset, projection, and migration names are
-  unique within their object maps.
-- entity property and collection field names are unique within their scopes.
+- component, enum, and record type names are unique within their object maps, and
+  across the three: they share one namespace.
+- no concept is named with a reserved name.
+- field names are unique within their record type or component, and no name is blank.
+- each field has exactly one of `type`, `component` and `record`.
+- a `key` is a non-empty list of distinct names of fields of its record type.
 - enum value lists are non-empty and free of duplicate values.
-- recordset column arrays preserve order and allow duplicate `name` values.
-- references resolve, including `use`, `component`, `enum`, `entity`, `source`, and
-  `bind`. Module-qualified references are preserved verbatim in the serialization
+- a reference is a concept name, or `<module>.<Name>` with exactly one dot
+  ([decision 0014](decisions/0014-module-qualified-references.md)).
+- references resolve, including `use`, `component`, `enum`, and `record`.
+  Module-qualified references are preserved verbatim in the serialization
   and MUST resolve within the consumer-provided module set; an unknown module is the
   same diagnostic class as an unresolved bare name.
 - primitive types are in the supported type set.
 - constraints use supported keys and valid value types.
-- projection hints do not become authoritative backend requirements.
+- every key belongs to the vocabulary that the identifier names.
+- no removed or reserved top-level field is present.
 
 ## JSON Schema Publication
 
-Generated JSON Schema artifacts SHOULD be published in this repository under
-`schema/`.
+The JSON Schemas of this serialization are published in this repository under
+`schema/` ([decision 0010](decisions/0010-json-schema-publication.md)):
 
-The website SHOULD expose stable copies at:
+- `schema/modelspec-ast-1.0-draft-2.schema.json`, for the `1.0-draft-2` vocabulary
+- `schema/modelspec-ast-1.0-draft.schema.json`, for the deprecated `1.0-draft`
+  vocabulary, so that a model pinned in that vocabulary can still be checked
+- `schema/modelspec-ast.schema.json`, the latest, which is the `1.0-draft-2` schema
+  today
 
-- `https://modelspec.org/schema/modelspec-ast.schema.json`
+The website exposes stable copies at:
+
+- `https://modelspec.org/schema/modelspec-ast-1.0-draft-2.schema.json`
 - `https://modelspec.org/schema/modelspec-ast-1.0-draft.schema.json`
+- `https://modelspec.org/schema/modelspec-ast.schema.json`
 
 The repository copy is the source of truth. Website URLs are stable distribution
 endpoints for tools and documentation.
+
+A JSON Schema describes a document's shape. It cannot say that a reference resolves or
+that a key names a field, so a document that passes the schema is not thereby a valid
+model.
+
+The schemas also fix four points of shape that the reference reader enforces: a name
+is not blank; an enum's values are strings or integers; `module.name`, when present,
+is not empty; and an unknown key is refused inside a record type, a component, an
+enum and a field, while an unknown top-level field is allowed.
 
 ## Open Questions
 

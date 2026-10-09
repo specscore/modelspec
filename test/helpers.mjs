@@ -97,10 +97,11 @@ export function productionConfig(root, overrides = {}) {
   };
 }
 
-/** A throwaway repository root holding a copy of the real public/. */
+/** A throwaway repository root holding a copy of the real public/ and schema/. */
 export async function tempRoot() {
   const root = await mkdtemp(join(tmpdir(), 'modelspec-test-'));
   await cp(join(REPO, 'public'), join(root, 'public'), { recursive: true });
+  await cp(join(REPO, 'schema'), join(root, 'schema'), { recursive: true });
   await mkdir(join(root, 'spec'), { recursive: true });
   await writeFile(join(root, 'spec', 'keep.md'), 'keep');
   return { root, cleanup: () => rm(root, { recursive: true, force: true }) };

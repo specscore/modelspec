@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // After a deploy: confirms the live site serves the build just made. The live /build-info.json must
-// record this build's commit, index commits and index checksums, and the landing page and /registry/ must answer 200; each is
+// record this build's commit, index commits and index checksums, and the landing page, /registry/, /registry/sources/ and
+// the published JSON Schema /schema/modelspec-ast.schema.json must answer 200; each is
 // retried with growing waits (about two and a half minutes in all) while the new version spreads, then fails.
 //
 //   node scripts/smoke-live.mjs
@@ -12,11 +13,14 @@ import { fileURLToPath } from 'node:url';
 import { DEPLOY_DIR_NAME, ROOT, SITE_URL } from '../src/config.mjs';
 import { MARKER_PATH, expectOk, printable, verifyLive } from '../src/freshness.mjs';
 
+/** The live paths that must answer 200 after a deploy. */
+export const SMOKE_PATHS = ['/', '/registry/', '/registry/sources/', '/schema/modelspec-ast.schema.json'];
+
 async function main() {
   const built = JSON.parse(await readFile(join(ROOT, DEPLOY_DIR_NAME, MARKER_PATH), 'utf8'));
   const { ok, reasons } = await verifyLive({ markerUrl: `${SITE_URL}${MARKER_PATH}`, built });
   if (!ok) throw new Error(`${SITE_URL} does not serve this build: ${reasons.join('; ')}`);
-  for (const path of ['/', '/registry/', '/registry/sources/']) {
+  for (const path of SMOKE_PATHS) {
     const page = await expectOk({ url: `${SITE_URL}${path}` });
     if (!page.ok) throw new Error(page.reason);
   }

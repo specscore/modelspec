@@ -6,6 +6,10 @@ format: https://specscore.md/decisions-index-specification
 
 ## Decisions
 
+Decisions 0002 and 0003 are listed as Approved and are no longer in force, 0004 has
+no subject left, and 0007, 0009, 0014 and 0015 are succeeded in part. Each says so in its observed
+consequences, and [the transition](../README.md#transition) has the table.
+
 | # | Decision | Status | Date | Tags | Affected |
 |---|----------|--------|------|------|----------|
 | [0001](0001-composition-over-inheritance.md) | Composition Over Inheritance | Approved | 2026-07-08 | model,composition | — |

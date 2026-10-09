@@ -134,7 +134,7 @@ serialization's `module.id`; source-level names stay short and portable.
 
 ## Observed Consequences
 
-None observed yet.
+2026-10-09 — Succeeded in part by decision 0018, which took effect in the specification's grammar chapters: the reference setting is `record`, and `entity` is its deprecated spelling. Everything else stands. Decision 0021, which amends resolution for published models, is approved and not in force. This file's headers do not record it: SpecScore accepts a `Supersedes` link only on a successor that is not yet approved, and the successors were approved before they took effect.
 
 ## Affected Features
 

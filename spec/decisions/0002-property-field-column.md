@@ -59,7 +59,7 @@ implicit identity. Tooling must preserve the layer-specific terminology.
 
 ## Observed Consequences
 
-None observed yet.
+2026-10-09 — Succeeded by decisions 0019 and 0020, which took effect in the specification's grammar chapters. A record type's member is a field (0020), and collections and recordsets, with the member word `column`, are removed (0019). None of this decision's three rules remains in the grammar. This file's headers do not record it: SpecScore accepts a `Supersedes` link only on a successor that is not yet approved, and the successors were approved before they took effect.
 
 ## Affected Features
 

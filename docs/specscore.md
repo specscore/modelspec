@@ -44,5 +44,3 @@ SpecScore does not define:
 
 - ModelSpec concept vocabulary
 - ModelSpec type semantics
-- ModelSpec projection semantics
-- ModelSpec migration metadata semantics

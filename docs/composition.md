@@ -49,14 +49,14 @@ component "Address" {
 }
 ```
 
-Entities embed components:
+Record types embed components:
 
 ```hcl
-entity "Customer" {
+record "Customer" {
   key = ["id"]
   use = ["Auditable", "Address"]
 
-  property "id" {
+  field "id" {
     type = "uuid"
   }
 }
@@ -86,19 +86,16 @@ predictable.
 
 Use:
 
-- Entity
-- Property
+- Record type
 - Field
 - Component
-- Relationship
-- Projection
-- Mapping
+- Reference
 
 Avoid:
 
 - Base class
 - Derived class
-- Abstract entity
+- Abstract record type
 
 ## Advantages
 

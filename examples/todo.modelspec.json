@@ -1,5 +1,5 @@
 {
-  "modelspec": "1.0-draft",
+  "modelspec": "1.0-draft-2",
   "module": {
     "id": "github.com/specscore/modelspec/examples/todo",
     "name": "Todo",
@@ -19,11 +19,15 @@
       }
     }
   },
-  "entities": {
+  "records": {
     "User": {
-      "key": ["id"],
-      "use": ["Auditable"],
-      "properties": {
+      "key": [
+        "id"
+      ],
+      "use": [
+        "Auditable"
+      ],
+      "fields": {
         "id": {
           "type": "uuid"
         },
@@ -36,9 +40,13 @@
       }
     },
     "Task": {
-      "key": ["id"],
-      "use": ["Auditable"],
-      "properties": {
+      "key": [
+        "id"
+      ],
+      "use": [
+        "Auditable"
+      ],
+      "fields": {
         "id": {
           "type": "uuid"
         },
@@ -52,57 +60,23 @@
           "required": true
         },
         "owner": {
-          "entity": "User",
+          "record": "User",
           "required": true
         }
       }
-    }
-  },
-  "collections": {
-    "tasks": {
-      "kind": "editable",
-      "source": "Task",
+    },
+    "TaskSummary": {
       "fields": {
         "id": {
-          "type": "uuid",
-          "bind": "Task.id"
+          "type": "uuid"
         },
         "title": {
-          "type": "string",
-          "bind": "Task.title"
+          "type": "string"
         },
         "completed": {
-          "type": "bool",
-          "bind": "Task.completed"
-        },
-        "ownerId": {
-          "type": "uuid",
-          "bind": "Task.owner"
+          "type": "bool"
         }
       }
-    }
-  },
-  "recordsets": {
-    "taskSummary": {
-      "key": ["id"],
-      "query": "from tasks select id, title, completed",
-      "columns": [
-        {
-          "name": "id",
-          "type": "uuid",
-          "bind": "Task.id"
-        },
-        {
-          "name": "title",
-          "type": "string",
-          "bind": "Task.title"
-        },
-        {
-          "name": "completed",
-          "type": "bool",
-          "bind": "Task.completed"
-        }
-      ]
     }
   }
 }

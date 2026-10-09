@@ -99,7 +99,7 @@
     </section>
 
     <!-- TARGETS MARQUEE -->
-    <section class="targets-strip" aria-label="Projection targets named in the specification">
+    <section class="targets-strip" aria-label="Storage engines, API layers and languages a model could be generated for">
       <ul>
         <li>PostgreSQL</li><li>SQLite</li><li>Firestore</li><li>GraphQL</li>
         <li>Go</li><li>TypeScript</li><li>inGitDB</li><li>OpenVaultDB</li>
@@ -190,20 +190,20 @@
         <p class="section-label">03 — Core concepts</p>
         <h2>A small, honest vocabulary.</h2>
         <p class="section-sub">
-          Entities are named structures of typed properties, with an optional key.
-          Components are reusable groups of fields. Enums are named vocabularies. The
-          projection block is an example no tool reads.
+          Record types are named structures of typed fields, with an optional key.
+          Components are reusable groups of fields. Enums are named vocabularies. A
+          reference says that a field refers to another record type.
         </p>
       </div>
 
       <div class="concept-grid">
         <article class="card reveal">
-          <h3>Entity</h3>
-          <p>A named structure of typed properties — <code>User</code>, <code>Order</code>, <code>Invoice</code>. A key is optional: without one, the model makes no claim of record identity.</p>
-          <pre><code><span class="k">entity</span> <span class="s">"User"</span> {
+          <h3>Record type</h3>
+          <p>A named structure of typed fields — <code>User</code>, <code>Order</code>, <code>Invoice</code>. A key is optional: without one, the model makes no claim of record identity.</p>
+          <pre><code><span class="k">record</span> <span class="s">"User"</span> {
   <span class="k">key</span> = [<span class="s">"id"</span>]
 
-  <span class="k">property</span> <span class="s">"id"</span> {
+  <span class="k">field</span> <span class="s">"id"</span> {
     type = <span class="s">"uuid"</span>
   }
 }</code></pre>
@@ -222,24 +222,23 @@
 
         <article class="card reveal">
           <h3>Composition</h3>
-          <p>Entities <em>use</em> components, much like Go struct embedding — no deep type hierarchies.</p>
-          <pre><code><span class="k">entity</span> <span class="s">"Invoice"</span> {
+          <p>Record types <em>use</em> components, much like Go struct embedding — no deep type hierarchies.</p>
+          <pre><code><span class="k">record</span> <span class="s">"Invoice"</span> {
   <span class="k">key</span> = [<span class="s">"id"</span>]
   <span class="k">use</span> = [<span class="s">"Auditable"</span>]
 
-  <span class="k">property</span> <span class="s">"id"</span> {
+  <span class="k">field</span> <span class="s">"id"</span> {
     type = <span class="s">"uuid"</span>
   }
 }</code></pre>
         </article>
 
         <article class="card reveal">
-          <h3>Projection</h3>
-          <p><em>An example no tool reads.</em> The specification shows this block but does not define what goes inside it. The reference CLI records it without reading its content, and will not export a file that contains one.</p>
-          <pre><code><span class="k">projection</span> <span class="s">"sqlite"</span> {
-  <span class="k">collection</span> <span class="s">"users"</span> {
-    source = <span class="s">"User"</span>
-  }
+          <h3>Reference</h3>
+          <p>A field that refers to another record type. It is true whether or not a database declares a foreign key for it.</p>
+          <pre><code><span class="k">field</span> <span class="s">"user"</span> {
+  record   = <span class="s">"User"</span>
+  required = <span class="n">true</span>
 }</code></pre>
         </article>
       </div>
@@ -270,15 +269,15 @@
   }
 }
 
-<span class="k">entity</span> <span class="s">"User"</span> {
+<span class="k">record</span> <span class="s">"User"</span> {
   <span class="k">key</span> = [<span class="s">"id"</span>]
   <span class="k">use</span> = [<span class="s">"Auditable"</span>]
 
-  <span class="k">property</span> <span class="s">"id"</span> {
+  <span class="k">field</span> <span class="s">"id"</span> {
     type = <span class="s">"uuid"</span>
   }
 
-  <span class="k">property</span> <span class="s">"email"</span> {
+  <span class="k">field</span> <span class="s">"email"</span> {
     type     = <span class="s">"string"</span>
     required = <span class="n">true</span>
     unique   = <span class="n">true</span>
@@ -286,26 +285,16 @@
   }
 }
 
-<span class="k">entity</span> <span class="s">"Order"</span> {
+<span class="k">record</span> <span class="s">"Order"</span> {
   <span class="k">key</span> = [<span class="s">"id"</span>]
 
-  <span class="k">property</span> <span class="s">"id"</span> {
+  <span class="k">field</span> <span class="s">"id"</span> {
     type = <span class="s">"uuid"</span>
   }
 
-  <span class="k">property</span> <span class="s">"user"</span> {
-    entity   = <span class="s">"User"</span>
+  <span class="k">field</span> <span class="s">"user"</span> {
+    record   = <span class="s">"User"</span>
     required = <span class="n">true</span>
-  }
-}
-
-<span class="k">projection</span> <span class="s">"sqlite"</span> {
-  <span class="k">collection</span> <span class="s">"users"</span> {
-    source = <span class="s">"User"</span>
-    <span class="k">index</span> <span class="s">"users_email_unique"</span> {
-      fields = [<span class="s">"email"</span>]
-      unique = <span class="n">true</span>
-    }
   }
 }</code></pre>
       </div>
@@ -317,9 +306,9 @@
         in other modules by qualified name, so a shared vocabulary can be defined once and reused.
       </p>
       <p class="drift-note">
-        The <code>projection</code> block at the end of the file is an example no tool reads:
-        the specification does not define what goes inside it, and the reference CLI will not
-        export a file that contains one.
+        Earlier drafts wrote a record type as <code>entity</code> and its fields as <code>property</code>.
+        The reference CLI accepts both, and <code>modelspec rewrite --write</code> converts a file. Other
+        readers, the public registry's check among them, still accept only the earlier spelling.
       </p>
     </section>
 
@@ -350,7 +339,7 @@
         <article class="card reveal">
           <h3>GraphSpec</h3>
           <p>
-            A <em>consumer</em>, not a parent. GraphSpec references ModelSpec entities,
+            A <em>consumer</em>, not a parent. GraphSpec references ModelSpec record types,
             components and enums rather than defining structure itself. ModelSpec never
             references GraphSpec.
           </p>
@@ -390,18 +379,15 @@
         <div>
           <p class="section-label">Defines</p>
           <ul class="pill-list">
-            <li>Entities</li>
-            <li>Fields &amp; properties</li>
-            <li>Relationships</li>
+            <li>Record types</li>
+            <li>Fields</li>
+            <li>Keys</li>
+            <li>References</li>
             <li>Reusable components</li>
             <li>Named enumerations</li>
             <li>Constraints</li>
-            <li>Indexes</li>
-            <li>Projections</li>
-            <li>Migration metadata</li>
-            <li>Storage-neutral schemas</li>
           </ul>
-          <p class="drift-note">Indexes, projections and migration metadata are shown in the specification by example. Their content is not yet defined, and no tool reads it.</p>
+          <p class="drift-note">The words <code>projection</code>, <code>index</code> and <code>migration</code> are reserved and have no content yet.</p>
         </div>
 
         <div class="nongoals">
@@ -447,6 +433,7 @@
           <li>Specification — active</li>
           <li>HCL authoring grammar — drafted</li>
           <li>JSON serialization — first machine format</li>
+          <li>JSON Schema — published</li>
           <li>YAML serialization — out of scope for v0</li>
           <li>Generators — planned, none built</li>
           <li>Reference CLI and its test corpus — released</li>
@@ -475,7 +462,7 @@
         <article class="card">
           <h3>ModelSpec</h3>
           <p>
-            The shape of the data (entities, fields, types and links), written once,
+            The shape of the data (record types, fields, types and links), written once,
             whatever stores it.
             <a href="/registry/">Browse the models</a>
           </p>
