@@ -38,6 +38,13 @@ export function anchorId(prefix, ...names) {
   return [prefix, ...names.map(part)].join('-');
 }
 
+/**
+ * An empty element that carries an earlier anchor of the page, placed first inside the element it stands for, so a link
+ * written before the rename (`#entity-Artist`, `#property-Album-ArtistId`, `#entities`) opens on the same place as
+ * the current one. It is an element of its own because an element has one id.
+ */
+const alias = id => `<span class="reg-alias" id="${esc(id)}"></span>`;
+
 const trimBase = url => url.replace(/\/+$/, '');
 export const discoveryUrl = ctx => `${trimBase(ctx.ovdbDirectoryBaseUrl)}/#explore`;
 const plural = (n, one, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
@@ -204,7 +211,7 @@ function layersBlock(ctx, data) {
   return `<section class="reg-layers" id="layers" aria-labelledby="layers-heading">
       <h2 id="layers-heading">Where it is, what shape it has, what it means.</h2>
       <ul class="reg-layer-list">
-        <li><strong>ModelSpec</strong>: the shape of the data (entities, fields, types and links), written once, whatever stores it.</li>
+        <li><strong>ModelSpec</strong>: the shape of the data (record types, fields, types and links), written once, whatever stores it.</li>
         <li><strong><a href="${safeUrl(trimBase(ctx.ovdbDirectoryBaseUrl) + '/')}">OVDB Directory</a></strong>: where the data is, who publishes it and how to reach it.</li>
         <li><strong><a href="${safeUrl(trimBase(ctx.meaningGraphBaseUrl) + '/')}">MeaningGraph</a></strong>: what the data means. Meanings are attached to ModelSpec fields, so one description serves every copy of the same model.</li>
       </ul>
@@ -251,7 +258,7 @@ function modelCounts(model, data) {
 
 function renderModelCard(model, data) {
   const { graphs, databases } = modelCounts(model, data);
-  const properties = model.entities.reduce((n, e) => n + e.properties.length, 0);
+  const fields = model.entities.reduce((n, e) => n + e.properties.length, 0);
   const components = model.components.length > 0 ? `, ${plural(model.components.length, 'component')}` : '';
   return `<li class="reg-model">
           <div class="reg-model-head"><h3><a href="${esc(modelPath(model.id))}">${esc(model.title)}</a></h3>${statusPill(model.status)}</div>
@@ -259,7 +266,7 @@ function renderModelCard(model, data) {
           <dl class="reg-mini">
             <div><dt>Address</dt><dd><code>${esc(model.address)}</code></dd></div>
             <div><dt>Repository</dt><dd>${externalLink(`${model.repository}/tree/${model.commit}`, `${repositoryLabel(model.repository)}@${model.commit.slice(0, 7)}`)}${codeGrapherUrl(model) ? ` · <a class="reg-codegrapher" href="${safeUrl(codeGrapherUrl(model))}" target="_blank" rel="noreferrer">CodeGrapher ↗</a>` : ''}</dd></div>
-            <div><dt>Shape</dt><dd>${plural(model.entities.length, 'entity', 'entities')}, ${plural(properties, 'property', 'properties')}${components}</dd></div>
+            <div><dt>Shape</dt><dd>${plural(model.entities.length, 'record type')}, ${plural(fields, 'field')}${components}</dd></div>
             <div><dt>Used by</dt><dd>${plural(graphs.length, 'meaning graph')}, ${plural(databases.length, 'database')}</dd></div>
           </dl>
         </li>`;
@@ -273,7 +280,7 @@ export function renderRegistryPage(data, ctx, shell) {
     <header class="reg-hero">
       <p class="section-label">Registry — new, draft</p>
       <h1>The ModelSpec registry</h1>
-      <p class="reg-lede">Published ModelSpec models. Each has one address, a pinned commit in its repository and the entities it defines, so a project can start from it and others can tell they share it.</p>
+      <p class="reg-lede">Published ModelSpec models. Each has one address, a pinned commit in its repository and the record types it defines, so a project can start from it and others can tell they share it.</p>
     </header>
     <p class="reg-draft" role="note"><strong>Draft.</strong> The registry is new: the models listed here and the format of the index they are built from may still change. To register a model, open a pull request on ${externalLink(REGISTRY_REPOSITORY_URL, 'github.com/modelspec-org/registry')}, which explains how.</p>
     <section class="reg-section" id="models" aria-labelledby="models-heading">
@@ -289,7 +296,7 @@ export function renderRegistryPage(data, ctx, shell) {
   return page({
     where: 'registry index',
     title: 'Registry — ModelSpec',
-    description: 'The ModelSpec registry: published models, their entities and properties, the MeaningGraph graphs that bind their meanings and the OVDB Directory databases that use them. New, draft.',
+    description: 'The ModelSpec registry: published models, their record types and fields, the MeaningGraph graphs that bind their meanings and the OVDB Directory databases that use them. New, draft.',
     path: REGISTRY_PATH,
     ctx,
     shell,
@@ -315,11 +322,11 @@ export function renderSourcesPage(data, ctx, shell) {
 
 // ------------------------------------------------------------ /registry/models/<id>/
 
-/** The type cell of a property or field: a scalar, a reference to an entity, or an embedded component. */
+/** The type cell of a record type's field or a component's field: a scalar, a reference to a record type, or an embedded component. */
 function typeCell(prop, localEntities, localComponents) {
   const arrow = '<span class="reg-arrow" aria-label="to">→</span>';
   if (prop.references) {
-    const target = localEntities.has(prop.references) ? `<a href="#${esc(anchorId('entity', prop.references))}">${esc(prop.references)}</a>` : esc(prop.references);
+    const target = localEntities.has(prop.references) ? `<a href="#${esc(anchorId('record', prop.references))}">${esc(prop.references)}</a>` : esc(prop.references);
     return `${esc(prop.type)} ${arrow} ${target}`;
   }
   if (prop.component) {
@@ -329,33 +336,34 @@ function typeCell(prop, localEntities, localComponents) {
   return esc(prop.type);
 }
 
-function renderProperty(entity, prop, localEntities, localComponents) {
-  const id = anchorId('property', entity.name, prop.name);
+function renderField(entity, prop, localEntities, localComponents) {
+  const id = anchorId('field', entity.name, prop.name);
   return `<tr id="${esc(id)}">
-              <th scope="row" data-label="Property"><a class="reg-prop-name" href="#${esc(id)}"><code>${esc(prop.name)}</code></a></th>
+              <th scope="row" data-label="Field">${alias(anchorId('property', entity.name, prop.name))}<a class="reg-prop-name" href="#${esc(id)}"><code>${esc(prop.name)}</code></a></th>
               <td data-label="Type">${typeCell(prop, localEntities, localComponents)}</td>
               <td data-label="Required">${prop.required ? 'yes' : 'no'}</td>
               <td data-label="Key">${prop.key ? '<span class="reg-pill reg-pill--key">key</span>' : 'no'}</td>
             </tr>`;
 }
 
-function renderEntity(entity, localEntities, localComponents) {
-  const id = anchorId('entity', entity.name);
-  const rows = entity.properties.map(prop => renderProperty(entity, prop, localEntities, localComponents)).join('\n            ');
+function renderRecordType(entity, localEntities, localComponents) {
+  const id = anchorId('record', entity.name);
+  const rows = entity.properties.map(prop => renderField(entity, prop, localEntities, localComponents)).join('\n            ');
   const key = entity.key.length > 0 ? `<p class="reg-entity-key">Key: ${entity.key.map(k => `<code>${esc(k)}</code>`).join(', ')}</p>` : '';
   const use = entity.use.length > 0
     ? `<p class="reg-entity-use">Uses components: ${entity.use.map(u => (localComponents.has(u) ? `<a href="#${esc(anchorId('component', u))}"><code>${esc(u)}</code></a>` : `<code>${esc(u)}</code>`)).join(', ')}</p>`
     : '';
   const table = entity.properties.length === 0
-    ? '<p class="reg-none">No properties.</p>'
+    ? '<p class="reg-none">No fields.</p>'
     : `<table class="reg-props">
-          <caption class="reg-sr">Properties of ${esc(entity.name)}</caption>
-          <thead><tr><th scope="col">Property</th><th scope="col">Type</th><th scope="col">Required</th><th scope="col">Key</th></tr></thead>
+          <caption class="reg-sr">Fields of ${esc(entity.name)}</caption>
+          <thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Required</th><th scope="col">Key</th></tr></thead>
           <tbody>
             ${rows}
           </tbody>
         </table>`;
   return `<section class="reg-entity" id="${esc(id)}" aria-labelledby="heading-${esc(id)}">
+        ${alias(anchorId('entity', entity.name))}
         <h3 id="heading-${esc(id)}"><a href="#${esc(id)}">${esc(entity.name)}</a> <span class="reg-count">${entity.properties.length}</span></h3>
         ${key}
         ${use}
@@ -388,19 +396,6 @@ function renderComponent(component, localEntities, localComponents) {
       </section>`;
 }
 
-function renderCollection(collection) {
-  const id = anchorId('collection', collection.name);
-  const rows = collection.fields.map(field => {
-    const fieldId = anchorId('collection-field', collection.name, field.name);
-    return `<tr id="${esc(fieldId)}"><th scope="row" data-label="Field"><a href="#${esc(fieldId)}"><code>${esc(field.name)}</code></a></th><td data-label="Type">${esc(field.type)}</td><td data-label="Binding">${field.bind ? `<code>${esc(field.bind)}</code>` : '—'}</td></tr>`;
-  }).join('\n');
-  return `<section class="reg-entity reg-collection" id="${esc(id)}" aria-labelledby="heading-${esc(id)}">
-    <h3 id="heading-${esc(id)}"><a href="#${esc(id)}">${esc(collection.name)}</a> <span class="reg-pill">${esc(collection.kind)}</span></h3>
-    ${collection.source ? `<p>Source entity: <code>${esc(collection.source)}</code></p>` : ''}
-    ${rows ? `<table class="reg-props reg-fields"><caption class="reg-sr">Fields of ${esc(collection.name)}</caption><thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Binding</th></tr></thead><tbody>${rows}</tbody></table>` : '<p class="reg-none">No fields.</p>'}
-  </section>`;
-}
-
 function renderGraphRow(graph, ctx) {
   const pills = [graph.kind, graph.status].filter(Boolean).map(v => `<span class="reg-pill">${esc(v)}</span>`).join('');
   const desc = graph.description ? `<p class="reg-row-desc">${esc(excerpt(graph.description, 220))}</p>` : '';
@@ -427,7 +422,7 @@ export function renderModelPage(model, data, ctx, shell) {
   const sources = sourcesForModel(model, data.directory.sources);
   const localEntities = new Set(model.entities.map(e => e.name));
   const localComponents = new Set(model.components.map(c => c.name));
-  const propertyCount = model.entities.reduce((n, e) => n + e.properties.length, 0);
+  const fieldCountOfRecords = model.entities.reduce((n, e) => n + e.properties.length, 0);
   const files = [['source', model.files.source], ['JSON', model.files.json]]
     .filter(([, path]) => path)
     .map(([kind, path]) => `<li>${externalLink(fileUrl(model, path), path, 'reg-file')} <span class="reg-file-kind">${esc(kind)}</span>${codeGrapherUrl(model, path) ? ` <a class="reg-codegrapher" href="${safeUrl(codeGrapherUrl(model, path))}" target="_blank" rel="noreferrer">View in CodeGrapher ↗</a>` : ''}</li>`)
@@ -435,22 +430,16 @@ export function renderModelPage(model, data, ctx, shell) {
   const maintainers = model.maintainers.length === 0 ? '' : `<div><dt>Maintainers</dt><dd>${model.maintainers.map(h => externalLink(`https://github.com/${h}`, h)).join(', ')}</dd></div>`;
   const website = model.homepage === undefined ? '' : `\n        <div><dt>Website</dt><dd>${externalLink(model.homepage, homepageLabel(model.homepage), 'reg-homepage')}</dd></div>`;
   const versions = [model.moduleVersion && `module ${model.moduleVersion}`, model.modelspecVersion && `ModelSpec ${model.modelspecVersion}`].filter(Boolean);
-  const entityIndex = model.entities.map(e => `<li><a href="#${esc(anchorId('entity', e.name))}">${esc(e.name)}</a></li>`).join('');
-  const entities = model.entities.map(e => renderEntity(e, localEntities, localComponents)).join('\n      ');
+  const recordIndex = model.entities.map(e => `<li><a href="#${esc(anchorId('record', e.name))}">${esc(e.name)}</a></li>`).join('');
+  const records = model.entities.map(e => renderRecordType(e, localEntities, localComponents)).join('\n      ');
   const fieldCount = model.components.reduce((n, c) => n + c.fields.length, 0);
   const componentsSection = model.components.length === 0 ? '' : `<section class="reg-section" id="components" aria-labelledby="components-heading">
       <h2 id="components-heading">Components <span class="reg-count">${model.components.length}</span></h2>
-      <p class="reg-section-note">${plural(model.components.length, 'component')} and ${plural(fieldCount, 'field')}: reusable groups of fields that entities embed with <code>use</code>.</p>
+      <p class="reg-section-note">${plural(model.components.length, 'component')} and ${plural(fieldCount, 'field')}: reusable groups of fields that record types embed with <code>use</code>.</p>
       <ul class="reg-entity-index" aria-label="Components">${model.components.map(c => `<li><a href="#${esc(anchorId('component', c.name))}">${esc(c.name)}</a></li>`).join('')}</ul>
       ${model.components.map(c => renderComponent(c, localEntities, localComponents)).join('\n      ')}
     </section>
     `;
-  const collectionsSection = (model.collections ?? []).length === 0 ? '' : `<section class="reg-section" id="collections" aria-labelledby="collections-heading">
-      <h2 id="collections-heading">Collections <span class="reg-count">${model.collections.length}</span></h2>
-      <p class="reg-section-note">Native collections declared by this model.</p>
-      <ul class="reg-entity-index" aria-label="Collections">${model.collections.map(c => `<li><a href="#${esc(anchorId('collection', c.name))}">${esc(c.name)}</a></li>`).join('')}</ul>
-      ${model.collections.map(renderCollection).join('\n')}
-    </section>`;
   const graphRows = graphs.length === 0
     ? '<p class="reg-none">No graph in the MeaningGraph registry binds meanings to this model yet.</p>'
     : `<ul class="reg-rows">
@@ -476,7 +465,7 @@ export function renderModelPage(model, data, ctx, shell) {
       <h1>${esc(model.title)} ${statusPill(model.status)}</h1>
       <p class="reg-lede">${esc(model.description)}</p>
       <ul class="reg-jump" aria-label="On this page">
-        <li><a href="#entities">Entities</a></li>${model.components.length > 0 ? '\n        <li><a href="#components">Components</a></li>' : ''}${(model.collections ?? []).length > 0 ? '\n        <li><a href="#collections">Collections</a></li>' : ''}
+        <li><a href="#records">Record types</a></li>${model.components.length > 0 ? '\n        <li><a href="#components">Components</a></li>' : ''}
         <li><a href="#meaning-graphs">Meaning graphs</a></li>
         <li><a href="#databases">Databases</a></li>
         <li><a href="#source-discoveries">Source discoveries</a></li>
@@ -496,15 +485,16 @@ export function renderModelPage(model, data, ctx, shell) {
         ${maintainers}
       </dl>
     </section>
-    <section class="reg-section" id="entities" aria-labelledby="entities-heading">
-      <h2 id="entities-heading">Entities <span class="reg-count">${model.entities.length}</span></h2>
-      <p class="reg-section-note">${plural(model.entities.length, 'entity', 'entities')} and ${plural(propertyCount, 'property', 'properties')}, as in the model files at the pinned commit.</p>
-      <ul class="reg-entity-index" aria-label="Entities">${entityIndex}</ul>
-      ${entities}
+    <section class="reg-section" id="records" aria-labelledby="records-heading">
+      ${alias('entities')}
+      <h2 id="records-heading">Record types <span class="reg-count">${model.entities.length}</span></h2>
+      <p class="reg-section-note">${plural(model.entities.length, 'record type')} and ${plural(fieldCountOfRecords, 'field')}, as in the model files at the pinned commit.</p>
+      <ul class="reg-entity-index" aria-label="Record types">${recordIndex}</ul>
+      ${records}
     </section>
-    ${componentsSection}${collectionsSection}<section class="reg-section" id="meaning-graphs" aria-labelledby="meaning-graphs-heading">
+    ${componentsSection}<section class="reg-section" id="meaning-graphs" aria-labelledby="meaning-graphs-heading">
       <h2 id="meaning-graphs-heading">Meaning graphs for this model <span class="reg-count">${graphs.length}</span></h2>
-      <p class="reg-section-note">From the MeaningGraph registry: graphs whose meaning files bind concepts to this model's entities and properties.</p>
+      <p class="reg-section-note">From the MeaningGraph registry: graphs whose meaning files bind concepts to this model's record types and fields.</p>
       ${graphRows}
     </section>
     <section class="reg-section" id="databases" aria-labelledby="databases-heading">

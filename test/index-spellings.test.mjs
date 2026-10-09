@@ -15,13 +15,12 @@ import { bothSpellings, config, currentSpelling, modelspecJson, modelspecWithCom
 const committed = JSON.parse(readFileSync(join(REPO, 'fixtures', 'modelspec-registry-index.fixture.json'), 'utf8'));
 const fx = { allowFixture: true, requireFixture: true };
 
-/** The sample with components that embed each other without a cycle, and a native collection. */
+/** The sample with components that embed each other without a cycle. */
 function richSample() {
   const sample = modelspecWithComponents();
   sample.models[0].entities[0].use = ['Auditable'];
   sample.models[0].components[0].fields[2].component = 'Metadata';
   sample.models[0].components.push({ name: 'Metadata', fields: [{ name: 'traceId', type: 'string' }] });
-  sample.models[0].collections = [{ name: 'ArtistViews', kind: 'computed', source: 'Artist', query: 'SELECT 1', fields: [{ name: 'ArtistId', type: 'int' }] }];
   return sample;
 }
 

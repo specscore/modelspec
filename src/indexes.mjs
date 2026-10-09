@@ -248,28 +248,6 @@ function component(value, path, seen) {
   return { name, fields };
 }
 
-function collection(value, path, seen, entityNames) {
-  object(value, path);
-  const name = pattern(value.name, `${path}.name`, NAME, 'letters, digits and underscores');
-  if (seen.has(name)) fail(`${path}.name`, `duplicates collection ${name}`);
-  seen.add(name);
-  if (!['editable', 'computed'].includes(value.kind)) fail(`${path}.kind`, 'must be editable or computed');
-  const source = value.source === undefined ? undefined : pattern(value.source, `${path}.source`, NAME, 'an entity name');
-  if (source && !entityNames.has(source)) fail(`${path}.source`, `names unknown entity ${source}`);
-  const query = value.query === undefined ? undefined : text(value.query, `${path}.query`);
-  if (value.kind === 'computed' && !query) fail(`${path}.query`, 'is required for a computed collection');
-  const fieldNames = new Set();
-  const fields = list(value.fields, `${path}.fields`).map((field, i) => {
-    const at = `${path}.fields[${i}]`;
-    object(field, at);
-    const fieldName = pattern(field.name, `${at}.name`, NAME, 'letters, digits and underscores');
-    if (fieldNames.has(fieldName)) fail(`${at}.name`, `duplicates field ${fieldName}`);
-    fieldNames.add(fieldName);
-    return {name: fieldName, type: text(field.type, `${at}.type`), ...(field.bind === undefined ? {} : {bind: text(field.bind, `${at}.bind`)})};
-  });
-  return {name, kind: value.kind, ...(source ? {source} : {}), ...(query ? {query} : {}), fields};
-}
-
 /** Validate an already parsed ModelSpec registry index and return the normalised form. */
 export function validateModelspecIndex(json, options = {}) {
   const head = envelope(json, MODELSPEC_FORMAT, 'models', options);
@@ -285,9 +263,19 @@ export function validateModelspecIndex(json, options = {}) {
     object(m.files, `${at}.files`);
     const names = new Set();
     const componentNames = new Set();
-    const collectionNames = new Set();
     const recordTypes = recordsKey(m);
     const entities = list(m[recordTypes], `${at}.${recordTypes}`).map((e, j) => entity(e, `${at}.${recordTypes}[${j}]`, names));
+    const components = m.components === undefined ? [] : list(m.components, `${at}.components`).map((c, j) => component(c, `${at}.components[${j}]`, componentNames));
+    // Record types and components share one namespace (the specification, decision 0015). Here it also keeps the page's
+    // anchors apart: a member of a record type is #field-<Record>-<member>, a member of a component #field-<Component>-<field>.
+    for (const [j, c] of components.entries()) {
+      const k = entities.findIndex(e => e.name === c.name);
+      if (k !== -1) fail(`${at}.components[${j}].name`, `duplicates the record type ${c.name} (${at}.${recordTypes}[${k}].name): record types and components share one namespace`);
+    }
+    // ModelSpec removed the collection (decision 0019); the key is read only to refuse a model that still declares one.
+    if (m.collections !== undefined && !(Array.isArray(m.collections) && m.collections.length === 0)) {
+      fail(`${at}.collections`, 'is not accepted: ModelSpec removed the collection, so a model cannot declare one (leave the key out or empty)');
+    }
     return {
       id,
       title: text(m.title, `${at}.title`),
@@ -306,8 +294,7 @@ export function validateModelspecIndex(json, options = {}) {
       moduleVersion: optionalText(m.module_version, `${at}.module_version`),
       modelspecVersion: optionalText(m.modelspec, `${at}.modelspec`),
       entities,
-      components: m.components === undefined ? [] : list(m.components, `${at}.components`).map((c, j) => component(c, `${at}.components[${j}]`, componentNames)),
-      collections: m.collections === undefined ? [] : list(m.collections, `${at}.collections`).map((c, j) => collection(c, `${at}.collections[${j}]`, collectionNames, names)),
+      components,
     };
   });
   return { ...head, models };

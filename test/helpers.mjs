@@ -127,24 +127,32 @@ export function modelspecWithComponents() {
   return json;
 }
 
+/** The record types of a model entry under whichever key it has them: `records`, else `entities`. */
+const recordsOf = model => model.records ?? model.entities;
+/** The members of a record type under whichever key it has them: `fields`, else `properties`. */
+const fieldsOf = record => record.fields ?? record.properties;
+const without = (value, ...keys) => Object.fromEntries(Object.entries(value).filter(([key]) => !keys.includes(key)));
+
 /**
- * A ModelSpec registry index in the current spelling: each model's `entities` renamed `records` and each record's
- * `properties` renamed `fields`. Nothing else changes, the checksum included (the build reads it, it does not compute it).
+ * A ModelSpec registry index in the current spelling: each model's record types under `records` and each record's members
+ * under `fields`, and no earlier key. The index may be in either spelling (a fixture refresh turns the committed one into the
+ * current). Nothing else changes, the checksum included (the build reads it, it does not compute it).
  */
 export function currentSpelling(index) {
-  const renamed = (value, from, to) => Object.fromEntries(Object.entries(value).map(([key, item]) => [key === from ? to : key, item]));
-  return { ...index, models: index.models.map(model => renamed({
-    ...model,
-    entities: model.entities.map(record => renamed(record, 'properties', 'fields')),
-  }, 'entities', 'records')) };
+  return { ...index, models: index.models.map(model => ({
+    ...without(model, 'entities', 'records'),
+    records: recordsOf(model).map(record => ({ ...without(record, 'properties', 'fields'), fields: fieldsOf(record) })),
+  })) };
 }
 
-/** The same index carrying both spellings of every list, with the same content under each. */
+/**
+ * The same index carrying both spellings of every list, with the same content under each: `records` with `fields`, and
+ * `entities` whose record types carry `properties` and `fields`. The index may be in either spelling.
+ */
 export function bothSpellings(index) {
-  const current = currentSpelling(index);
-  return { ...index, models: index.models.map((model, i) => ({
-    ...model,
-    records: current.models[i].records,
-    entities: model.entities.map((record, j) => ({ ...record, fields: current.models[i].records[j].fields })),
+  return { ...index, models: index.models.map(model => ({
+    ...without(model, 'entities', 'records'),
+    records: recordsOf(model).map(record => ({ ...without(record, 'properties', 'fields'), fields: fieldsOf(record) })),
+    entities: recordsOf(model).map(record => ({ ...without(record, 'properties', 'fields'), properties: fieldsOf(record), fields: fieldsOf(record) })),
   })) };
 }
