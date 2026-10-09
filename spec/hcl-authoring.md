@@ -14,14 +14,14 @@ surface. YAML is not a ModelSpec serialization in v0
 ModelSpec authors write named declarations as singular HCL blocks:
 
 ```hcl
-entity "User" {
+record "User" {
   key = ["id"]
 
-  property "id" {
+  field "id" {
     type = "uuid"
   }
 
-  property "email" {
+  field "email" {
     type     = "string"
     required = true
     unique   = true
@@ -30,10 +30,10 @@ entity "User" {
 }
 ```
 
-An entity may omit `key` when the model makes no claim of stable logical record
+A record type may omit `key` when the model makes no claim of stable logical record
 identity. This does not describe or rule out primary-key or unique constraints
-in a physical source schema. If present, an entity key must be a non-empty list
-of distinct properties or fields provided by components it uses.
+in a physical source schema. If present, a key must be a non-empty list of distinct
+fields, its own or provided by components it uses.
 
 Tooling should parse HCL into a ModelSpec AST. That AST should then be serializable to
 JSON for machine ingestion. No YAML form is defined.
@@ -42,19 +42,15 @@ JSON for machine ingestion. No YAML form is defined.
 
 ModelSpec HCL SHOULD use singular named blocks for model members:
 
-- `entity "User" { ... }`
+- `record "User" { ... }`
 - `component "Auditable" { ... }`
 - `enum "BookingStatus" { ... }`
-- `property "email" { ... }`
-- `field "createdAt" { ... }`
-- `collection "users" { ... }`
-- `recordset "user_report" { ... }`
-- `column "id" { ... }`
+- `field "email" { ... }`
 
 ModelSpec SHOULD NOT use map-style containers as the primary authoring syntax:
 
 ```hcl
-properties = {
+fields = {
   email = {
     type = "string"
   }
@@ -68,24 +64,51 @@ clear source locations, supports nested declarations, and keeps diffs small.
 
 ModelSpec v0 HCL uses:
 
-- singular named blocks for declarations: `entity`, `component`, `enum`, `property`,
-  `field`, `collection`, `recordset`, `column`, and `projection`
-- attributes for scalar and list settings: `type`, `required`, `unique`, `key`,
-  `source`, `bind`, `query`, and similar metadata
-- module-qualified names (`core.Space`, `calendarius.TimeWindow`) in reference
-  attributes (`entity`, `component`, `enum`, `use` entries) for read-only
+- three top-level blocks, each with one name label: `record`, `component`, and `enum`
+- one nested block, with one name label: `field`, in a `record` and in a `component`
+- settings on a record type: `key` and `use`
+- settings on an enum: `values`
+- settings on a field: exactly one of `type`, `component` and `record`, and the
+  constraints `required`, `unique`, `min_len`, `max_len`, `pattern`, `enum` and
+  `format`
+- module-qualified names (`core.Space`, `calendarius.TimeWindow`) in the settings that
+  name another concept (`record`, `component`, `enum`, `use` entries) for read-only
   cross-module references; bare names remain same-module
   ([decision 0014](decisions/0014-module-qualified-references.md))
-- literal values for model semantics: strings, numbers, booleans, lists, and object
-  literals where explicitly specified
+- literal values: strings, numbers, booleans, and lists
+
+A file contains only blocks. A top-level setting is not allowed.
 
 ModelSpec v0 HCL does not support map-style declaration containers as canonical
-syntax. For example, `properties = { ... }` is not the canonical way to declare
-entity properties.
+syntax. For example, `fields = { ... }` is not the canonical way to declare
+fields.
 
 ModelSpec v0 HCL does not use dynamic HCL expressions or functions for model
 semantics. A later version may add constrained expression support where it has a clear
 portable meaning.
+
+## Deprecated Spellings
+
+A reader accepts three deprecated spellings and treats each as the word that replaced
+it ([decision 0018](decisions/0018-entity-becomes-record.md),
+[decision 0020](decisions/0020-field-is-the-member-word.md)):
+
+| Deprecated | Current |
+|---|---|
+| block `entity` | block `record` |
+| block `property`, in a record type | block `field` |
+| setting `entity` on a member | setting `record` |
+
+Current and deprecated spellings may be mixed in one file and in one module. A member
+that carries both `record` and `entity` is an error. See
+[core-model.md](core-model.md#deprecated-spellings).
+
+## Removed And Reserved
+
+The blocks `collection` and `recordset`, the nested block `column`, and the settings
+`kind`, `source`, `query` and `bind` are removed. The words `projection`, `index` and
+`migration` are reserved and have no content: a block of that type is an error
+([decision 0019](decisions/0019-collection-and-recordset-removed-three-words-reserved.md)).
 
 ## Why HCL
 
@@ -101,30 +124,25 @@ The source-of-truth model remains the HCL-authored ModelSpec module or the equiv
 ModelSpec AST. JSON should be treated as an interchange serialization of that AST.
 
 HCL and JSON do not need identical surface shapes. HCL is optimized for authors; JSON
-serializes the AST. For example, HCL uses repeated `property` blocks while JSON may use
-a `properties` object map because entity property names are unique.
+serializes the AST. For example, HCL uses repeated `field` blocks while JSON uses
+a `fields` object map because field names are unique.
+
+HCL carries no version marker. The keyword tells a reader which spelling it sees.
 
 ## Ordering And Duplicate Names
 
 Name scopes are explicit ([decision 0015](decisions/0015-concept-namespaces-and-reserved-names.md)):
 
-- **Entity, component, and enum names share ONE flat namespace per module** — the
-  *referenceable trio* that consumers may address by bare concept name. An entity
-  and an enum with the same name in one module is an error, not a coexistence.
-- **Collection names** form a separate scope per module, and **recordset names**
-  another. They are addressable by consumers only in kind-explicit form, never by
-  bare name.
-- **Entity property names** are unique within their entity.
-- **Reserved names:** `entities`, `components`, `enums`, `collections`, and
-  `recordsets` are forbidden as concept names in any scope — they are the kind
-  tokens of consumer reference syntax.
+- **Record type, component, and enum names share ONE flat namespace per module**, so
+  that consumers may address any of them by bare concept name. A record type and an
+  enum with the same name in one module is an error, not a coexistence.
+- **Field names** are unique within their record type or component.
+- **Reserved names:** `records`, `entities`, `components`, `enums`, `collections`, and
+  `recordsets` are forbidden as concept names. They are, or were, the kind tokens of
+  consumer reference syntax.
 
 Declaration order is not semantic, although tools may preserve it for
 documentation and stable diffs.
-
-Recordset column order is semantic. Recordset column names MAY repeat because SQL
-queries can return multiple columns with the same display name. The AST and JSON
-serialization MUST preserve recordset column order and duplicates.
 
 ## Open Questions
 
@@ -135,3 +153,8 @@ serialization MUST preserve recordset column order and duplicates.
   nothing). Remaining open only for standalone HCL distribution outside any managed
   tree: does a bare `.hcl` file ever need self-carried identity, or does compiled
   JSON (`module.id`) always cover that case? Revisit only on demonstrated need.
+- **Which kind tokens stay reserved.** Decision 0015 reserved five names because
+  they were the kind tokens of a consumer's reference syntax. Two of them,
+  `collections` and `recordsets`, now name nothing, and `records` is reserved beside
+  `entities` for the length of the transition. The final list follows the successor
+  of SpecScore decision 0011, which defines that syntax.

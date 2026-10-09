@@ -1,84 +1,42 @@
 # Migration Metadata
 
-## Purpose
+## Status
 
-Define the migration metadata ModelSpec should carry so consumers can plan changes
-between model versions.
+`migration` is a reserved word with no content
+([decision 0019](decisions/0019-collection-and-recordset-removed-three-words-reserved.md)).
+A model cannot declare migration metadata, and a reader refuses a `migration` block.
+The word is kept free so that a later version can define it.
 
-ModelSpec does not execute migrations. The intent is that a consumer such as
-OpenVaultDB compares a current and a target model and produces a migration plan. No
-consumer does so today.
+Earlier drafts of this chapter showed a `migration` block by example. Its settings
+were never defined and no tool read them, so it was not part of the language.
 
-Migrations are the responsibility of the store implementation driver. ModelSpec does
-not include migration capabilities beyond descriptive metadata in v0.
+## What Stands
+
+ModelSpec does not execute migrations, and defines no migration plan, execution step,
+checkpoint, or rollback. Those belong to the store that holds the data and to the
+system that consumes the model
+([decision 0008](decisions/0008-migration-capabilities-out-of-scope.md)).
 
 ## Version Identity
 
-A published ModelSpec version should be immutable.
-
-Version metadata should identify:
-
-- model id
-- version
-- parent version or origin
-- compatibility notes
-- deprecated entities or fields
-- rename mappings
-- destructive changes
+A published ModelSpec version should be immutable. The JSON form carries `module.id`
+and `module.version`; a registered model is also pinned by commit.
 
 ## Change Intent
 
-Some changes are ambiguous without author intent.
-
-For example:
+Some changes are ambiguous without the author's intent:
 
 - `fullName` removed and `displayName` added could be a rename or a delete-and-add.
-- a nullable field becoming required may need a backfill.
-- a relationship cardinality change may require data validation.
+- an optional field becoming required may need a backfill.
+- a reference changing its target may require data validation.
 
-ModelSpec should allow authors to provide migration metadata that distinguishes these
-cases.
-
-The `migration` block below is shown by example. Its attributes and its mapping to the
-JSON `migrations` object are not defined, and the reference CLI records the block
-without reading its content and will not export a file that contains one.
-
-```hcl
-migration "2026-07-08-user-display-name" {
-  from = "1.2.0"
-  to   = "1.3.0"
-
-  rename "User.fullName" {
-    to = "User.displayName"
-  }
-
-  backfill "User.displayName" {
-    strategy = "copy"
-    from     = "User.fullName"
-  }
-}
-```
-
-## OpenVaultDB Consumption
-
-This is the intended use and is not implemented. OpenVaultDB would load the current
-ModelSpec and the target ModelSpec, then use them to plan:
-
-- schema changes
-- data transformations
-- index changes
-- backend format changes
-- validation checks
-- rollback or compensating actions
-
-OpenVaultDB would remain responsible for user approval, permissions, audit events,
-checkpointing, and execution.
+Descriptive metadata that tells these cases apart is the job the reserved word is kept
+for. Nothing defines its syntax yet, and no consumer compares two versions of a model
+today.
 
 ## Boundary
 
-ModelSpec describes migration intent and semantic compatibility.
-
-It does not define:
+When migration metadata is defined, it will describe intent. It will not define:
 
 - user approval prompts
 - migration execution engines

@@ -10,15 +10,15 @@ component "Auditable" {
   }
 }
 
-entity "User" {
+record "User" {
   key = ["id"]
   use = ["Auditable"]
 
-  property "id" {
+  field "id" {
     type = "uuid"
   }
 
-  property "email" {
+  field "email" {
     type     = "string"
     required = true
     unique   = true
@@ -26,72 +26,41 @@ entity "User" {
   }
 }
 
-entity "Task" {
+record "Task" {
   key = ["id"]
   use = ["Auditable"]
 
-  property "id" {
+  field "id" {
     type = "uuid"
   }
 
-  property "title" {
+  field "title" {
     type     = "string"
     required = true
     max_len  = 200
   }
 
-  property "completed" {
+  field "completed" {
     type     = "bool"
     required = true
   }
 
-  property "owner" {
-    entity   = "User"
+  field "owner" {
+    record   = "User"
     required = true
   }
 }
 
-collection "tasks" {
-  kind   = "editable"
-  source = "Task"
-
+record "TaskSummary" {
   field "id" {
     type = "uuid"
-    bind = "Task.id"
   }
 
   field "title" {
     type = "string"
-    bind = "Task.title"
   }
 
   field "completed" {
     type = "bool"
-    bind = "Task.completed"
-  }
-
-  field "ownerId" {
-    type = "uuid"
-    bind = "Task.owner"
-  }
-}
-
-recordset "task_summary" {
-  key   = ["id"]
-  query = "from tasks select id, title, completed"
-
-  column "id" {
-    type = "uuid"
-    bind = "Task.id"
-  }
-
-  column "title" {
-    type = "string"
-    bind = "Task.title"
-  }
-
-  column "completed" {
-    type = "bool"
-    bind = "Task.completed"
   }
 }

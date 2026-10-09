@@ -4,7 +4,7 @@ This page describes the intended integration. None of it is implemented: no
 OpenVaultDB code loads a model to validate writes, plan a migration or choose a
 backend mapping. What exists today is narrower. A database published to the OVDB
 Directory names the ModelSpec model it follows, and `ovdb publisher check` verifies
-that the recordsets it lists are the entities of that model.
+that the recordsets it lists are the record types of that model.
 
 ## Role
 
@@ -21,7 +21,6 @@ The storage decision belongs to the vault, not the app.
 | Concern | Owner | Artifact |
 |---|---|---|
 | What data exists | App | ModelSpec module |
-| Optional backend mapping suggestion | App | Advisory ModelSpec projection |
 | Where and how data is stored | Vault | Backend selection and storage policy |
 | ModelSpec to backend schema mapping | Vault | Generators and mappers |
 | Schema enforcement on writes | Vault | Validation against ModelSpec |
@@ -76,12 +75,12 @@ For migrations, OpenVaultDB should load both:
 The diff between those models informs the migration plan. OpenVaultDB owns approval,
 checkpointing, audit, rollback, and execution.
 
-## Advisory Mapping Suggestions
+## Storage Layout
 
-Apps may provide optional projection hints in the ModelSpec source or compiled AST
-serialization.
+A model cannot suggest a storage layout: `projection` is a reserved word with no
+content. The layout is the vault's choice.
 
-For InGitDB, the same entity could be stored as:
+For InGitDB, the same record type could be stored as:
 
 ```text
 one file per record: {id}.json
@@ -92,8 +91,6 @@ or:
 ```text
 all records in one file: records.yaml
 ```
-
-The app may suggest a preference. The vault may honor, override, or ignore it.
 
 This preserves portability: a user can move a vault between SQLite, PostgreSQL,
 Firestore, InGitDB, or another backend without changing the application model.
