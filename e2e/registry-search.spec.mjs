@@ -68,3 +68,32 @@ test('newer query wins; empty results and outages have distinct messages', async
   await expect(page.locator('.registry-result-fields')).toHaveCount(0);
   await expect(page.locator('.registry-result-link')).toHaveAttribute('href', 'https://modelspec.org/registry/models/chinook/#property-Artist-ArtistId');
 });
+
+// What the page sends for each filter. The request carries the kind's value, never its label, so the words in the panel can
+// change while the service is sent exactly what it has always been sent, and nothing that names the removed collection.
+test('the kind filter shows the current words and sends the same request for each kind as before', async ({page}) => {
+  const bodies = [];
+  await page.route(endpoint, async route => {
+    bodies.push(route.request().postData());
+    await route.fulfill({status: 200, contentType: 'application/json', body: JSON.stringify({hits: [], found: 0, page: 1, generation: 'test'})});
+  });
+  await page.goto('/registry/');
+  const options = await page.locator('#registry-search-kind option').evaluateAll(list => list.map(option => [option.value, option.textContent]));
+  expect(options).toEqual([['', 'All kinds'], ['model', 'Models'], ['model_entity', 'Record types'], ['model_field', 'Fields']]);
+  await expect(page.getByRole('searchbox', {name: 'Name or identifier'})).toHaveAttribute('placeholder', 'Search a record type or field…');
+  const input = page.getByRole('searchbox', {name: 'Name or identifier'});
+  // byte for byte what the page sent before this change: the key order q, domain, page, then kind when one is chosen
+  const expected = {'': '{"q":"Artist","domain":"modelspec","page":1}',
+    model: '{"q":"Artist","domain":"modelspec","page":1,"kind":"model"}',
+    model_entity: '{"q":"Artist","domain":"modelspec","page":1,"kind":"model_entity"}',
+    model_field: '{"q":"Artist","domain":"modelspec","page":1,"kind":"model_field"}'};
+  for (const [value] of options) {
+    await page.locator('#registry-search-kind').selectOption(value);
+    bodies.length = 0;
+    await input.fill('');
+    await input.fill('Artist');
+    await expect.poll(() => bodies.length).toBeGreaterThan(0);
+    expect(bodies.at(-1), `kind ${JSON.stringify(value)}`).toBe(expected[value]);
+  }
+  expect(bodies.concat(Object.values(expected)).join('')).not.toContain('model_collection');
+});

@@ -1,6 +1,6 @@
 const KINDS = {
   meaninggraph: [['', 'All kinds'], ['meaning_entity', 'Entities'], ['meaning_field', 'Fields']],
-  modelspec: [['', 'All kinds'], ['model', 'Models'], ['model_entity', 'Entities'], ['model_collection', 'Collections'], ['model_field', 'Fields']],
+  modelspec: [['', 'All kinds'], ['model', 'Models'], ['model_entity', 'Record types'], ['model_field', 'Fields']],
   ovdb: [['', 'All kinds'], ['ovdb_server', 'Servers'], ['ovdb_database', 'Databases'], ['ovdb_collection', 'Collections']],
 };
 // Public VM pilot approved for these registry sites; Cloud remains a separate launch mode.
@@ -37,7 +37,7 @@ export function renderSearchPanel(domain, config, browseUrl, {includeAssets = tr
   return `<section id="registry-search" class="registry-search" data-registry-search data-domain="${domain}" data-endpoint="${config.endpoint}" aria-labelledby="registry-search-heading">
     <div class="registry-search-heading"><p class="eyebrow">Find a published definition</p><h2 id="registry-search-heading">Search the public registry</h2></div>
     <div class="search-wrap"><form class="search-form" role="search" autocomplete="off"><svg class="search-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.5"/><path d="m16 16 5 5"/></svg>
-      <input id="registry-search-query" name="q" type="search" minlength="1" maxlength="120" aria-label="Name or identifier" placeholder="Search an entity or field…" aria-controls="registry-search-results" aria-describedby="registry-search-status" aria-expanded="false">
+      <input id="registry-search-query" name="q" type="search" minlength="1" maxlength="120" aria-label="Name or identifier" placeholder="Search a record type or field…" aria-controls="registry-search-results" aria-describedby="registry-search-status" aria-expanded="false">
       <button type="submit" aria-label="Search"><span aria-hidden="true">→</span></button></form>
     <div class="registry-search-filter"><label for="registry-search-kind">Kind</label><select id="registry-search-kind" name="kind">${options}</select></div>
     <div id="registry-search-results" class="search-results" hidden></div></div>

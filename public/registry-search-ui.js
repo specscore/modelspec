@@ -4,7 +4,7 @@
   const origins = {meaninggraph: 'https://meaninggraph.io', modelspec: 'https://modelspec.org', ovdb: 'https://directory.openvaultdb.com'};
   const kinds = {
     meaninggraph: {meaning_entity: 'Entity', meaning_field: 'Field'},
-    modelspec: {model: 'Model', model_entity: 'Entity', model_collection: 'Collection', model_field: 'Field'},
+    modelspec: {model: 'Model', model_entity: 'Record type', model_collection: 'Collection', model_field: 'Field'},
     ovdb: {ovdb_server: 'Server', ovdb_database: 'Database', ovdb_collection: 'Collection'},
   };
   const icons = {
