@@ -4,7 +4,7 @@
   const origins = {meaninggraph: 'https://meaninggraph.io', modelspec: 'https://modelspec.org', ovdb: 'https://directory.openvaultdb.com'};
   const kinds = {
     meaninggraph: {meaning_entity: 'Entity', meaning_field: 'Field'},
-    modelspec: {model: 'Model', model_entity: 'Record type', model_collection: 'Collection', model_field: 'Field'},
+    modelspec: {model: 'Model', model_entity: 'Record type', model_record: 'Record type', model_collection: 'Collection', model_field: 'Field'},
     ovdb: {ovdb_server: 'Server', ovdb_database: 'Database', ovdb_collection: 'Collection'},
   };
   const icons = {
@@ -77,7 +77,7 @@
     }
     if (typeof hit.qualified_name === 'string' && hit.qualified_name)
       content.append(node('small', 'registry-result-path', hit.qualified_name));
-    const iconType = isField ? 'field' : hit.kind.includes('entity') ? 'entity' : 'other';
+    const iconType = isField ? 'field' : hit.kind.includes('entity') || hit.kind.includes('record') ? 'entity' : 'other';
     link.append(icon(iconType, 'registry-result-kind-icon registry-result-kind-icon--' + iconType), content, node('span', 'registry-result-arrow', '↗'));
     item.append(link);
     return item;
