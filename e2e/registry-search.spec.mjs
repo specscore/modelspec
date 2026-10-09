@@ -69,6 +69,33 @@ test('newer query wins; empty results and outages have distinct messages', async
   await expect(page.locator('.registry-result-link')).toHaveAttribute('href', 'https://modelspec.org/registry/models/chinook/#property-Artist-ArtistId');
 });
 
+// The service will hold record types as `model_record` once the site exports them under that name; until then it holds
+// `model_entity`. A hit of either kind must look and link the same, and a kind the page does not know is still dropped.
+test('a model_record hit renders exactly as a model_entity hit does, and an unknown kind is still dropped', async ({page}) => {
+  const rendered = {};
+  await page.route(endpoint, async route => {
+    const q = route.request().postDataJSON().q;
+    const hits = q === 'unknown' ? [hit('Artist', 'model_widget')]
+      : [{...hit('Artist', q), canonical_url: q === 'model_record'
+        ? 'https://modelspec.org/registry/models/chinook/#record-Artist' : 'https://modelspec.org/registry/models/chinook/#entity-Artist'}];
+    await route.fulfill({status: 200, contentType: 'application/json', body: JSON.stringify({hits, found: 1, page: 1, generation: 'test'})});
+  });
+  await page.goto('/registry/');
+  const input = page.getByRole('searchbox', {name: 'Name or identifier'});
+  for (const kind of ['model_entity', 'model_record']) {
+    await input.fill(kind);
+    await expect(page.locator('.registry-result-title')).toHaveText('Artist');
+    await expect(page.locator('.registry-result-kind')).toHaveText('Record type');
+    await expect(page.locator('.registry-result-kind-icon--entity')).toHaveCount(1);
+    await expect(page.locator('.registry-result-link')).toHaveAttribute('href', `https://modelspec.org/registry/models/chinook/#${kind === 'model_record' ? 'record' : 'entity'}-Artist`);
+    rendered[kind] = await page.locator('.registry-result-link').innerHTML();
+  }
+  expect(rendered.model_record).toBe(rendered.model_entity);
+  await input.fill('unknown');
+  await expect(page.locator('#registry-search-status')).toContainText('Search is unavailable');
+  await expect(page.locator('.registry-result-link')).toHaveCount(0);
+});
+
 // What the page sends for each filter. The request carries the kind's value, never its label, so the words in the panel can
 // change while the service is sent exactly what it has always been sent, and nothing that names the removed collection.
 test('the kind filter shows the current words and sends the same request for each kind as before', async ({page}) => {
