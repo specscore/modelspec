@@ -40,10 +40,13 @@ Those concerns belong in adjacent specifications and application architecture.
 
 The words `projection`, `index` and `migration` are reserved and have no content
 yet. Earlier drafts wrote a record type as `entity` and its fields as `property`;
-the tools that read ModelSpec files, the reference CLI and the public registry's
-check among them, accept both, and `modelspec rewrite --write` converts a file. The
-registered models are still written in the earlier spelling until each is rewritten
-and pinned anew, and they stay valid. See
+the reference CLI 0.2.0 reads both and `modelspec rewrite --write` converts a file.
+So do SpecScore CLI 0.55.0, MeaningGraph CLI 0.3.0, OpenVaultDB's publisher CLI
+0.42.0, CodeGrapher 0.16.0, the public ModelSpec registry's check and the registry
+sites (modelspec.org, meaninggraph.io and the OVDB Directory site). CodeGrapher's web
+client does not read the current spelling yet. The registered models are still written
+in the earlier spelling until each is rewritten and pinned anew, and they stay valid.
+See
 [spec/core-model.md](spec/core-model.md#deprecated-spellings).
 
 ## Shape, Not Meaning
