@@ -113,17 +113,44 @@ test('a record type and a component of one model must not share a name, and the 
   const json = modelspecWithComponents();
   json.models[0].components[1].name = 'Album';
   assert.throws(() => validateModelspecIndex(json), /models\[0\]\.components\[1\]\.name duplicates the record type Album \(models\[0\]\.entities\[1\]\.name\): record types and components share one namespace/);
+  // each index in the message is its own: the component's where the component stands, the record type's where that stands
+  const crossed = modelspecWithComponents();
+  crossed.models[0].components[0].name = 'Album';
+  assert.throws(() => validateModelspecIndex(crossed), /models\[0\]\.components\[0\]\.name duplicates the record type Album \(models\[0\]\.entities\[1\]\.name\)/);
+  const other = modelspecWithComponents();
+  other.models[0].components[1].name = 'Artist';
+  assert.throws(() => validateModelspecIndex(other), /models\[0\]\.components\[1\]\.name duplicates the record type Artist \(models\[0\]\.entities\[0\]\.name\)/);
   // the same, in the current spelling, where the path names the key that was read
   assert.throws(() => validateModelspecIndex(currentSpelling(json)), /models\[0\]\.components\[1\]\.name duplicates the record type Album \(models\[0\]\.records\[1\]\.name\)/);
   // the same name in another model is not a clash: ids are per page
   const two = modelspecWithComponents();
-  const other = structuredClone(two.models[0]);
-  other.id = 'other';
-  other.address = 'modelspec://github.com/acme/shop/other';
-  other.components = [{ name: 'Album', fields: [{ name: 'x', type: 'int' }] }];
-  other.entities = [{ name: 'Artist', key: [], properties: [] }];
-  two.models.push(other);
+  const second = structuredClone(two.models[0]);
+  second.id = 'other';
+  second.address = 'modelspec://github.com/acme/shop/other';
+  second.components = [{ name: 'Album', fields: [{ name: 'x', type: 'int' }] }];
+  second.entities = [{ name: 'Artist', key: [], properties: [] }];
+  two.models.push(second);
   assert.equal(validateModelspecIndex(two).models.length, 2);
+});
+
+test('names that differ only by case are two names: ids are case-sensitive, so a record type and a component may differ so, and the page has no equal ids', () => {
+  const cases = [
+    ['Album', 'album', json => {}],
+    ['album', 'Album', json => { json.models[0].entities[1].name = 'album'; }],
+    ['Artist', 'ARTIST', json => {}],
+  ];
+  for (const [record, component, rename] of cases) {
+    const json = modelspecWithComponents();
+    rename(json);
+    // a component whose members have the same names as the record type's, so only the case keeps their ids apart
+    json.models[0].components.push({ name: component, fields: [{ name: 'ArtistId', type: 'int' }, { name: 'AlbumId', type: 'int' }, { name: 'Name', type: 'string' }] });
+    const model = validateModelspecIndex(json).models[0];
+    assert.ok(model.entities.some(e => e.name === record) && model.components.some(c => c.name === component), `${record}/${component}`);
+    for (const [path, html] of renderRegistryPages(sampleData({ modelspec: json }), ctx, shell)) {
+      const ids = idsOf(html);
+      assert.equal(new Set(ids).size, ids.length, `${record}/${component} ${path}: ${ids.filter((id, i) => ids.indexOf(id) !== i)} repeated`);
+    }
+  }
 });
 
 test('the clash is real: without the rule a record type and a component of one name would share #field-<Name>-<member>', () => {
