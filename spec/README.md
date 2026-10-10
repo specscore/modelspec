@@ -82,15 +82,31 @@ own approval." The error is for a model that is being written, changed or
 registered. A document that a pin names keeps its spelling and stays readable, and a
 model that refers to such a document is not made invalid by it.
 [core-model.md](core-model.md#deprecated-spellings) states both rules, with an
-example of each. In the reference CLI from version 0.3.0, `modelspec lint` and
+example of each. The first is required of the reference CLI and is what this
+specification asks of every other checker, which follows by its own decision.
+
+In the reference CLI from version 0.3.0, `modelspec lint` and
 `modelspec export` fail for a model that holds a deprecated spelling, a module that
 is supplied only to resolve references keeps a warning, and `modelspec rewrite`
 still reads the deprecated spelling in order to rewrite it.
 
-The stage changed this specification and the reference CLI, and no other reader. On
-9 October 2026 the public ModelSpec registry's check reported a registered model in
-the deprecated spelling with a notice and did not refuse it. Refusing one is a
-change for that registry to make.
+This stage changes this specification and the reference CLI, and no other checker.
+On 10 October 2026 three of the readers named in the table did not report a
+deprecated spelling as an error in a model they check. SpecScore CLI 0.55.0
+(`specscore graph lint`) gave an advisory notice of severity `info`. The public
+ModelSpec registry's check printed a notice for each registry record whose files
+were in the deprecated spelling. OpenVaultDB's publisher check (`ovdb publisher
+check` 0.43.0) reported nothing about the spelling. Each run ended with exit status
+0; [core-model.md](core-model.md#checkers-that-do-not-report-the-error) says what
+each did.
+
+A registry record that is being added, or whose commit is being moved, offers a
+model for registration, and the first rule governs that model. A record that stands
+is a pin, and the document it names is read under the second rule: for such a
+record a notice without a refusal is what the second rule asks. The public
+registry's check did not tell the two apart on 10 October 2026, and it did not run
+the reference CLI. Refusing a model that is being registered, or whose pin is being
+moved, is a change for that registry to make.
 
 That scope was chosen by the implementing session on the recommendation of a census
 of 9 October 2026. The owner approved making the old spelling an error and has been

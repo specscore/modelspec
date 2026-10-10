@@ -50,7 +50,12 @@ not made invalid by it: the reference CLI keeps a warning for a module that is
 supplied only to resolve references. These readers read both spellings: SpecScore CLI
 0.55.0, MeaningGraph CLI 0.3.0, OpenVaultDB's publisher CLI 0.42.0, CodeGrapher
 0.16.0, the public ModelSpec registry's check and the registry sites (modelspec.org,
-meaninggraph.io and the OVDB Directory site). On 9 October 2026 CodeGrapher's web
+meaninggraph.io and the OVDB Directory site). Three of them were observed on 10
+October 2026 not to report the earlier spelling as an error in a model they check:
+SpecScore's `graph lint` 0.55.0 gave an advisory notice, the public registry's check
+printed a notice, and OpenVaultDB's publisher check 0.43.0 reported nothing about
+it, each with exit status 0. The rule is required of the reference CLI, and every
+other checker follows it by its own decision. On 9 October 2026 CodeGrapher's web
 client did not read the current spelling. No registered model is pinned in the
 earlier spelling. See
 [spec/core-model.md](spec/core-model.md#deprecated-spellings).

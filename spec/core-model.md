@@ -306,14 +306,21 @@ Three spellings from earlier drafts are deprecated
 How a deprecated spelling is treated depends on why the file is read. A file may
 belong to a model that is being checked, because someone is writing, changing or
 registering it. Or it may be a document that a pin names, read because something
-else depends on it as it was. One rule covers each case, and a third section says
-what holds where the two meet.
+else depends on it as it was. One rule covers each case, a third section says what
+holds where the two meet, and a fourth covers every other reader.
 
 ### A Model Being Written Or Registered
 
-A checker of a model that is being written, changed or registered MUST report a
-deprecated spelling as an error. A model that holds one is not valid as a new or
-updated model.
+A model that is being written, changed or registered is not valid in a deprecated
+spelling: a model that holds one is not valid as a new or updated model. A checker
+of such a model reports the deprecated spelling as an error.
+
+The reference CLI MUST report that error, from the release named under
+[The Reference CLI](#the-reference-cli). Every other checker SHOULD report it, and
+follows by its own decision: this specification does not say that a checker other
+than the reference CLI MUST.
+[Checkers That Do Not Report The Error](#checkers-that-do-not-report-the-error)
+names, with the date, the checkers known not to report it.
 
 ```hcl
 entity "Invoice" {
@@ -325,9 +332,9 @@ entity "Invoice" {
 }
 ```
 
-Given this file as a model to check, a checker reports an error: the file holds two
-deprecated spellings, `entity` and `property`. With `record` and `field` in their
-place the same file is valid.
+Given this file as a model to check, a checker that follows this rule reports an
+error: the file holds two deprecated spellings, `entity` and `property`. With
+`record` and `field` in their place the same file is valid.
 
 ### A Document That A Pin Names
 
@@ -335,6 +342,11 @@ A pin names a document at one commit of its repository. A registry record that l
 a published model at a commit is a pin, and so is any other record that names a
 model's file and its commit. The bytes at a commit do not change, so a document that
 was pinned in a deprecated spelling keeps it for as long as the pin stands.
+
+A registry record is a pin once it stands. While a record is being added, or its
+commit is being moved, the model at the commit it is to name is a model being
+registered, and the first rule governs it. Once the record stands, the document it
+names is read under this rule.
 
 A reader of a document that a pin names MUST accept the deprecated spellings and
 treat each as the word it replaces, for as long as the pin stands. It SHOULD report
@@ -374,8 +386,29 @@ record "Order" {
 Suppose the module `customers` is supplied to resolve the reference, and its file
 declares `entity "Customer"`. A checker of the model above resolves the reference
 and reports no error. Its warning, if it gives one, names the file of `customers`.
-Given `customers` itself as the model to check, the same checker reports the error
-of the first rule.
+Given `customers` itself as the model to check, a checker that follows the first
+rule reports the error of that rule.
+
+### Any Other Reader
+
+A reader that neither checks a model nor reads a document that a pin names MAY
+accept the deprecated spellings: a viewer of a branch head, an indexer of a working
+copy and a tool that rewrites a file are such readers. One that accepts them treats
+each as the word it replaces.
+
+### Checkers That Do Not Report The Error
+
+On 10 October 2026 three checkers were observed not to report a deprecated spelling
+as an error in a model they check. Each read both spellings. The list holds what
+was observed that day, not every checker.
+
+| Checker | What it did on 10 October 2026 |
+|---|---|
+| SpecScore CLI 0.55.0, `specscore graph lint` | It read a file in a deprecated spelling as the current spelling. With `--severity info` it printed an advisory notice for the file (`graph-model-deprecated-spelling`, severity `info`), which is not counted as a violation; without that flag it printed nothing about the spelling. The run ended with exit status 0 either way. |
+| The public ModelSpec registry's check, `npm run check` and `npm run lint:hcl` at commit `21ebfe9` of `modelspec-org/registry` | It printed one `notice:` line for each registry record whose files were in a deprecated spelling, and ended with exit status 0. It did not run the reference CLI, and nothing in it told a record that was being added or moved from one that stood. |
+| OpenVaultDB's publisher check, `ovdb publisher check` 0.43.0 | It accepted a publisher's model in a deprecated spelling and reported nothing about the spelling. The run ended with exit status 0. |
+
+Whether each of them reports the error, and from when, is its own decision.
 
 ### The Reference CLI
 
@@ -453,6 +486,7 @@ A ModelSpec document must be validatable. Validation should report located error
 
 In a document that a pin names, and in a model that is read only to resolve a
 reference, validation should report a deprecated spelling without refusing the
-document. See [Deprecated Spellings](#deprecated-spellings).
+document. See [Deprecated Spellings](#deprecated-spellings), which also names the
+checkers known not to report the error.
 
 SpecScore may run those checks, but ModelSpec defines what the checks mean.
