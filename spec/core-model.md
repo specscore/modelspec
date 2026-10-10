@@ -427,10 +427,10 @@ file names or of arguments.
 - Every file of a checked module is checked. So `modelspec lint` checks every file a
   path names, the rest of its module, and the `--module` files when no path is
   given. The files of a module that is only referred to are read and checked as
-  well, under every rule but this one: any other error in such a module fails the
-  run. The rest of a module is the other `.hcl` files of its layout directory, the
-  JSON copy beside an HCL file, and any file that `--module` supplies for the same
-  module.
+  well, under every rule but the rule for a deprecated spelling: any other error in
+  such a module fails the run. The rest of a module is the other `.hcl` files of its
+  layout directory, the JSON copy beside an HCL file, and any file that `--module`
+  supplies for the same module.
 - A module is only referred to when at least one named path holds a model, every one
   of its files was supplied with `--module`, none of its files lies under a named
   path, and no named file belongs to it.

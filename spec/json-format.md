@@ -148,9 +148,10 @@ The rules of [core-model.md](core-model.md#deprecated-spellings) hold for JSON a
 they do for HCL:
 
 - A document that is being written, changed or registered is not valid under the
-  identifier `1.0-draft`, and a checker of such a document reports the identifier as
-  an error. The reference CLI MUST report it. Every other checker SHOULD, and
-  follows by its own decision;
+  identifier `1.0-draft`. A checker of such a document SHOULD report the identifier
+  as an error. The reference CLI is required to: it MUST report it. Every other
+  checker follows by its own decision, and a pass from a checker that does not
+  report it does not show that the document is valid as a new or updated model;
   [core-model.md](core-model.md#checkers-that-do-not-report-the-error) names the
   checkers known not to report it.
 - A reader of a document that a pin names MUST accept `1.0-draft` and read each key
