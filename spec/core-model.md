@@ -412,10 +412,11 @@ Whether each of them reports the error, and from when, is its own decision.
 
 ### The Reference CLI
 
-The reference CLI applies these rules from version 0.3.0. `modelspec lint` decides
-for each module, once the files are loaded, whether the module is being checked or
-is only referred to. It decides once for a module, never for one file of it, and
-the result does not depend on the order of file names or of arguments.
+The reference CLI applies these rules from its release that follows 0.2.0 (expected
+as 0.3.0). `modelspec lint` decides for each module, once the files are loaded,
+whether the module is being checked or is only referred to. It decides once for a
+module, never for one file of it, and the result does not depend on the order of
+file names or of arguments.
 
 - A module is being checked when one of its files is named on the command line or
   lies under a path named there, whether or not `--module` also supplies the file.
@@ -455,15 +456,20 @@ the model to check.
 
 ### Where These Rules Come From
 
-The first rule took effect with the last step of
-[decision 0022](decisions/0022-prose-now-format-change-on-the-owners-word.md), when
-no registered model was pinned in a deprecated spelling. That step says "The old
-spelling becomes an error" and does not say where. The scope set out here, an error
-in a model being checked and not in a document that a pin names, was chosen by the
-implementing session on the recommendation of a census of 9 October 2026. The owner
-approved making the old spelling an error and has been told of the scope. His
-words, the scope and the alternatives that were not taken are in decision 0022's
-observed consequences.
+The first rule states the last step of
+[decision 0022](decisions/0022-prose-now-format-change-on-the-owners-word.md): "The
+old spelling becomes an error only when no registered pin uses it, and only with its
+own approval." The step does not say where the old spelling is an error. The scope
+set out here is an error in a model being checked and not in a document that a pin
+names, required of the reference CLI and asked of every other checker.
+
+The owner approved making the old spelling an error (decision 0022, the entry of 9
+October 2026 that quotes "yes, you can and should make the old spelling an error").
+The scope of the error was chosen by the implementing session on the recommendation
+of a census of 9 October 2026; the owner was told of it the same day. His words, the
+scope and the alternatives that were not taken are in decision 0022's observed
+consequences. The state of each stage, with the day on which no registered model
+was pinned in a deprecated spelling, is in [README.md](README.md#transition).
 
 These rules read differently from three sentences of approved decisions. An approved
 decision's text is not edited, so the difference is stated here:

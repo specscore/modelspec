@@ -69,8 +69,8 @@ became `field`, and two constructs were removed
 | This specification and the reference CLI describe and read the current spelling, and still read the deprecated one. | Done. |
 | Other readers accept both spellings. | Mostly done. These read both: SpecScore CLI 0.55.0, MeaningGraph CLI 0.3.0, OpenVaultDB's publisher CLI 0.42.0, CodeGrapher 0.16.0, the public ModelSpec registry's check, and the sites modelspec.org, meaninggraph.io and the OVDB Directory site. On 9 October 2026 CodeGrapher's web client did not read the current spelling. |
 | Writers emit the current spelling. | Begun. The registry pages of modelspec.org say "record type" and "field", and answer the anchors `#record-Name` and `#field-Record-member` as well as the earlier `#entity-Name` and `#property-Record-member`. The public ModelSpec registry's index writes `records` and `fields`. Other writers follow in their own changes. |
-| Each registered model is rewritten and its pin moved. | Done. No registered model is pinned in the deprecated spelling. |
-| A deprecated spelling becomes an error. | Done, for a model that is being checked: in this specification, and in the reference CLI from version 0.3.0. A document that a pin names stays readable. No other reader changed with this stage. |
+| Each registered model is rewritten and its pin moved. | Done on LANDING-DATE: on that day no registered model was pinned in the deprecated spelling. |
+| A deprecated spelling becomes an error. | Stated in this specification, for a model that is being checked, and applied by the reference CLI's release that follows 0.2.0 (expected as 0.3.0). A document that a pin names stays readable. No other checker changes with this stage. |
 
 Decision 0022 lists the specification among the writers of its second step. The
 grammar chapters changed earlier, with the reference CLI, because decisions 0018 to
@@ -85,13 +85,13 @@ model that refers to such a document is not made invalid by it.
 example of each. The first is required of the reference CLI and is what this
 specification asks of every other checker, which follows by its own decision.
 
-In the reference CLI from version 0.3.0, `modelspec lint` fails for a module that is
-being checked and holds a deprecated spelling, and `modelspec export` refuses such a
-source. A module that is only referred to keeps a warning in `modelspec lint`: one
-that `--module` supplies beside a named path, with none of its files named or under
-a named path. `modelspec rewrite` still reads the deprecated spelling in order to
-rewrite it. [core-model.md](core-model.md#the-reference-cli) says how the reference
-CLI tells a checked module from one that is only referred to.
+In the reference CLI's release that follows 0.2.0, `modelspec lint` fails for a
+module that is being checked and holds a deprecated spelling, and `modelspec export`
+refuses such a source. A module that is only referred to keeps a warning in
+`modelspec lint`: one that `--module` supplies beside a named path, with none of its
+files named or under a named path. `modelspec rewrite` still reads the deprecated
+spelling in order to rewrite it. [core-model.md](core-model.md#the-reference-cli)
+says how the reference CLI tells a checked module from one that is only referred to.
 
 This stage changes this specification and the reference CLI, and no other checker.
 On 10 October 2026 three of the readers named in the table did not report a
@@ -112,10 +112,12 @@ registry's check did not tell the two apart on 10 October 2026, and it did not r
 the reference CLI. Refusing a model that is being registered, or whose pin is being
 moved, is a change for that registry to make.
 
-That scope was chosen by the implementing session on the recommendation of a census
-of 9 October 2026. The owner approved making the old spelling an error and has been
-told of the scope. His words, the scope and the alternatives that were not taken are
-in decision 0022's observed consequences.
+The owner approved making the old spelling an error (decision 0022, the entry of 9
+October 2026 that quotes "yes, you can and should make the old spelling an error").
+The scope of the error was chosen by the implementing session on the recommendation
+of a census of 9 October 2026; the owner was told of it the same day. His words, the
+scope and the alternatives that were not taken are in decision 0022's observed
+consequences.
 
 [Decision 0021](decisions/0021-published-model-pins-the-models-it-refers-to.md) is
 approved and not in force: resolution of a module-qualified name is still left to the

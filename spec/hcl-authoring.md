@@ -165,9 +165,9 @@ documentation and stable diffs.
 - **Which kind tokens stay reserved.** Decision 0015 reserved five names because
   they were the kind tokens of a consumer's reference syntax. Two of them,
   `collections` and `recordsets`, now name nothing, and `records` is reserved beside
-  `entities`. The last step of decision 0022, which made a deprecated spelling an
-  error in a model being checked, did not release `entities`: a document that a pin
-  names still carries it as a top-level key of the `1.0-draft` vocabulary, and the
+  `entities`. The last step of decision 0022, an error for a deprecated spelling in a
+  model being checked, does not release `entities`: a document that a pin names
+  still carries it as a top-level key of the `1.0-draft` vocabulary, and the
   consumer's reference syntax still reads it as the earlier spelling of the kind
   segment `records`. SpecScore decision 0014, which succeeds SpecScore decision 0011
   in part and defines that syntax, leaves the final list open as well: all six names

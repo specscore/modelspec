@@ -42,12 +42,12 @@ The words `projection`, `index` and `migration` are reserved and have no content
 yet.
 
 Earlier drafts wrote a record type as `entity` and its fields as `property`. In a
-model that is being written or registered that spelling is an error: the reference
-CLI from version 0.3.0 reports it as one in `modelspec lint` and refuses the file in
-`modelspec export`, and `modelspec rewrite --write` converts a file. A document that
-a pin names keeps its spelling and stays readable, and a model that refers to one is
-not made invalid by it: `modelspec lint` keeps a warning for a module that is only
-referred to. These readers read both spellings: SpecScore CLI
+model that is being written or registered that spelling is an error: from the
+reference CLI's release that follows 0.2.0 (expected as 0.3.0), `modelspec lint`
+reports it as one and `modelspec export` refuses the file, and
+`modelspec rewrite --write` converts a file. A document that a pin names keeps its
+spelling and stays readable, and a model that refers to one is not made invalid by
+it: `modelspec lint` keeps a warning for a module that is only referred to. These readers read both spellings: SpecScore CLI
 0.55.0, MeaningGraph CLI 0.3.0, OpenVaultDB's publisher CLI 0.42.0, CodeGrapher
 0.16.0, the public ModelSpec registry's check and the registry sites (modelspec.org,
 meaninggraph.io and the OVDB Directory site). Three of them were observed on 10
@@ -56,8 +56,8 @@ SpecScore's `graph lint` 0.55.0 gave an advisory notice, the public registry's c
 printed a notice, and OpenVaultDB's publisher check 0.43.0 reported nothing about
 it, each with exit status 0. The rule is required of the reference CLI, and every
 other checker follows it by its own decision. On 9 October 2026 CodeGrapher's web
-client did not read the current spelling. No registered model is pinned in the
-earlier spelling. See
+client did not read the current spelling. On LANDING-DATE no registered model was
+pinned in the earlier spelling. See
 [spec/core-model.md](spec/core-model.md#deprecated-spellings).
 
 ## Shape, Not Meaning
