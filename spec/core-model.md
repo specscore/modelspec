@@ -443,9 +443,13 @@ file names or of arguments.
 - A file lies under a named path when its path, made absolute, is that path or below
   it, and also when the file or a directory above it is the same place as the named
   path: a symbolic link to a named directory, and another letter case of its name
-  where the file system ignores case, are the named directory. A file supplied under
-  two names lies under a named path when any of its names does, and where the files
-  cannot be compared the module is treated as being checked.
+  where the file system ignores case, are the named directory. Every name a file is
+  supplied under counts. The file lies under a named path when any of its names
+  does; an HCL file and the JSON copy beside it are a pair by any name of either;
+  and the module of the name the file is read under, each module another name of it
+  was assigned to with `--module`, and the layout module another name of it is a
+  file of, are checked together. Where the files cannot be compared, the module is
+  treated as being checked, and `modelspec lint` says so in a note.
 - A module kept under a named path is being checked even where a search does not
   read it and only `--module` supplies it:
   `modelspec lint . --module core=.pinned/core.modelspec.hcl` reports the error in
