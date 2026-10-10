@@ -121,11 +121,12 @@ the changes made after a review on 10 October 2026. On 10 October 2026 he was sh
 the scope as four points (an error for a model being checked; a warning for a module
 the checked model only refers to with `--module`; `modelspec export` refusing an
 earlier-spelling source; only the reference CLI changing) and answered "1 yes", the
-scope being the first of three questions put to him. The finer points (how a module
-counts as being checked, the form with no path named, what `export --check`
-compares, that every name of a file counts, and that a module is treated as being
-checked where the files cannot be compared) were settled by the implementing session
-after review; they were told to him and were not put to him one by one. His words,
+scope being the first of three questions put to him. The finer points (among them
+how a module counts as being checked, the form with no path named, what
+`export --check` compares, that every name of a file counts, and that a module is
+treated as being checked where the files cannot be compared) were settled by the
+implementing session after review; they were told to him and were not put to him one
+by one. His words,
 the scope and the alternatives that were not taken are in decision 0022's observed
 consequences.
 
