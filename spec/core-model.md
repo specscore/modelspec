@@ -338,10 +338,12 @@ error: the file holds two deprecated spellings, `entity` and `property`. With
 
 ### A Document That A Pin Names
 
-A pin names a document at one commit of its repository. A registry record that lists
-a published model at a commit is a pin, and so is any other record that names a
-model's file and its commit. The bytes at a commit do not change, so a document that
-was pinned in a deprecated spelling keeps it for as long as the pin stands.
+A pin names a document at one commit of its repository, or by a digest of its bytes.
+A registry record that lists a published model at a commit is a pin, and so is any
+other record that names a model's file and its commit, or its file and a digest of
+it. The bytes at a commit, and the bytes a digest names, do not change, so a
+document that was pinned in a deprecated spelling keeps it for as long as the pin
+stands.
 
 A registry record is a pin once it stands. While a record is being added, or its
 commit is being moved, the model at the commit it is to name is a model being
@@ -455,7 +457,12 @@ file names or of arguments.
   order to do so.
 
 A pinned document in a deprecated spelling gets the error too when it is named as
-the model to check.
+the model to check: the reference CLI cannot tell that a pin names a file, and treats
+every model it is asked to check as a new or updated model. A registry that checks a
+standing record again with `modelspec lint` therefore gets the error for a document
+that the second rule says is read. This release has no option that reports it as a
+warning for a named model; decision 0022's entry of 2026-10-10 lists that option
+among the alternatives not taken.
 
 ### Where These Rules Come From
 
