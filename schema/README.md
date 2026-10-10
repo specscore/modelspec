@@ -25,7 +25,8 @@ passes a schema is not thereby a valid model; `modelspec lint` checks the rest.
 `modelspec lint` treats the model it is asked to check as a new or updated model.
 From the reference CLI's release that follows 0.2.0 (expected as 0.3.0) it
 therefore reports a document in the `1.0-draft` vocabulary as an error, a pinned one
-included, when it is named as the model to check. A `1.0-draft` document of a module that is only referred to keeps a warning
+included, when it is named as the model to check. A `1.0-draft` document of a module
+that is only referred to keeps a warning
 ([spec/core-model.md](../spec/core-model.md#the-reference-cli)). The `1.0-draft`
 schema checks the shape of such a document.
 

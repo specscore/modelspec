@@ -47,10 +47,12 @@ reference CLI's release that follows 0.2.0 (expected as 0.3.0), `modelspec lint`
 reports it as one and `modelspec export` refuses the file, and
 `modelspec rewrite --write` converts a file. A document that a pin names keeps its
 spelling and stays readable, and a model that refers to one is not made invalid by
-it: `modelspec lint` keeps a warning for a module that is only referred to. These readers read both spellings: SpecScore CLI
-0.55.0, MeaningGraph CLI 0.3.0, OpenVaultDB's publisher CLI 0.42.0, CodeGrapher
-0.16.0, the public ModelSpec registry's check and the registry sites (modelspec.org,
-meaninggraph.io and the OVDB Directory site). Three of them were observed on 10
+it: `modelspec lint` keeps a warning for a module that is only referred to.
+
+These readers read both spellings: SpecScore CLI 0.55.0, MeaningGraph CLI 0.3.0,
+OpenVaultDB's publisher CLI 0.42.0, CodeGrapher 0.16.0, the public ModelSpec
+registry's check and the registry sites (modelspec.org, meaninggraph.io and the OVDB
+Directory site). Three of them were observed on 10
 October 2026 not to report the earlier spelling as an error in a model they check:
 SpecScore's `graph lint` 0.55.0 gave an advisory notice, the public registry's check
 printed a notice, and OpenVaultDB's publisher check 0.43.0 reported nothing about
