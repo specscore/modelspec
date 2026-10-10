@@ -465,7 +465,7 @@ approved making the old spelling an error and has been told of the scope. His
 words, the scope and the alternatives that were not taken are in decision 0022's
 observed consequences.
 
-These rules read differently from two sentences of approved decisions. An approved
+These rules read differently from three sentences of approved decisions. An approved
 decision's text is not edited, so the difference is stated here:
 
 - Decisions 0018 and 0020 each say, among their consequences, "Readers accept both
@@ -474,6 +474,9 @@ decision's text is not edited, so the difference is stated here:
   for as long as a pin names it, and that does not end when the last registered
   model is pinned anew. Decision 0018 says as much in its next sentence: "A commit
   that is pinned today keeps its old spelling and stays readable."
+- Decision 0022 says, in the wording of its Decision that the owner answered with
+  "Approve", "Read both spellings until the last registered model is pinned anew".
+  The second rule departs from it in the same way.
 - Decision 0022 states its last step for "The old spelling" as a whole. The first
   rule limits the error to a model that is being checked.
 
