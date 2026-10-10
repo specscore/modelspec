@@ -89,8 +89,8 @@ portable meaning.
 
 ## Deprecated Spellings
 
-A reader accepts three deprecated spellings and treats each as the word that replaced
-it ([decision 0018](decisions/0018-entity-becomes-record.md),
+Three spellings are deprecated, and one word replaced each
+([decision 0018](decisions/0018-entity-becomes-record.md),
 [decision 0020](decisions/0020-field-is-the-member-word.md)):
 
 | Deprecated | Current |
@@ -99,9 +99,18 @@ it ([decision 0018](decisions/0018-entity-becomes-record.md),
 | block `property`, in a record type | block `field` |
 | setting `entity` on a member | setting `record` |
 
-Current and deprecated spellings may be mixed in one file and in one module. A member
-that carries both `record` and `entity` is an error. See
-[core-model.md](core-model.md#deprecated-spellings).
+In a model that is being written, changed or registered, each of the three is an
+error. In a document that a pin names, a reader accepts them and treats each as the
+word that replaced it. In a module that is read only to resolve a reference from the
+model being checked, they do not make that model invalid, and a checker reports them
+as a warning and not as an error.
+[core-model.md](core-model.md#deprecated-spellings) states the rules, with an
+example of each, and says which checkers report the error.
+
+A document that a pin names, and a module that is read only to resolve a reference,
+may mix current and deprecated spellings in one file and in one module, and a reader
+accepts the mix. A member that carries both `record` and `entity` is an error in any
+document.
 
 ## Removed And Reserved
 
@@ -156,5 +165,10 @@ documentation and stable diffs.
 - **Which kind tokens stay reserved.** Decision 0015 reserved five names because
   they were the kind tokens of a consumer's reference syntax. Two of them,
   `collections` and `recordsets`, now name nothing, and `records` is reserved beside
-  `entities` for the length of the transition. The final list follows the successor
-  of SpecScore decision 0011, which defines that syntax.
+  `entities`. The last step of decision 0022, an error for a deprecated spelling in a
+  model being checked, does not release `entities`: a document that a pin names
+  still carries it as a top-level key of the `1.0-draft` vocabulary, and the
+  consumer's reference syntax still reads it as the earlier spelling of the kind
+  segment `records`. SpecScore decision 0014, which succeeds SpecScore decision 0011
+  in part and defines that syntax, leaves the final list open as well: all six names
+  stay reserved until a decision releases one.

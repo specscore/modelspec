@@ -303,20 +303,230 @@ Three spellings from earlier drafts are deprecated
 | `property "total" { … }` in a record type | `field "total" { … }` |
 | `entity = "Customer"` on a member | `record = "Customer"` |
 
-A reader MUST accept the deprecated spellings and treat each as the word it replaces,
-and SHOULD report that the file uses a deprecated spelling. A model in the deprecated
-spelling is valid. A published model that is pinned by commit keeps its spelling
-for as long as the pin stands.
+How a deprecated spelling is treated depends on why the file is read. A file may
+belong to a model that is being checked, because someone is writing, changing or
+registering it. Or it may be a document that a pin names, read because something
+else depends on it as it was. One rule covers each case, a third section says what
+holds where the two meet, and a fourth covers every other reader.
 
-The reference CLI rewrites a file from the deprecated spelling to the current one
-with `modelspec rewrite --write`, changing nothing else in the file. Without
-`--write` it reports what it would change.
+### A Model Being Written Or Registered
 
-A deprecated spelling is to become an error once no registered model is pinned in
-it. What the owner said about that last step on 9 October 2026, and how it was read,
-is in the observed consequences of
-[decision 0022](decisions/0022-prose-now-format-change-on-the-owners-word.md). Until
-then the paragraph above holds.
+A model that is being written, changed or registered is not valid in a deprecated
+spelling: a model that holds one is not valid as a new or updated model. A checker
+of such a model SHOULD report the deprecated spelling as an error. The reference CLI
+is required to: it MUST report that error from the release named under
+[The Reference CLI](#the-reference-cli). Every other checker follows by its own
+decision: this specification does not say that a checker other than the reference
+CLI MUST. A pass from a checker that does not report the error does not show that a
+model is valid as a new or updated model.
+[Checkers That Do Not Report The Error](#checkers-that-do-not-report-the-error)
+names, with the date, the checkers known not to report it.
+
+```hcl
+entity "Invoice" {
+  key = ["id"]
+
+  property "id" {
+    type = "uuid"
+  }
+}
+```
+
+Given this file as a model to check, a checker that follows this rule reports an
+error: the file holds two deprecated spellings, `entity` and `property`. With
+`record` and `field` in their place the same file is valid.
+
+### A Document That A Pin Names
+
+A pin names a document at one commit of its repository, or by a digest of its bytes.
+A registry record that lists a published model at a commit is a pin, and so is any
+other record that names a model's file and its commit, or its file and a digest of
+it. The bytes at a commit, and the bytes a digest names, do not change, so a
+document that was pinned in a deprecated spelling keeps it for as long as the pin
+stands.
+
+A registry record is a pin once it stands. While a record is being added, or its
+commit is being moved, the model at the commit it is to name is a model being
+registered, and the first rule governs it. Once the record stands, the document it
+names is read under this rule.
+
+A reader of a document that a pin names MUST accept the deprecated spellings and
+treat each as the word it replaces, for as long as the pin stands. It SHOULD report
+that the document uses a deprecated spelling. That report is not an error.
+
+Suppose a pin names commit `4f0c2d9` of a repository, and the model file at that
+commit is the one shown above. A reader of the pin reads a record type `Invoice`
+with the key `id` and one field, `id`, of type `uuid`. It does not refuse the file,
+and it does not need the file rewritten: nothing can change the bytes at a commit.
+A later commit of that repository is an updated model, and the first rule applies
+to it: it is valid only in the current spelling. The pin names the earlier commit
+until someone moves it.
+
+### Where The Two Rules Meet
+
+The model being checked may refer to another model by a module-qualified name. The
+other model is read to resolve the reference. It is not the model being checked,
+and it may be a document that a pin names. A deprecated spelling in it MUST NOT make
+the model being checked invalid. A checker SHOULD report it as a warning, against
+the file that holds it.
+
+```hcl
+record "Order" {
+  key = ["id"]
+
+  field "id" {
+    type = "uuid"
+  }
+
+  field "customer" {
+    record   = "customers.Customer"
+    required = true
+  }
+}
+```
+
+Suppose the module `customers` is supplied to resolve the reference, and its file
+declares `entity "Customer"`. A checker of the model above resolves the reference
+and reports no error. Its warning, if it gives one, names the file of `customers`.
+Given `customers` itself as the model to check, a checker that follows the first
+rule reports the error of that rule.
+
+### Any Other Reader
+
+A reader that neither checks a model nor reads a document that a pin names MAY
+accept the deprecated spellings: a viewer of a branch head, an indexer of a working
+copy and a tool that rewrites a file are such readers. One that accepts them treats
+each as the word it replaces.
+
+### Checkers That Do Not Report The Error
+
+On 10 October 2026 three checkers were observed not to report a deprecated spelling
+as an error in a model they check. Each read both spellings. The list holds what
+was observed that day, not every checker.
+
+| Checker | What it did on 10 October 2026 |
+|---|---|
+| SpecScore CLI 0.55.0, `specscore graph lint` | It read a file in a deprecated spelling as the current spelling. With `--severity info` it printed an advisory notice for the file (`graph-model-deprecated-spelling`, severity `info`), which is not counted as a violation; without that flag it printed nothing about the spelling. The run ended with exit status 0 either way. |
+| The public ModelSpec registry's check, `npm run check` and `npm run lint:hcl` at commit `21ebfe9` of `modelspec-org/registry` | It printed one `notice:` line for each registry record whose files were in a deprecated spelling, and ended with exit status 0. It did not run the reference CLI, and nothing in it told a record that was being added or moved from one that stood. |
+| OpenVaultDB's publisher check, `ovdb publisher check` 0.43.0 | It accepted a publisher's model in a deprecated spelling and reported nothing about the spelling. The run ended with exit status 0. |
+
+Whether each of them reports the error, and from when, is its own decision.
+
+### The Reference CLI
+
+The reference CLI applies these rules from version 0.3.0.
+`modelspec lint` decides for each module, once the files are loaded,
+whether the module is being checked or is only referred to. It decides once for a
+module, never for one file of it, and the result does not depend on the order of
+file names or of arguments.
+
+- A module is being checked when one of its files is named on the command line or
+  lies under a path named there, whether or not `--module` also supplies the file.
+  With no path named, or with only paths that hold no model, every module that
+  `--module` supplies is being checked.
+- Every file of a checked module is checked. So `modelspec lint` checks every file a
+  path names, the rest of its module, and the `--module` files when no path is
+  given. The files of a module that is only referred to are read and checked as
+  well, under every rule but the rule for a deprecated spelling: any other error in
+  such a module fails the run. The rest of a module is the other `.hcl` files of its
+  layout directory, the JSON copy beside an HCL file, and any file that `--module`
+  supplies for the same module.
+- A module is only referred to when at least one named path holds a model, every one
+  of its files was supplied with `--module`, none of its files lies under a named
+  path, and no named file belongs to it.
+- An HCL file and the JSON copy beside it (`X.modelspec.hcl` and `X.modelspec.json`)
+  are checked together, whatever module `--module` assigns either of them to: when
+  the module of one is being checked, the module of the other is being checked as
+  well.
+- A module is told by its name: two sources that claim one module name are one
+  module for this decision, so naming a file of one has the other checked.
+- A file lies under a named path when its path, made absolute, is that path or below
+  it, and also when the file or a directory above it is the same place as the named
+  path: a symbolic link to a named directory, and another letter case of its name
+  where the file system ignores case, are the named directory. Every name a file is
+  supplied under counts. The file lies under a named path when any of its names
+  does; an HCL file and the JSON copy beside it are a pair by any name of either;
+  and the module of the name the file is read under, each module another name of it
+  was assigned to with `--module`, and, for a name that `--module` did not assign,
+  the layout module that name is a file of, are checked together. Where the files
+  cannot be compared, the module is treated as being checked, and `modelspec lint`
+  says so in a note.
+- A module kept under a named path is being checked even where a search does not
+  read it and only `--module` supplies it:
+  `modelspec lint . --module core=.pinned/core.modelspec.hcl` reports the error in
+  `core`. To keep the exception, the pinned module is kept outside the named paths,
+  or the model's directory is named rather than `.`.
+- In a file of a checked module, `modelspec lint` reports a deprecated spelling as
+  an error. It does so in HCL and in JSON and under both of its profiles, and the
+  run ends with the exit status for findings. In a file of a module that is only
+  referred to, it reports a warning, and the run does not fail for it.
+- With no path named, or none that holds a model, no module is only referred to. To
+  check a model kept in plain `.hcl` files against a pinned module in a deprecated
+  spelling, the model's directory is named as a path as well:
+  `modelspec lint parts --module shop=parts --module core=pinned/core.modelspec.hcl`.
+  The module `shop` is then being checked, and `core` is only referred to.
+- `modelspec export` reads HCL. With `--out`, with `--check` and with neither, it
+  refuses a source that holds a deprecated spelling: the source is rewritten first
+  and exported then. The refusal is decided from the model as it was loaded, so no
+  other finding of the run hides it.
+- `modelspec export --check` compares the committed copy with what
+  `modelspec export` writes, the format identifier included. A `1.0-draft` copy of a
+  source that exports as `1.0-draft-2` is reported as not what the source exports
+  to, with the exit status for findings, also for a model with no record type.
+- `modelspec rewrite` is unaffected. With `--write` it rewrites a file from the
+  deprecated spelling to the current one, changing nothing else in the file. Without
+  `--write` it reports what it would change. It reads the deprecated spelling in
+  order to do so.
+
+A pinned document in a deprecated spelling gets the error too when it is named as
+the model to check: the reference CLI cannot tell that a pin names a file, and treats
+every model it is asked to check as a new or updated model. A registry that checks a
+standing record again with `modelspec lint` therefore gets the error for a document
+that the second rule says is read. Version 0.3.0 has no option that reports it as a
+warning for a named model; decision 0022's entry of 2026-10-10 that says step 4 was
+prepared lists that option among the alternatives not taken.
+
+### Where These Rules Come From
+
+The first rule states the last step of
+[decision 0022](decisions/0022-prose-now-format-change-on-the-owners-word.md): "The
+old spelling becomes an error only when no registered pin uses it, and only with its
+own approval." The step does not say where the old spelling is an error. The scope
+set out here is an error in a model being checked and not in a document that a pin
+names, required of the reference CLI and asked of every other checker.
+
+The owner approved making the old spelling an error (decision 0022, the entry of 9
+October 2026 that quotes "yes, you can and should make the old spelling an error").
+The scope of the error was chosen by the implementing session on the recommendation
+of a census of 9 October 2026; the owner was told of it that day (23:02 UTC), and of
+the changes made after a review on 10 October 2026. On 10 October 2026 he was shown
+the scope as four points (an error for a model being checked; a warning for a module
+the checked model only refers to with `--module`; `modelspec export` refusing an
+earlier-spelling source; only the reference CLI changing) and answered "1 yes", the
+scope being the first of three questions put to him. The finer points (among them
+how a module counts as being checked, the form with no path named, what
+`export --check` compares, that every name of a file counts, and that a module is
+treated as being checked where the files cannot be compared) were settled by the
+implementing session after review; they were told to him and were not put to him one
+by one. His words,
+the scope and the alternatives that were not taken are in decision 0022's observed
+consequences. The state of each stage, with the day on which no registered
+model was pinned in a deprecated spelling, is in [README.md](README.md#transition).
+
+These rules read differently from three sentences of approved decisions. An approved
+decision's text is not edited, so the difference is stated here:
+
+- Decisions 0018 and 0020 each say, among their consequences, "Readers accept both
+  spellings until the last registered model is pinned anew". The second rule gives
+  reading a different end: a reader accepts the deprecated spellings in a document
+  for as long as a pin names it, and that does not end when the last registered
+  model is pinned anew. Decision 0018 says as much in its next sentence: "A commit
+  that is pinned today keeps its old spelling and stays readable."
+- Decision 0022 says, in the wording of its Decision that the owner answered with
+  "Approve", "Read both spellings until the last registered model is pinned anew".
+  The second rule departs from it in the same way.
+- Decision 0022 states its last step for "The old spelling" as a whole. The first
+  rule limits the error to a model that is being checked.
 
 ## Removed Constructs And Reserved Words
 
@@ -346,8 +556,11 @@ A ModelSpec document must be validatable. Validation should report located error
 - invalid constraints
 - a field with none, or more than one, of `type`, `component` and `record`
 - removed constructs and reserved words
+- a deprecated spelling, in a model that is being written or registered
 
-Validation should also report, without making the model invalid, a deprecated
-spelling.
+In a document that a pin names, and in a model that is read only to resolve a
+reference, validation should report a deprecated spelling without refusing the
+document. See [Deprecated Spellings](#deprecated-spellings), which also names the
+checkers known not to report the error.
 
 SpecScore may run those checks, but ModelSpec defines what the checks mean.

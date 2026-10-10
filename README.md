@@ -39,14 +39,29 @@ ModelSpec intentionally does not define:
 Those concerns belong in adjacent specifications and application architecture.
 
 The words `projection`, `index` and `migration` are reserved and have no content
-yet. Earlier drafts wrote a record type as `entity` and its fields as `property`;
-the reference CLI 0.2.0 reads both and `modelspec rewrite --write` converts a file.
-So do SpecScore CLI 0.55.0, MeaningGraph CLI 0.3.0, OpenVaultDB's publisher CLI
-0.42.0, CodeGrapher 0.16.0, the public ModelSpec registry's check and the registry
-sites (modelspec.org, meaninggraph.io and the OVDB Directory site). CodeGrapher's web
-client does not read the current spelling yet. The registered models are still written
-in the earlier spelling until each is rewritten and pinned anew, and they stay valid.
-See
+yet.
+
+Earlier drafts wrote a record type as `entity` and its fields as `property`. In a
+model that is being written or registered that spelling is an error: from version
+0.3.0 of the reference CLI, `modelspec lint` reports it as one and
+`modelspec export` refuses the file, and
+`modelspec rewrite --write` converts a file. A document that a pin names keeps its
+spelling and stays readable, and a model that refers to one is not made invalid by
+it: `modelspec lint` keeps a warning for a module that is only referred to.
+
+These readers read both spellings: SpecScore CLI 0.55.0, MeaningGraph CLI 0.3.0,
+OpenVaultDB's publisher CLI 0.43.0, CodeGrapher 0.16.0, the public ModelSpec
+registry's check and the registry sites (modelspec.org, meaninggraph.io and the OVDB
+Directory site). Three of them were observed on 10
+October 2026 not to report the earlier spelling as an error in a model they check:
+SpecScore's `graph lint` 0.55.0 gave an advisory notice, the public registry's
+check, at commit `21ebfe9`, printed a notice, and OpenVaultDB's publisher check
+0.43.0 reported nothing about it, each with exit status 0. The rule is required of
+the reference CLI, and every other checker follows it by its own decision. On 9
+October 2026 CodeGrapher's web client did not read the current spelling; on 10
+October 2026 it read both. On 10 October 2026 no registered model was pinned in the
+earlier spelling (`modelspec-org/registry` at `a7325ea`, `meaninggraph/registry` at
+`49f472f`). See
 [spec/core-model.md](spec/core-model.md#deprecated-spellings).
 
 ## Shape, Not Meaning

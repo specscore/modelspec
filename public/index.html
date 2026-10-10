@@ -307,9 +307,15 @@
       </p>
       <p class="drift-note">
         Earlier drafts wrote a record type as <code>entity</code> and its fields as <code>property</code>.
-        The reference CLI 0.2.0 reads both and <code>modelspec rewrite --write</code> converts a file. So do
-        SpecScore CLI 0.55.0, MeaningGraph CLI 0.3.0, OpenVaultDB's publisher CLI 0.42.0, CodeGrapher 0.16.0,
-        the public registry's check and the registry sites.
+        In a model that is being written or registered that spelling is an error: the reference CLI
+        from version 0.3.0 reports it as one, and
+        <code>modelspec rewrite --write</code> converts a file. A document that a pin names keeps its
+        spelling and stays readable. SpecScore CLI 0.55.0, MeaningGraph CLI 0.3.0,
+        OpenVaultDB's publisher CLI 0.43.0, CodeGrapher 0.16.0, the public registry's check and the registry
+        sites read both spellings. On 10 October 2026 SpecScore's <code>graph lint</code> 0.55.0, the public
+        registry's check and OpenVaultDB's publisher check 0.43.0 did not report the earlier spelling as an
+        error in a model they check: the rule is required of the reference CLI, and every other checker
+        follows it by its own decision.
       </p>
     </section>
 

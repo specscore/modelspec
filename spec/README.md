@@ -67,19 +67,68 @@ became `field`, and two constructs were removed
 | Stage | State |
 |---|---|
 | This specification and the reference CLI describe and read the current spelling, and still read the deprecated one. | Done. |
-| Other readers accept both spellings. | Mostly done. These read both: SpecScore CLI 0.55.0, MeaningGraph CLI 0.3.0, OpenVaultDB's publisher CLI 0.42.0, CodeGrapher 0.16.0, the public ModelSpec registry's check, and the sites modelspec.org, meaninggraph.io and the OVDB Directory site. Remaining: CodeGrapher's web client does not read the current spelling yet. |
-| Writers emit the current spelling. | Begun. The registry pages of modelspec.org say "record type" and "field", and answer the anchors `#record-Name` and `#field-Record-member` as well as the earlier `#entity-Name` and `#property-Record-member`. Other writers, the registry's own index among them, follow in their own changes. |
-| Each registered model is rewritten and its pin moved. | Not done. Every registered model is in the deprecated spelling today, and is valid. |
-| A deprecated spelling becomes an error. | Not done. It follows the stage above. The owner's statement of 9 October 2026 about it, and how it was read, is in decision 0022's observed consequences. |
+| Other readers accept both spellings. | Done for the readers named here, on 10 October 2026. These read both: SpecScore CLI 0.55.0, MeaningGraph CLI 0.3.0, OpenVaultDB's publisher CLI 0.43.0, CodeGrapher 0.16.0, the public ModelSpec registry's check, and the sites modelspec.org, meaninggraph.io and the OVDB Directory site. CodeGrapher's web client did not read the current spelling on 9 October 2026 and read both on 10 October 2026. One reader accepts the earlier spelling only and is not counted here: the package `publisher/source/pinchain` of `openvaultdb/ovdb` (at commit `2a444f2`) reads one pinned document, the baseline model of its ECB source, and refuses any identifier but `1.0-draft`. It is a reader of a document that a pin names, which the second rule of [core-model.md](core-model.md#a-document-that-a-pin-names) covers, and it changes when that pin moves. |
+| Writers emit the current spelling. | Begun. The registry pages of modelspec.org say "record type" and "field", and answer the anchors `#record-Name` and `#field-Record-member` as well as the earlier `#entity-Name` and `#property-Record-member`. The public ModelSpec registry's index writes `records` and `fields`. Other writers follow in their own changes. |
+| Each registered model is rewritten and its pin moved. | Done on 10 October 2026: at commit `a7325ea` of `modelspec-org/registry` and commit `49f472f` of `meaninggraph/registry` no registered model was pinned in the deprecated spelling. |
+| A deprecated spelling becomes an error. | Done on 10 October 2026, for a model that is being checked: this specification states it, and the reference CLI applies it from version 0.3.0. A document that a pin names stays readable. No other checker changes with this stage. |
 
 Decision 0022 lists the specification among the writers of its second step. The
 grammar chapters changed earlier, with the reference CLI, because decisions 0018 to
 0020 each place the grammar and the reference CLI in Phase 2.
 
-A registered model stays in the deprecated spelling until it is rewritten and its pin
-moved. The readers named above read it either way; CodeGrapher's web client does not
-read the current spelling yet. A new model can be written in the current spelling and
-checked with the reference CLI today.
+The last stage has a scope, which decision 0022 does not state: its step reads "The
+old spelling becomes an error only when no registered pin uses it, and only with its
+own approval." The error is for a model that is being written, changed or
+registered. A document that a pin names keeps its spelling and stays readable, and a
+model that refers to such a document is not made invalid by it.
+[core-model.md](core-model.md#deprecated-spellings) states both rules, with an
+example of each. The first is required of the reference CLI and is what this
+specification asks of every other checker, which follows by its own decision.
+
+In the reference CLI from version 0.3.0, `modelspec lint` fails for a
+module that is being checked and holds a deprecated spelling, and `modelspec export`
+refuses such a source. A module that is only referred to keeps a warning in
+`modelspec lint`: one that `--module` supplies beside a named path that holds a
+model, with none of its files named or under a named path. `modelspec rewrite` still
+reads the deprecated spelling in order to rewrite it.
+[core-model.md](core-model.md#the-reference-cli) says how the reference CLI tells a
+checked module from one that is only referred to.
+
+This stage changes this specification and the reference CLI, and no other checker.
+On 10 October 2026 three of the readers named in the table did not report a
+deprecated spelling as an error in a model they check. SpecScore CLI 0.55.0
+(`specscore graph lint`) gave an advisory notice of severity `info`. The public
+ModelSpec registry's check, at commit `21ebfe9` of `modelspec-org/registry`, printed
+a notice for each of the three registry records whose files were in the deprecated
+spelling. OpenVaultDB's publisher check (`ovdb publisher check` 0.43.0) reported
+nothing about the spelling. Each run ended with exit status 0;
+[core-model.md](core-model.md#checkers-that-do-not-report-the-error) says what each
+did.
+
+A registry record that is being added, or whose commit is being moved, offers a
+model for registration, and the first rule governs that model. A record that stands
+is a pin, and the document it names is read under the second rule: for such a
+record a notice without a refusal is what the second rule asks. The public
+registry's check did not tell the two apart on 10 October 2026, and it did not run
+the reference CLI. Refusing a model that is being registered, or whose pin is being
+moved, is a change for that registry to make.
+
+The owner approved making the old spelling an error (decision 0022, the entry of 9
+October 2026 that quotes "yes, you can and should make the old spelling an error").
+The scope of the error was chosen by the implementing session on the recommendation
+of a census of 9 October 2026; the owner was told of it that day (23:02 UTC), and of
+the changes made after a review on 10 October 2026. On 10 October 2026 he was shown
+the scope as four points (an error for a model being checked; a warning for a module
+the checked model only refers to with `--module`; `modelspec export` refusing an
+earlier-spelling source; only the reference CLI changing) and answered "1 yes", the
+scope being the first of three questions put to him. The finer points (among them
+how a module counts as being checked, the form with no path named, what
+`export --check` compares, that every name of a file counts, and that a module is
+treated as being checked where the files cannot be compared) were settled by the
+implementing session after review; they were told to him and were not put to him one
+by one. His words,
+the scope and the alternatives that were not taken are in decision 0022's observed
+consequences.
 
 [Decision 0021](decisions/0021-published-model-pins-the-models-it-refers-to.md) is
 approved and not in force: resolution of a module-qualified name is still left to the
