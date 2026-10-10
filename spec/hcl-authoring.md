@@ -101,12 +101,16 @@ Three spellings are deprecated, and one word replaced each
 
 In a model that is being written, changed or registered, each of the three is an
 error. In a document that a pin names, a reader accepts them and treats each as the
-word that replaced it. [core-model.md](core-model.md#deprecated-spellings) states
-both rules, with an example of each.
+word that replaced it. In a module that is read only to resolve a reference from the
+model being checked, they do not make that model invalid, and a checker reports them
+as a warning and not as an error.
+[core-model.md](core-model.md#deprecated-spellings) states the rules, with an
+example of each, and says which checkers report the error.
 
-A document that a pin names may mix current and deprecated spellings in one file and
-in one module, and a reader accepts the mix. A member that carries both `record` and
-`entity` is an error in any document.
+A document that a pin names, and a module that is read only to resolve a reference,
+may mix current and deprecated spellings in one file and in one module, and a reader
+accepts the mix. A member that carries both `record` and `entity` is an error in any
+document.
 
 ## Removed And Reserved
 
