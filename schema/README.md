@@ -23,7 +23,7 @@ enums, or that a module-qualified name has a module behind it. A document that
 passes a schema is not thereby a valid model; `modelspec lint` checks the rest.
 
 `modelspec lint` treats the model it is asked to check as a new or updated model.
-From the reference CLI's release that follows 0.2.0 (expected as 0.3.0) it
+From version 0.3.0 of the reference CLI it
 therefore reports a document in the `1.0-draft` vocabulary as an error, a pinned one
 included, when it is named as the model to check. A `1.0-draft` document of a module
 that is only referred to keeps a warning

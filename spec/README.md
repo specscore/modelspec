@@ -69,8 +69,8 @@ became `field`, and two constructs were removed
 | This specification and the reference CLI describe and read the current spelling, and still read the deprecated one. | Done. |
 | Other readers accept both spellings. | Done for the readers named here, on 10 October 2026. These read both: SpecScore CLI 0.55.0, MeaningGraph CLI 0.3.0, OpenVaultDB's publisher CLI 0.43.0, CodeGrapher 0.16.0, the public ModelSpec registry's check, and the sites modelspec.org, meaninggraph.io and the OVDB Directory site. CodeGrapher's web client did not read the current spelling on 9 October 2026 and read both on 10 October 2026. One reader accepts the earlier spelling only and is not counted here: the package `publisher/source/pinchain` of `openvaultdb/ovdb` (at commit `2a444f2`) reads one pinned document, the baseline model of its ECB source, and refuses any identifier but `1.0-draft`. It is a reader of a document that a pin names, which the second rule of [core-model.md](core-model.md#a-document-that-a-pin-names) covers, and it changes when that pin moves. |
 | Writers emit the current spelling. | Begun. The registry pages of modelspec.org say "record type" and "field", and answer the anchors `#record-Name` and `#field-Record-member` as well as the earlier `#entity-Name` and `#property-Record-member`. The public ModelSpec registry's index writes `records` and `fields`. Other writers follow in their own changes. |
-| Each registered model is rewritten and its pin moved. | Done on LANDING-DATE: at commit REGISTRY-COMMIT-MODELS of `modelspec-org/registry` and commit REGISTRY-COMMIT-GRAPHS of `meaninggraph/registry` no registered model was pinned in the deprecated spelling. |
-| A deprecated spelling becomes an error. | Stated in this specification, for a model that is being checked, and applied by the reference CLI's release that follows 0.2.0 (expected as 0.3.0). A document that a pin names stays readable. No other checker changes with this stage. |
+| Each registered model is rewritten and its pin moved. | Done on 10 October 2026: at commit `a7325ea` of `modelspec-org/registry` and commit `49f472f` of `meaninggraph/registry` no registered model was pinned in the deprecated spelling. |
+| A deprecated spelling becomes an error. | Done on 10 October 2026, for a model that is being checked: this specification states it, and the reference CLI applies it from version 0.3.0. A document that a pin names stays readable. No other checker changes with this stage. |
 
 Decision 0022 lists the specification among the writers of its second step. The
 grammar chapters changed earlier, with the reference CLI, because decisions 0018 to
@@ -85,7 +85,7 @@ model that refers to such a document is not made invalid by it.
 example of each. The first is required of the reference CLI and is what this
 specification asks of every other checker, which follows by its own decision.
 
-In the reference CLI's release that follows 0.2.0, `modelspec lint` fails for a
+In the reference CLI from version 0.3.0, `modelspec lint` fails for a
 module that is being checked and holds a deprecated spelling, and `modelspec export`
 refuses such a source. A module that is only referred to keeps a warning in
 `modelspec lint`: one that `--module` supplies beside a named path that holds a
@@ -117,8 +117,17 @@ The owner approved making the old spelling an error (decision 0022, the entry of
 October 2026 that quotes "yes, you can and should make the old spelling an error").
 The scope of the error was chosen by the implementing session on the recommendation
 of a census of 9 October 2026; the owner was told of it that day (23:02 UTC), and of
-the changes made after a review on 10 October 2026. His words, the scope and the
-alternatives that were not taken are in decision 0022's observed consequences.
+the changes made after a review on 10 October 2026. On 10 October 2026 he was shown
+the scope as four points (an error for a model being checked; a warning for a module
+the checked model only refers to with `--module`; `modelspec export` refusing an
+earlier-spelling source; only the reference CLI changing) and answered "1 yes", the
+scope being the first of three questions put to him. The finer points (how a module
+counts as being checked, the form with no path named, what `export --check`
+compares, that every name of a file counts, and that a module is treated as being
+checked where the files cannot be compared) were settled by the implementing session
+after review; they were told to him and were not put to him one by one. His words,
+the scope and the alternatives that were not taken are in decision 0022's observed
+consequences.
 
 [Decision 0021](decisions/0021-published-model-pins-the-models-it-refers-to.md) is
 approved and not in force: resolution of a module-qualified name is still left to the

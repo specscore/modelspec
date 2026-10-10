@@ -42,9 +42,9 @@ The words `projection`, `index` and `migration` are reserved and have no content
 yet.
 
 Earlier drafts wrote a record type as `entity` and its fields as `property`. In a
-model that is being written or registered that spelling is an error: from the
-reference CLI's release that follows 0.2.0 (expected as 0.3.0), `modelspec lint`
-reports it as one and `modelspec export` refuses the file, and
+model that is being written or registered that spelling is an error: from version
+0.3.0 of the reference CLI, `modelspec lint` reports it as one and
+`modelspec export` refuses the file, and
 `modelspec rewrite --write` converts a file. A document that a pin names keeps its
 spelling and stays readable, and a model that refers to one is not made invalid by
 it: `modelspec lint` keeps a warning for a module that is only referred to.
@@ -59,9 +59,9 @@ check, at commit `21ebfe9`, printed a notice, and OpenVaultDB's publisher check
 0.43.0 reported nothing about it, each with exit status 0. The rule is required of
 the reference CLI, and every other checker follows it by its own decision. On 9
 October 2026 CodeGrapher's web client did not read the current spelling; on 10
-October 2026 it read both. On LANDING-DATE no registered model was pinned in the
-earlier spelling (`modelspec-org/registry` at REGISTRY-COMMIT-MODELS,
-`meaninggraph/registry` at REGISTRY-COMMIT-GRAPHS). See
+October 2026 it read both. On 10 October 2026 no registered model was pinned in the
+earlier spelling (`modelspec-org/registry` at `a7325ea`, `meaninggraph/registry` at
+`49f472f`). See
 [spec/core-model.md](spec/core-model.md#deprecated-spellings).
 
 ## Shape, Not Meaning

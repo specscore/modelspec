@@ -414,8 +414,8 @@ Whether each of them reports the error, and from when, is its own decision.
 
 ### The Reference CLI
 
-The reference CLI applies these rules from its release that follows 0.2.0 (expected
-as 0.3.0). `modelspec lint` decides for each module, once the files are loaded,
+The reference CLI applies these rules from version 0.3.0.
+`modelspec lint` decides for each module, once the files are loaded,
 whether the module is being checked or is only referred to. It decides once for a
 module, never for one file of it, and the result does not depend on the order of
 file names or of arguments.
@@ -482,9 +482,9 @@ A pinned document in a deprecated spelling gets the error too when it is named a
 the model to check: the reference CLI cannot tell that a pin names a file, and treats
 every model it is asked to check as a new or updated model. A registry that checks a
 standing record again with `modelspec lint` therefore gets the error for a document
-that the second rule says is read. This release has no option that reports it as a
-warning for a named model; decision 0022's entry of 2026-10-10 lists that option
-among the alternatives not taken.
+that the second rule says is read. Version 0.3.0 has no option that reports it as a
+warning for a named model; decision 0022's entry of 2026-10-10 that says step 4 was
+prepared lists that option among the alternatives not taken.
 
 ### Where These Rules Come From
 
@@ -499,10 +499,18 @@ The owner approved making the old spelling an error (decision 0022, the entry of
 October 2026 that quotes "yes, you can and should make the old spelling an error").
 The scope of the error was chosen by the implementing session on the recommendation
 of a census of 9 October 2026; the owner was told of it that day (23:02 UTC), and of
-the changes made after a review on 10 October 2026. His words, the scope and the
-alternatives that were not taken are in decision 0022's observed consequences. The
-state of each stage, with the day on which no registered model was pinned in a
-deprecated spelling, is in [README.md](README.md#transition).
+the changes made after a review on 10 October 2026. On 10 October 2026 he was shown
+the scope as four points (an error for a model being checked; a warning for a module
+the checked model only refers to with `--module`; `modelspec export` refusing an
+earlier-spelling source; only the reference CLI changing) and answered "1 yes", the
+scope being the first of three questions put to him. The finer points (how a module
+counts as being checked, the form with no path named, what `export --check`
+compares, that every name of a file counts, and that a module is treated as being
+checked where the files cannot be compared) were settled by the implementing session
+after review; they were told to him and were not put to him one by one. His words,
+the scope and the alternatives that were not taken are in decision 0022's observed
+consequences. The state of each stage, with the day on which no registered
+model was pinned in a deprecated spelling, is in [README.md](README.md#transition).
 
 These rules read differently from three sentences of approved decisions. An approved
 decision's text is not edited, so the difference is stated here:

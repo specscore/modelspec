@@ -200,7 +200,7 @@ documents that are read only to resolve a reference.
 
 A serializer writes `1.0-draft-2` for a source in the current spelling. A source
 that holds a deprecated spelling is not valid as a new or updated model, so the
-reference CLI's release that follows 0.2.0 (expected as 0.3.0) refuses to export it,
+reference CLI from version 0.3.0 refuses to export it,
 with `modelspec export`, with `--out` and with `--check`. The source is rewritten
 first, with `modelspec rewrite --write`, and exported then.
 
