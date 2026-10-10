@@ -447,9 +447,10 @@ file names or of arguments.
   supplied under counts. The file lies under a named path when any of its names
   does; an HCL file and the JSON copy beside it are a pair by any name of either;
   and the module of the name the file is read under, each module another name of it
-  was assigned to with `--module`, and the layout module another name of it is a
-  file of, are checked together. Where the files cannot be compared, the module is
-  treated as being checked, and `modelspec lint` says so in a note.
+  was assigned to with `--module`, and, for a name that `--module` did not assign,
+  the layout module that name is a file of, are checked together. Where the files
+  cannot be compared, the module is treated as being checked, and `modelspec lint`
+  says so in a note.
 - A module kept under a named path is being checked even where a search does not
   read it and only `--module` supplies it:
   `modelspec lint . --module core=.pinned/core.modelspec.hcl` reports the error in
