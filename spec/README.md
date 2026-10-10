@@ -88,10 +88,11 @@ specification asks of every other checker, which follows by its own decision.
 In the reference CLI's release that follows 0.2.0, `modelspec lint` fails for a
 module that is being checked and holds a deprecated spelling, and `modelspec export`
 refuses such a source. A module that is only referred to keeps a warning in
-`modelspec lint`: one that `--module` supplies beside a named path, with none of its
-files named or under a named path. `modelspec rewrite` still reads the deprecated
-spelling in order to rewrite it. [core-model.md](core-model.md#the-reference-cli)
-says how the reference CLI tells a checked module from one that is only referred to.
+`modelspec lint`: one that `--module` supplies beside a named path that holds a
+model, with none of its files named or under a named path. `modelspec rewrite` still
+reads the deprecated spelling in order to rewrite it.
+[core-model.md](core-model.md#the-reference-cli) says how the reference CLI tells a
+checked module from one that is only referred to.
 
 This stage changes this specification and the reference CLI, and no other checker.
 On 10 October 2026 three of the readers named in the table did not report a

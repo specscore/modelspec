@@ -420,22 +420,25 @@ file names or of arguments.
 
 - A module is being checked when one of its files is named on the command line or
   lies under a path named there, whether or not `--module` also supplies the file.
-  With no path named at all, every module that `--module` supplies is being checked.
+  With no path named, or with only paths that hold no model, every module that
+  `--module` supplies is being checked.
 - Every file of a checked module is checked. So `modelspec lint` checks every file a
   path names, the rest of its module, and the `--module` files when no path is
-  given. The rest of a module is the other `.hcl` files of its layout directory, the
+  given. The files of a module that is only referred to are read and checked as
+  well, under every rule but this one: any other error in such a module fails the
+  run. The rest of a module is the other `.hcl` files of its layout directory, the
   JSON copy beside an HCL file, and any file that `--module` supplies for the same
   module.
-- A module is only referred to when at least one path is named, every one of its
-  files was supplied with `--module`, none of its files lies under a named path, and
-  no named file belongs to it.
+- A module is only referred to when at least one named path holds a model, every one
+  of its files was supplied with `--module`, none of its files lies under a named
+  path, and no named file belongs to it.
 - In a file of a checked module, `modelspec lint` reports a deprecated spelling as
   an error. It does so in HCL and in JSON and under both of its profiles, and the
   run ends with the exit status for findings. In a file of a module that is only
   referred to, it reports a warning, and the run does not fail for it.
-- With no path named, no module is only referred to. To check a model kept in plain
-  `.hcl` files against a pinned module in a deprecated spelling, the model's
-  directory is named as a path as well:
+- With no path named, or none that holds a model, no module is only referred to. To
+  check a model kept in plain `.hcl` files against a pinned module in a deprecated
+  spelling, the model's directory is named as a path as well:
   `modelspec lint parts --module shop=parts --module core=pinned/core.modelspec.hcl`.
   The module `shop` is then being checked, and `core` is only referred to.
 - `modelspec export` reads HCL. With `--out`, with `--check` and with neither, it
