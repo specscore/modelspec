@@ -434,6 +434,23 @@ file names or of arguments.
 - A module is only referred to when at least one named path holds a model, every one
   of its files was supplied with `--module`, none of its files lies under a named
   path, and no named file belongs to it.
+- An HCL file and the JSON copy beside it (`X.modelspec.hcl` and `X.modelspec.json`)
+  are checked together, whatever module `--module` assigns either of them to: when
+  the module of one is being checked, the module of the other is being checked as
+  well.
+- A module is told by its name: two sources that claim one module name are one
+  module for this decision, so naming a file of one has the other checked.
+- A file lies under a named path when its path, made absolute, is that path or below
+  it, and also when the file or a directory above it is the same place as the named
+  path: a symbolic link to a named directory, and another letter case of its name
+  where the file system ignores case, are the named directory. A file supplied under
+  two names lies under a named path when any of its names does, and where the files
+  cannot be compared the module is treated as being checked.
+- A module kept under a named path is being checked even where a search does not
+  read it and only `--module` supplies it:
+  `modelspec lint . --module core=.pinned/core.modelspec.hcl` reports the error in
+  `core`. To keep the exception, the pinned module is kept outside the named paths,
+  or the model's directory is named rather than `.`.
 - In a file of a checked module, `modelspec lint` reports a deprecated spelling as
   an error. It does so in HCL and in JSON and under both of its profiles, and the
   run ends with the exit status for findings. In a file of a module that is only
