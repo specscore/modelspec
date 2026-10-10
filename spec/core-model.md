@@ -476,10 +476,11 @@ names, required of the reference CLI and asked of every other checker.
 The owner approved making the old spelling an error (decision 0022, the entry of 9
 October 2026 that quotes "yes, you can and should make the old spelling an error").
 The scope of the error was chosen by the implementing session on the recommendation
-of a census of 9 October 2026; the owner was told of it the same day. His words, the
-scope and the alternatives that were not taken are in decision 0022's observed
-consequences. The state of each stage, with the day on which no registered model
-was pinned in a deprecated spelling, is in [README.md](README.md#transition).
+of a census of 9 October 2026; the owner was told of it that day (23:02 UTC), and of
+the changes made after a review on 10 October 2026. His words, the scope and the
+alternatives that were not taken are in decision 0022's observed consequences. The
+state of each stage, with the day on which no registered model was pinned in a
+deprecated spelling, is in [README.md](README.md#transition).
 
 These rules read differently from three sentences of approved decisions. An approved
 decision's text is not edited, so the difference is stated here:

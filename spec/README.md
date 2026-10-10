@@ -116,9 +116,9 @@ moved, is a change for that registry to make.
 The owner approved making the old spelling an error (decision 0022, the entry of 9
 October 2026 that quotes "yes, you can and should make the old spelling an error").
 The scope of the error was chosen by the implementing session on the recommendation
-of a census of 9 October 2026; the owner was told of it the same day. His words, the
-scope and the alternatives that were not taken are in decision 0022's observed
-consequences.
+of a census of 9 October 2026; the owner was told of it that day (23:02 UTC), and of
+the changes made after a review on 10 October 2026. His words, the scope and the
+alternatives that were not taken are in decision 0022's observed consequences.
 
 [Decision 0021](decisions/0021-published-model-pins-the-models-it-refers-to.md) is
 approved and not in force: resolution of a module-qualified name is still left to the
