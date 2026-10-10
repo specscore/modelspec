@@ -313,12 +313,12 @@ holds where the two meet, and a fourth covers every other reader.
 
 A model that is being written, changed or registered is not valid in a deprecated
 spelling: a model that holds one is not valid as a new or updated model. A checker
-of such a model reports the deprecated spelling as an error.
-
-The reference CLI MUST report that error, from the release named under
-[The Reference CLI](#the-reference-cli). Every other checker SHOULD report it, and
-follows by its own decision: this specification does not say that a checker other
-than the reference CLI MUST.
+of such a model SHOULD report the deprecated spelling as an error. The reference CLI
+is required to: it MUST report that error from the release named under
+[The Reference CLI](#the-reference-cli). Every other checker follows by its own
+decision: this specification does not say that a checker other than the reference
+CLI MUST. A pass from a checker that does not report the error does not show that a
+model is valid as a new or updated model.
 [Checkers That Do Not Report The Error](#checkers-that-do-not-report-the-error)
 names, with the date, the checkers known not to report it.
 

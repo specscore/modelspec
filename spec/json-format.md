@@ -221,7 +221,7 @@ A validator consuming the JSON AST serialization MUST check:
 
 - `modelspec` is present and supported. `1.0-draft-2` is supported.
   [The 1.0-draft Vocabulary](#the-10-draft-vocabulary) says where `1.0-draft` is
-  read and where it is an error.
+  read, where it is an error, and which checkers are required to report that error.
 - `module.id` and `module.version` are present.
 - component, enum, and record type names are unique within their object maps, and
   across the three: they share one namespace.
