@@ -50,16 +50,18 @@ spelling and stays readable, and a model that refers to one is not made invalid 
 it: `modelspec lint` keeps a warning for a module that is only referred to.
 
 These readers read both spellings: SpecScore CLI 0.55.0, MeaningGraph CLI 0.3.0,
-OpenVaultDB's publisher CLI 0.42.0, CodeGrapher 0.16.0, the public ModelSpec
+OpenVaultDB's publisher CLI 0.43.0, CodeGrapher 0.16.0, the public ModelSpec
 registry's check and the registry sites (modelspec.org, meaninggraph.io and the OVDB
 Directory site). Three of them were observed on 10
 October 2026 not to report the earlier spelling as an error in a model they check:
-SpecScore's `graph lint` 0.55.0 gave an advisory notice, the public registry's check
-printed a notice, and OpenVaultDB's publisher check 0.43.0 reported nothing about
-it, each with exit status 0. The rule is required of the reference CLI, and every
-other checker follows it by its own decision. On 9 October 2026 CodeGrapher's web
-client did not read the current spelling. On LANDING-DATE no registered model was
-pinned in the earlier spelling. See
+SpecScore's `graph lint` 0.55.0 gave an advisory notice, the public registry's
+check, at commit `21ebfe9`, printed a notice, and OpenVaultDB's publisher check
+0.43.0 reported nothing about it, each with exit status 0. The rule is required of
+the reference CLI, and every other checker follows it by its own decision. On 9
+October 2026 CodeGrapher's web client did not read the current spelling; on 10
+October 2026 it read both. On LANDING-DATE no registered model was pinned in the
+earlier spelling (`modelspec-org/registry` at REGISTRY-COMMIT-MODELS,
+`meaninggraph/registry` at REGISTRY-COMMIT-GRAPHS). See
 [spec/core-model.md](spec/core-model.md#deprecated-spellings).
 
 ## Shape, Not Meaning

@@ -67,9 +67,9 @@ became `field`, and two constructs were removed
 | Stage | State |
 |---|---|
 | This specification and the reference CLI describe and read the current spelling, and still read the deprecated one. | Done. |
-| Other readers accept both spellings. | Mostly done. These read both: SpecScore CLI 0.55.0, MeaningGraph CLI 0.3.0, OpenVaultDB's publisher CLI 0.42.0, CodeGrapher 0.16.0, the public ModelSpec registry's check, and the sites modelspec.org, meaninggraph.io and the OVDB Directory site. On 9 October 2026 CodeGrapher's web client did not read the current spelling. |
+| Other readers accept both spellings. | Mostly done. These read both: SpecScore CLI 0.55.0, MeaningGraph CLI 0.3.0, OpenVaultDB's publisher CLI 0.43.0, CodeGrapher 0.16.0, the public ModelSpec registry's check, and the sites modelspec.org, meaninggraph.io and the OVDB Directory site. CodeGrapher's web client did not read the current spelling on 9 October 2026 and read both on 10 October 2026. |
 | Writers emit the current spelling. | Begun. The registry pages of modelspec.org say "record type" and "field", and answer the anchors `#record-Name` and `#field-Record-member` as well as the earlier `#entity-Name` and `#property-Record-member`. The public ModelSpec registry's index writes `records` and `fields`. Other writers follow in their own changes. |
-| Each registered model is rewritten and its pin moved. | Done on LANDING-DATE: on that day no registered model was pinned in the deprecated spelling. |
+| Each registered model is rewritten and its pin moved. | Done on LANDING-DATE: at commit REGISTRY-COMMIT-MODELS of `modelspec-org/registry` and commit REGISTRY-COMMIT-GRAPHS of `meaninggraph/registry` no registered model was pinned in the deprecated spelling. |
 | A deprecated spelling becomes an error. | Stated in this specification, for a model that is being checked, and applied by the reference CLI's release that follows 0.2.0 (expected as 0.3.0). A document that a pin names stays readable. No other checker changes with this stage. |
 
 Decision 0022 lists the specification among the writers of its second step. The
@@ -98,10 +98,10 @@ This stage changes this specification and the reference CLI, and no other checke
 On 10 October 2026 three of the readers named in the table did not report a
 deprecated spelling as an error in a model they check. SpecScore CLI 0.55.0
 (`specscore graph lint`) gave an advisory notice of severity `info`. The public
-ModelSpec registry's check printed a notice for each registry record whose files
-were in the deprecated spelling. OpenVaultDB's publisher check
-(`ovdb publisher check` 0.43.0) reported nothing about the spelling. Each run ended
-with exit status 0;
+ModelSpec registry's check, at commit `21ebfe9` of `modelspec-org/registry`, printed
+a notice for each of the three registry records whose files were in the deprecated
+spelling. OpenVaultDB's publisher check (`ovdb publisher check` 0.43.0) reported
+nothing about the spelling. Each run ended with exit status 0;
 [core-model.md](core-model.md#checkers-that-do-not-report-the-error) says what each
 did.
 
