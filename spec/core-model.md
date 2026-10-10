@@ -412,23 +412,46 @@ Whether each of them reports the error, and from when, is its own decision.
 
 ### The Reference CLI
 
-The reference CLI applies these rules from version 0.3.0:
+The reference CLI applies these rules from version 0.3.0. `modelspec lint` decides
+for each module, once the files are loaded, whether the module is being checked or
+is only referred to. It decides once for a module, never for one file of it, and
+the result does not depend on the order of file names or of arguments.
 
-- `modelspec lint` reports a deprecated spelling as an error in every file of a
-  model it is asked to check, which is every file under the paths it is given. It
-  does so in HCL and in JSON and under both of its profiles, and ends with the exit
-  status for findings.
-- `modelspec export`, with or without `--check`, refuses a source file that holds a
-  deprecated spelling. The file is rewritten first and exported then.
-- A module that is supplied only to resolve references (`--module`) keeps a warning,
-  and the run does not fail for it.
-- `modelspec rewrite --write` rewrites a file from the deprecated spelling to the
-  current one, changing nothing else in the file. Without `--write` it reports what
-  it would change. It reads the deprecated spelling in order to do so.
+- A module is being checked when one of its files is named on the command line or
+  lies under a path named there, whether or not `--module` also supplies the file.
+  With no path named at all, every module that `--module` supplies is being checked.
+- Every file of a checked module is checked. So `modelspec lint` checks every file a
+  path names, the rest of its module, and the `--module` files when no path is
+  given. The rest of a module is the other `.hcl` files of its layout directory, the
+  JSON copy beside an HCL file, and any file that `--module` supplies for the same
+  module.
+- A module is only referred to when at least one path is named, every one of its
+  files was supplied with `--module`, none of its files lies under a named path, and
+  no named file belongs to it.
+- In a file of a checked module, `modelspec lint` reports a deprecated spelling as
+  an error. It does so in HCL and in JSON and under both of its profiles, and the
+  run ends with the exit status for findings. In a file of a module that is only
+  referred to, it reports a warning, and the run does not fail for it.
+- With no path named, no module is only referred to. To check a model kept in plain
+  `.hcl` files against a pinned module in a deprecated spelling, the model's
+  directory is named as a path as well:
+  `modelspec lint parts --module shop=parts --module core=pinned/core.modelspec.hcl`.
+  The module `shop` is then being checked, and `core` is only referred to.
+- `modelspec export` reads HCL. With `--out`, with `--check` and with neither, it
+  refuses a source that holds a deprecated spelling: the source is rewritten first
+  and exported then. The refusal is decided from the model as it was loaded, so no
+  other finding of the run hides it.
+- `modelspec export --check` compares the committed copy with what
+  `modelspec export` writes, the format identifier included. A `1.0-draft` copy of a
+  source that exports as `1.0-draft-2` is reported as not what the source exports
+  to, with the exit status for findings, also for a model with no record type.
+- `modelspec rewrite` is unaffected. With `--write` it rewrites a file from the
+  deprecated spelling to the current one, changing nothing else in the file. Without
+  `--write` it reports what it would change. It reads the deprecated spelling in
+  order to do so.
 
-`modelspec lint` checks every file under the paths it is given as part of a model
-being written. A pinned document in a deprecated spelling gets the error too when
-it is named to `lint` directly.
+A pinned document in a deprecated spelling gets the error too when it is named as
+the model to check.
 
 ### Where These Rules Come From
 

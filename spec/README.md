@@ -85,20 +85,24 @@ model that refers to such a document is not made invalid by it.
 example of each. The first is required of the reference CLI and is what this
 specification asks of every other checker, which follows by its own decision.
 
-In the reference CLI from version 0.3.0, `modelspec lint` and
-`modelspec export` fail for a model that holds a deprecated spelling, a module that
-is supplied only to resolve references keeps a warning, and `modelspec rewrite`
-still reads the deprecated spelling in order to rewrite it.
+In the reference CLI from version 0.3.0, `modelspec lint` fails for a module that is
+being checked and holds a deprecated spelling, and `modelspec export` refuses such a
+source. A module that is only referred to keeps a warning in `modelspec lint`: one
+that `--module` supplies beside a named path, with none of its files named or under
+a named path. `modelspec rewrite` still reads the deprecated spelling in order to
+rewrite it. [core-model.md](core-model.md#the-reference-cli) says how the reference
+CLI tells a checked module from one that is only referred to.
 
 This stage changes this specification and the reference CLI, and no other checker.
 On 10 October 2026 three of the readers named in the table did not report a
 deprecated spelling as an error in a model they check. SpecScore CLI 0.55.0
 (`specscore graph lint`) gave an advisory notice of severity `info`. The public
 ModelSpec registry's check printed a notice for each registry record whose files
-were in the deprecated spelling. OpenVaultDB's publisher check (`ovdb publisher
-check` 0.43.0) reported nothing about the spelling. Each run ended with exit status
-0; [core-model.md](core-model.md#checkers-that-do-not-report-the-error) says what
-each did.
+were in the deprecated spelling. OpenVaultDB's publisher check
+(`ovdb publisher check` 0.43.0) reported nothing about the spelling. Each run ended
+with exit status 0;
+[core-model.md](core-model.md#checkers-that-do-not-report-the-error) says what each
+did.
 
 A registry record that is being added, or whose commit is being moved, offers a
 model for registration, and the first rule governs that model. A record that stands

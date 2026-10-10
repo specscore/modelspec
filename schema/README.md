@@ -22,10 +22,10 @@ that a key names a member, that a name is unique across record types, components
 enums, or that a module-qualified name has a module behind it. A document that
 passes a schema is not thereby a valid model; `modelspec lint` checks the rest.
 
-`modelspec lint` checks the files it is given as a new or updated model. From
-version 0.3.0 it therefore reports a document in the `1.0-draft` vocabulary as an
-error, a pinned one included
-([spec/core-model.md](../spec/core-model.md#deprecated-spellings)). The `1.0-draft`
+`modelspec lint` treats the model it is asked to check as a new or updated model.
+From version 0.3.0 it therefore reports a document in the `1.0-draft` vocabulary as
+an error, a pinned one included, when it is named as the model to check. A `1.0-draft` document of a module that is only referred to keeps a warning
+([spec/core-model.md](../spec/core-model.md#the-reference-cli)). The `1.0-draft`
 schema checks the shape of such a document.
 
 Under both vocabularies a schema refuses the removed fields `collections` and
