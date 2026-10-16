@@ -226,6 +226,10 @@ the target ModelSpec, then use them for:
 [OpenVaultDB](https://openvaultdb.com/) remains independent from SpecScore. It depends on ModelSpec semantics, not
 on SpecScore ownership or tooling.
 
+## Used in DataTug development
+
+[DataTug](https://datatug.app) is developing structural definitions for its data and model contracts with ModelSpec; that integration work is ongoing. [See the tools behind DataTug](https://datatug.app/en/under-the-hood/tools-we-built/#contracts).
+
 ## SpecScore
 
 SpecScore validates ModelSpec but does not own ModelSpec semantics.
