@@ -152,16 +152,22 @@ test('privacy page discloses Google Fonts', async ({ page }) => {
 // sits at its centre point (not the banner).
 async function reachable(page, locator) {
   await locator.evaluate(el => el.scrollIntoView({ block: 'center', behavior: 'instant' }));
-  return locator.evaluate(el => {
-    const r = el.getBoundingClientRect();
-    const top = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2);
-    return !!top && (top === el || el.contains(top)) && !top.closest('.consent-banner');
-  });
+  return atCentre(locator);
 }
 
+const atCentre = locator => locator.evaluate(el => {
+  const r = el.getBoundingClientRect();
+  const top = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2);
+  return !!top && (top === el || el.contains(top)) && !top.closest('.consent-banner');
+});
+
+const scrollY = page => page.evaluate(() => Math.round(window.scrollY));
+const reservedVar = page => page.evaluate(() => document.documentElement.style.getPropertyValue('--consent-banner-h'));
 const VIEWPORTS = [[320, 568], [375, 667], [390, 844], [1280, 800], [1366, 768]];
+const MODEL = '/registry/models/chinook/';
+
 for (const [w, h] of VIEWPORTS) {
-  test(`banner covers no primary control and no footer link at ${w}x${h}; space is released after a choice`, async ({ page }) => {
+  test(`banner covers no primary control at ${w}x${h}`, async ({ page }) => {
     await page.setViewportSize({ width: w, height: h });
     await boot(page);
     await page.goto(`${ORIGIN}/registry/`);
@@ -172,33 +178,89 @@ for (const [w, h] of VIEWPORTS) {
     expect(b.height).toBeLessThanOrEqual(h * 0.35 + 1);
     if (w >= 768) expect(b.width).toBeLessThanOrEqual(448 + 1);
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(w);
-    expect(await page.evaluate(() => document.documentElement.style.getPropertyValue('--consent-banner-h'))).toBe(`${Math.ceil(b.height)}px`);
+    expect(await reservedVar(page)).toBe(`${Math.ceil(b.height)}px`);
     expect(await reachable(page, page.locator('#registry-search-query')), 'registry search field').toBe(true);
+    expect(await reachable(page, page.locator('[data-registry-search] button').first()), 'search button').toBe(true);
 
     await page.goto(`${ORIGIN}/`);
     await expect(banner(page)).toBeVisible();
     for (const link of await page.locator('.hero-actions').first().getByRole('link').all()) {
       expect(await reachable(page, link), await link.innerText()).toBe(true);
     }
-    for (const name of ['Registry', 'Why']) {
-      const nav = page.locator('.site-nav').getByRole('link', { name, exact: true });
-      if (w >= 768) expect(await reachable(page, nav), name).toBe(true);
+    if (w >= 768) {
+      for (const name of ['Registry', 'Why']) {
+        expect(await reachable(page, page.locator('.site-nav').getByRole('link', { name, exact: true })), name).toBe(true);
+      }
+    } else {
+      expect(await reachable(page, page.locator('#navToggle')), 'phone menu button').toBe(true);
     }
 
-    await page.evaluate(() => window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'instant' }));
-    const foot = page.locator('.site-foot');
-    expect(await reachable(page, foot.getByRole('link', { name: 'Privacy' })), 'footer Privacy').toBe(true);
-    expect(await reachable(page, foot.getByRole('button', { name: 'Analytics choices' })), 'footer Analytics choices').toBe(true);
+    for (const path of ['/', '/registry/', MODEL, '/registry/sources/', '/privacy/']) {
+      await page.goto(`${ORIGIN}${path}`);
+      await expect(banner(page)).toBeVisible();
+      // the true bottom of the page, without re-centring anything
+      await page.evaluate(() => window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'instant' }));
+      const foot = page.locator('.site-foot');
+      expect(await atCentre(foot.getByRole('link', { name: 'Privacy' })), `${path} footer Privacy`).toBe(true);
+      expect(await atCentre(foot.getByRole('button', { name: 'Analytics choices' })), `${path} footer Analytics choices`).toBe(true);
+    }
+  });
 
-    await banner(page).getByRole('button', { name: 'Reject' }).click();
-    const state = await page.evaluate(() => ({
-      v: document.documentElement.style.getPropertyValue('--consent-banner-h'),
-      pad: getComputedStyle(document.body).paddingBottom,
-      cls: document.documentElement.classList.contains('has-consent-banner'),
-    }));
-    expect(state).toEqual({ v: '', pad: '0px', cls: false });
+  test(`a first-visit choice does not scroll the page, and space is released at ${w}x${h}`, async ({ page }) => {
+    await page.setViewportSize({ width: w, height: h });
+    await boot(page);
+    for (const label of ['Reject', 'Accept analytics']) {
+      await page.goto(`${ORIGIN}/`);
+      await page.evaluate(() => localStorage.clear());
+      await page.reload();
+      await expect(banner(page)).toBeVisible();
+      const before = await scrollY(page);
+      await banner(page).getByRole('button', { name: label }).click();
+      await expect(banner(page)).toHaveCount(0);
+      expect(await scrollY(page)).toBe(before);
+      expect(await page.evaluate(() => document.activeElement?.textContent?.trim())).toBe('Analytics choices');
+      expect(await reservedVar(page)).toBe('');
+      expect(await page.evaluate(() => getComputedStyle(document.body).paddingBottom)).toBe('0px');
+      expect(await page.evaluate(() => document.documentElement.classList.contains('has-consent-banner'))).toBe(false);
+    }
+  });
+
+  test(`Tab never leaves a focused control under the banner at ${w}x${h}`, async ({ page }) => {
+    await page.setViewportSize({ width: w, height: h });
+    await boot(page);
+    for (const path of ['/', '/registry/', MODEL, '/registry/sources/', '/privacy/']) {
+      await page.goto(`${ORIGIN}${path}`);
+      await expect(banner(page)).toBeVisible();
+      for (let i = 0; i < 16; i++) {
+        await page.keyboard.press('Tab');
+        const state = await page.evaluate(() => {
+          const el = document.activeElement;
+          if (!el || el === document.body || el.closest('.consent-banner')) return { skip: true };
+          const r = el.getBoundingClientRect();
+          const top = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2);
+          return { skip: false, name: (el.textContent || el.id || el.tagName).trim().slice(0, 30), ok: !!top && !top.closest('.consent-banner') };
+        });
+        if (!state.skip) expect(state.ok, `${path} tab ${i + 1}: ${state.name}`).toBe(true);
+      }
+    }
   });
 }
+
+test('reserved space returns when the banner is reopened and follows a resize', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await boot(page);
+  await page.goto(`${ORIGIN}/`);
+  await banner(page).getByRole('button', { name: 'Reject' }).click();
+  expect(await reservedVar(page)).toBe('');
+  await page.locator('.site-foot').getByRole('button', { name: 'Analytics choices' }).click();
+  await expect(banner(page)).toBeVisible();
+  const wide = await reservedVar(page);
+  expect(wide).toBe(`${Math.ceil((await banner(page).boundingBox()).height)}px`);
+  expect(await page.evaluate(() => getComputedStyle(document.body).paddingBottom)).not.toBe('0px');
+  await page.setViewportSize({ width: 320, height: 568 });
+  await expect.poll(() => reservedVar(page)).not.toBe(wide);
+  expect(await reservedVar(page)).toBe(`${Math.ceil((await banner(page).boundingBox()).height)}px`);
+});
 
 test('keyboard: the banner is a few Tab presses away, and focus returns to the footer control after a choice', async ({ page }) => {
   await boot(page);

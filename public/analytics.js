@@ -139,6 +139,7 @@
     function hideBanner() {
       if (banner && banner.parentNode) banner.parentNode.removeChild(banner);
       banner = null;
+      if (doc.removeEventListener) doc.removeEventListener("focusin", keepFocusClear);
       var root = doc.documentElement;
       if (observer) { observer.disconnect(); observer = null; }
       if (root && root.classList) root.classList.remove("has-consent-banner");
@@ -160,7 +161,19 @@
     // button that reopened the banner), never back to <body>.
     function returnFocus() {
       var target = opener || doc.querySelector("[data-analytics-choices]");
-      if (target) target.focus();
+      if (target) target.focus({ preventScroll: true });
+    }
+
+    // Focus not obscured (WCAG 2.4.11): while the banner is open, a control that
+    // takes focus under it is scrolled clear of it. Scroll-padding alone cannot do this.
+    function keepFocusClear(e) {
+      var t = e.target;
+      if (!banner || !t || !t.getBoundingClientRect || (banner.contains && banner.contains(t))) return;
+      var top = banner.getBoundingClientRect().top;
+      var r = t.getBoundingClientRect();
+      if (r.bottom <= top - 8) return;
+      var mid = r.top + r.height / 2;
+      win.scrollBy({ top: mid - top / 2, behavior: "instant" });
     }
 
     function button(label, value) {
@@ -174,7 +187,7 @@
 
     function showBanner(focus) {
       if (banner) {
-        if (focus) banner.focus();
+        if (focus) banner.focus({ preventScroll: true });
         return;
       }
       banner = doc.createElement("section");
@@ -195,15 +208,14 @@
       row.appendChild(button("Reject", "denied"));
       banner.appendChild(p);
       banner.appendChild(row);
-      // First in DOM order, so keyboard users reach it in a few Tab presses; it
-      // is fixed to the bottom of the viewport by CSS.
       // Before the page header or main content (after any build notice), so keyboard
       // users reach it in a few Tab presses; it is fixed to the bottom by CSS.
       var ref = doc.body.querySelector ? doc.body.querySelector(":scope > header, :scope > main") : null;
       doc.body.insertBefore(banner, ref && ref.parentNode === doc.body ? ref : doc.body.firstChild);
       reserveSpace();
       if (win.ResizeObserver) { observer = new win.ResizeObserver(reserveSpace); observer.observe(banner); }
-      if (focus) banner.focus();
+      if (doc.addEventListener) doc.addEventListener("focusin", keepFocusClear);
+      if (focus) banner.focus({ preventScroll: true });
     }
 
     function decide(value) {

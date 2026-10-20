@@ -21,7 +21,9 @@ class El {
   removeChild(c) { this.children = this.children.filter((x) => x !== c); c.parentNode = null; }
   addEventListener(t, f) { this.handlers[t] = f; }
   click() { this.handlers.click.call(this); }
-  focus() { this.focused = true; }
+  focus(opts) { this.focused = true; this.focusOpts = opts; }
+  getBoundingClientRect() { return this.rect || { top: 0, bottom: 0, height: 0 }; }
+  contains(c) { return c === this || this.children.some((x) => x.contains && x.contains(c)); }
   find(pred) {
     for (const c of this.children) {
       if (pred(c)) return c;
@@ -39,11 +41,14 @@ function env({ host = "modelspec.org", href = "https://modelspec.org/docs/?q=sec
   const head = new El("head"), body = new El("body");
   const opener = new El("button");
   const listeners = {};
+  const docListeners = {};
   const doc = {
     head, body, documentElement: new El("html"), referrer, createElement: (t) => new El(t),
     createTextNode: (t) => ({ textContent: t }),
     querySelectorAll: () => [opener],
     querySelector: () => opener,
+    addEventListener: (t, f) => { docListeners[t] = f; },
+    removeEventListener: (t) => { delete docListeners[t]; },
     get cookie() { return [...new Set(jar.map((c) => c.name))].map((n) => `${n}=1`).join("; "); },
     set cookie(v) {
       const parts = v.split(";").map((x) => x.trim());
@@ -56,6 +61,7 @@ function env({ host = "modelspec.org", href = "https://modelspec.org/docs/?q=sec
   };
   const win = {
     document: doc, dataLayer: undefined,
+    scrollBy: (o) => win.scrolls.push(o),
     location: { hostname: host, href, origin: new URL(href).origin },
     addEventListener: (t, f) => { listeners[t] = f; },
     localStorage: brokenStorage
@@ -64,7 +70,7 @@ function env({ host = "modelspec.org", href = "https://modelspec.org/docs/?q=sec
   };
   const scripts = () => head.children.filter((c) => c.tag === "script").map((c) => c.src);
   const banner = () => body.find((c) => c.attrs.role === "region");
-  return { body, win, doc, store, jar, scripts, banner, opener, listeners };
+  return { docListeners, scrolls: (win.scrolls = []), body, win, doc, store, jar, scripts, banner, opener, listeners };
 }
 
 const calls = (win) => (win.dataLayer || []).map((a) => Array.from(a));
@@ -260,4 +266,23 @@ test("banner is first in DOM order, reserves space (html class), and focus retur
   e.banner().button("Reject").click();
   assert.equal(e.doc.documentElement.classList.contains("has-consent-banner"), false);
   assert.equal(e.opener.focused, true);
+});
+
+test("focus returns without scrolling, and a control focused under the banner is scrolled clear", () => {
+  const e = env();
+  create(e.win).start();
+  assert.ok(e.docListeners.focusin);
+  e.banner().rect = { top: 500, bottom: 700, height: 200 };
+  const under = new El("a");
+  under.rect = { top: 560, bottom: 600, height: 40 };
+  e.docListeners.focusin({ target: under });
+  assert.deepEqual(e.scrolls, [{ top: 560 + 20 - 250, behavior: "instant" }]);
+  const clear = new El("a");
+  clear.rect = { top: 100, bottom: 140, height: 40 };
+  e.docListeners.focusin({ target: clear });
+  e.docListeners.focusin({ target: e.banner().button("Reject") });
+  assert.equal(e.scrolls.length, 1);
+  e.banner().button("Reject").click();
+  assert.deepEqual(e.opener.focusOpts, { preventScroll: true });
+  assert.equal(e.docListeners.focusin, undefined);
 });
