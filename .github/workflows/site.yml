@@ -39,3 +39,5 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Browser tests (desktop and 375px, against fixture builds served by wrangler dev)
         run: npm run test:e2e
+      - name: Analytics consent browser tests (fixture build, no network)
+        run: npm run e2e:analytics
