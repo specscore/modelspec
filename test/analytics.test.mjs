@@ -15,6 +15,9 @@ class El {
   }
   setAttribute(k, v) { this.attrs[k] = v; }
   appendChild(c) { c.parentNode = this; this.children.push(c); return c; }
+  insertBefore(c, ref) { c.parentNode = this; const i = ref ? this.children.indexOf(ref) : -1; if (i < 0) this.children.push(c); else this.children.splice(i, 0, c); return c; }
+  get firstChild() { return this.children[0] || null; }
+  classList = { _s: new Set(), add(c) { this._s.add(c); }, remove(c) { this._s.delete(c); }, contains(c) { return this._s.has(c); } };
   removeChild(c) { this.children = this.children.filter((x) => x !== c); c.parentNode = null; }
   addEventListener(t, f) { this.handlers[t] = f; }
   click() { this.handlers.click.call(this); }
@@ -37,9 +40,10 @@ function env({ host = "modelspec.org", href = "https://modelspec.org/docs/?q=sec
   const opener = new El("button");
   const listeners = {};
   const doc = {
-    head, body, referrer, createElement: (t) => new El(t),
+    head, body, documentElement: new El("html"), referrer, createElement: (t) => new El(t),
     createTextNode: (t) => ({ textContent: t }),
     querySelectorAll: () => [opener],
+    querySelector: () => opener,
     get cookie() { return [...new Set(jar.map((c) => c.name))].map((n) => `${n}=1`).join("; "); },
     set cookie(v) {
       const parts = v.split(";").map((x) => x.trim());
@@ -60,12 +64,12 @@ function env({ host = "modelspec.org", href = "https://modelspec.org/docs/?q=sec
   };
   const scripts = () => head.children.filter((c) => c.tag === "script").map((c) => c.src);
   const banner = () => body.find((c) => c.attrs.role === "region");
-  return { win, doc, store, jar, scripts, banner, opener, listeners };
+  return { body, win, doc, store, jar, scripts, banner, opener, listeners };
 }
 
 const calls = (win) => (win.dataLayer || []).map((a) => Array.from(a));
 
-test("measurement ID is the OpenVaultDB property stream", () => {
+test("measurement ID is the ModelSpec property stream", () => {
   assert.equal(GA_ID, "G-1F96L8YS39");
 });
 
@@ -245,4 +249,15 @@ test("privacy page discloses Google Fonts, loaded before any choice", () => {
   assert.match(t, /fonts\.googleapis\.com/);
   assert.match(t, /fonts\.gstatic\.com/);
   assert.match(t, /IP address/);
+});
+
+test("banner is first in DOM order, reserves space (html class), and focus returns to the footer control after a choice", () => {
+  const e = env();
+  e.body.appendChild(new El("main"));
+  create(e.win).start();
+  assert.equal(e.body.children[0].attrs.role, "region");
+  assert.ok(e.doc.documentElement.classList.contains("has-consent-banner"));
+  e.banner().button("Reject").click();
+  assert.equal(e.doc.documentElement.classList.contains("has-consent-banner"), false);
+  assert.equal(e.opener.focused, true);
 });

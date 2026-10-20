@@ -138,6 +138,24 @@
     function hideBanner() {
       if (banner && banner.parentNode) banner.parentNode.removeChild(banner);
       banner = null;
+      var root = doc.documentElement;
+      if (root && root.classList) root.classList.remove("has-consent-banner");
+    }
+
+    // While the banner is open the page scrolls in a box that ends above it
+    // (see "has-consent-banner" in style.css), so it never covers page content.
+    function reserveSpace() {
+      var root = doc.documentElement;
+      if (!root || !root.classList || !banner) return;
+      root.classList.add("has-consent-banner");
+      if (root.style && banner.offsetHeight) root.style.setProperty("--consent-h", banner.offsetHeight + "px");
+    }
+
+    // After a choice focus goes to the footer "Analytics choices" control (or the
+    // button that reopened the banner), never back to <body>.
+    function returnFocus() {
+      var target = opener || doc.querySelector("[data-analytics-choices]");
+      if (target) target.focus();
     }
 
     function button(label, value) {
@@ -172,7 +190,10 @@
       row.appendChild(button("Reject", "denied"));
       banner.appendChild(p);
       banner.appendChild(row);
-      doc.body.appendChild(banner);
+      // First in DOM order, so keyboard users reach it in a few Tab presses; it
+      // is fixed to the bottom of the viewport by CSS.
+      doc.body.insertBefore(banner, doc.body.firstChild);
+      reserveSpace();
       if (focus) banner.focus();
     }
 
@@ -181,7 +202,7 @@
       hideBanner();
       if (value === "granted") apply("granted");
       else withdraw();
-      if (opener) opener.focus();
+      returnFocus();
     }
 
     function wireOpeners() {
@@ -200,6 +221,7 @@
       apply(c);
       if (c === null) showBanner(false);
       wireOpeners();
+      if (win.addEventListener) win.addEventListener("resize", reserveSpace);
       win.addEventListener("storage", function (e) {
         if (e.key !== KEY && e.key !== null) return;
         var v = readStored();

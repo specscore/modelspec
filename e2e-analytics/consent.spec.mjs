@@ -147,3 +147,58 @@ test('privacy page discloses Google Fonts', async ({ page }) => {
   expect(text).toContain('fonts.googleapis.com');
   expect(text).toContain('fonts.gstatic.com');
 });
+
+const overlaps = (a, b) => a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
+
+for (const [w, h] of [[1366, 768], [1280, 800], [390, 844], [320, 640]]) {
+  test(`banner covers no primary action at ${w}x${h}`, async ({ page }) => {
+    await page.setViewportSize({ width: w, height: h });
+    await boot(page);
+    await page.goto(`${ORIGIN}/registry/`);
+    await expect(banner(page)).toBeVisible();
+    let b = await banner(page).boundingBox();
+    expect(b.x).toBeGreaterThanOrEqual(0);
+    expect(b.x + b.width).toBeLessThanOrEqual(w);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(w);
+    const field = page.locator('#registry-search-query');
+    await field.scrollIntoViewIfNeeded();
+    const search = await field.boundingBox();
+    expect(overlaps(b, search), 'registry search field').toBe(false);
+    expect(search.y + search.height, 'search field is above the banner').toBeLessThanOrEqual(b.y);
+
+    await page.goto(`${ORIGIN}/`);
+    await expect(banner(page)).toBeVisible();
+    const b2 = await banner(page).boundingBox();
+    for (const link of await page.locator('.hero-actions').first().getByRole('link').all()) {
+      await link.scrollIntoViewIfNeeded();
+      const lb = await link.boundingBox();
+      expect(overlaps(b2, lb), await link.innerText()).toBe(false);
+      expect(lb.y + lb.height).toBeLessThanOrEqual(b2.y);
+    }
+  });
+}
+
+test('keyboard: the banner is a few Tab presses away, and focus returns to the footer control after a choice', async ({ page }) => {
+  await boot(page);
+  await page.goto(`${ORIGIN}/registry/`);
+  await expect(banner(page)).toBeVisible();
+  let n = 0;
+  let reached = '';
+  while (n < 6 && reached !== 'Accept analytics') {
+    await page.keyboard.press('Tab');
+    n++;
+    reached = await page.evaluate(() => document.activeElement?.textContent?.trim() || '');
+  }
+  expect(reached).toBe('Accept analytics');
+  expect(n).toBeLessThanOrEqual(3);
+  await page.keyboard.press('Tab');
+  await page.keyboard.press('Enter');
+  await expect(banner(page)).toHaveCount(0);
+  expect(await page.evaluate(() => document.activeElement?.textContent?.trim())).toBe('Analytics choices');
+});
+
+test('privacy page says registry search goes to search.openvaultdb.com', async ({ page }) => {
+  await boot(page);
+  await page.goto(`${ORIGIN}/privacy/`);
+  expect(await page.locator('main').innerText()).toContain('search.openvaultdb.com');
+});
