@@ -186,6 +186,7 @@ ${shell.headLinks}
 ${main}
   ${shell.footer.replaceAll(DEFAULTS.ovdbDirectoryBaseUrl, esc(trimBase(ctx.ovdbDirectoryBaseUrl)))}
   <script src="/script.js" defer></script>
+  <script src="/analytics.js" defer></script>
 </body>
 </html>
 `;

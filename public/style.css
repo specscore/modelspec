@@ -822,3 +822,41 @@ pre code {
   .site-nav a { white-space: nowrap; }
   .brand { flex-shrink: 0; }
 }
+
+/* ---------- analytics consent banner (analytics.js) ---------- */
+/* A compact corner card on wide screens and a short bottom bar on phones. While it
+   is open the page reserves its measured height (--consent-banner-h on <html>) as
+   bottom padding, so it never covers content and the footer stays reachable. */
+.consent-banner {
+  position: fixed; right: 16px; bottom: 16px; left: 16px; z-index: 1000;
+  max-height: 35vh; overflow-y: auto; margin: 0; padding: 10px 12px;
+  background: var(--card); color: var(--ink); border: 1px solid var(--line-2);
+  border-radius: var(--radius); box-shadow: 0 18px 40px -22px rgba(0,0,0,.45);
+  font-size: .8rem; line-height: 1.35;
+}
+@media (min-width: 768px) {
+  .consent-banner { left: auto; width: 28rem; max-width: calc(100vw - 32px); padding: 12px 14px; font-size: .86rem; line-height: 1.4; }
+}
+/* the open phone menu is fixed at the top: keep it above the banner */
+@media (max-width: 860px) {
+  html.has-consent-banner .site-nav { max-height: calc(100vh - 60px - var(--consent-banner-h, 0px) - 32px); max-height: calc(100dvh - 60px - var(--consent-banner-h, 0px) - 32px); overflow-y: auto; }
+}
+html.has-consent-banner body { padding-bottom: calc(var(--consent-banner-h, 0px) + 16px); }
+.consent-banner:focus { outline: none; }
+.consent-banner:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.consent-banner p { margin: 0 0 8px; color: var(--ink-soft); }
+.consent-banner a { color: var(--accent); text-decoration: underline; text-underline-offset: 3px; }
+.consent-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.consent-btn {
+  flex: 1 1 100px; min-height: 36px; padding: 6px 12px; cursor: pointer;
+  font: 600 .86rem var(--font-body); color: var(--ink);
+  background: var(--paper-2); border: 1.5px solid var(--ink); border-radius: 8px;
+}
+.consent-btn:hover { background: var(--line); }
+.consent-btn:focus-visible, .linklike:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.linklike {
+  background: none; border: 0; padding: 0; margin: 0; cursor: pointer;
+  font: inherit; font-size: .9rem; color: var(--ink-soft); text-decoration: none;
+}
+.linklike:hover { color: var(--accent); }
+.legal-doc .consent-btn { flex: none; margin-top: 8px; }

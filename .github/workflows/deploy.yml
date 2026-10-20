@@ -134,6 +134,9 @@ jobs:
       - name: Browser tests (desktop and 375px, against fixture builds served by wrangler dev)
         if: env.BUILD_NEEDED != 'false'
         run: npm run test:e2e
+      - name: Analytics consent browser tests (fixture build, no network)
+        if: env.BUILD_NEEDED != 'false'
+        run: npm run e2e:analytics
 
       - name: Deploy skipped, no credentials
         if: env.BUILD_NEEDED != 'false' && env.DEPLOY_EVENT == 'true' && env.HAS_CREDENTIALS != 'true'

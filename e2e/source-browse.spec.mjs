@@ -7,7 +7,7 @@ const fixture = name => JSON.parse(readFileSync(new URL(`../fixtures/${name}.fix
 const directory = fixture('ovdb-directory-index');
 const modelRegistry = fixture('modelspec-registry-index');
 const sources = validateDirectoryIndex(directory, { allowFixture: true, requireFixture: true }).sources;
-const localAssets = new Set(['/', '/registry/', '/registry/sources/', '/script.js', '/style.css', '/registry.css', '/registry-search-ui.css', '/registry-search-ui.js', '/favicon.svg', ...modelRegistry.models.map(model => `/registry/models/${model.id}/`)]);
+const localAssets = new Set(['/', '/registry/', '/registry/sources/', '/script.js', '/analytics.js', '/style.css', '/registry.css', '/registry-search-ui.css', '/registry-search-ui.js', '/favicon.svg', ...modelRegistry.models.map(model => `/registry/models/${model.id}/`)]);
 const forbiddenPayloads = new Set(directory.sources.map(source => source.resource_url).filter(Boolean));
 const noOverflow = async page => expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 

@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Privacy — ModelSpec</title>
+  <meta name="description" content="How modelspec.org uses Google Analytics, only after you accept, and how to withdraw your choice." />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/style.css" />
+  <style>
+    .legal-doc { position: relative; z-index: 1; max-width: 820px; margin: 0 auto; padding: clamp(2rem, 5vw, 4rem) clamp(1.25rem, 5vw, 3rem) clamp(3rem, 7vw, 5rem); overflow-wrap: anywhere; }
+    .legal-doc h1 { font-size: clamp(2rem, 5vw, 3.2rem); margin: 0 0 .6rem; }
+    .legal-doc h2 { font-size: clamp(1.3rem, 3vw, 1.8rem); margin: 2.4rem 0 .6rem; scroll-margin-top: 90px; }
+    .legal-doc p { color: var(--ink-soft); max-width: 68ch; }
+    .legal-doc a { color: var(--accent); text-decoration: underline; text-underline-offset: 3px; }
+    .legal-doc code { font-family: var(--font-mono); font-size: .86em; background: var(--paper); border: 1px solid var(--line); padding: .08em .4em; border-radius: 6px; }
+    .legal-doc .effective { font-family: var(--font-mono); font-size: .8rem; color: var(--ink-faint); }
+  </style>
+</head>
+<body>
+  <div class="grain" aria-hidden="true"></div>
+
+  <header class="site-head">
+    <a class="brand" href="/" aria-label="ModelSpec home">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 40 40" width="28" height="28">
+          <circle cx="9" cy="20" r="4" fill="currentColor"/>
+          <circle cx="31" cy="8" r="3" fill="none" stroke="currentColor" stroke-width="2"/>
+          <circle cx="31" cy="20" r="3" fill="none" stroke="currentColor" stroke-width="2"/>
+          <circle cx="31" cy="32" r="3" fill="none" stroke="currentColor" stroke-width="2"/>
+          <path d="M13 20 L28 9 M13 20 L28 20 M13 20 L28 31" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/>
+        </svg>
+      </span>
+      <span class="brand-name">ModelSpec</span>
+    </a>
+    <button class="nav-toggle" id="navToggle" aria-label="Open menu" aria-expanded="false" aria-controls="siteNav">
+      <span class="nav-toggle-bars" aria-hidden="true"></span>
+    </button>
+    <nav class="site-nav" id="siteNav" aria-label="Primary">
+      <a href="/#why">Why</a>
+      <a href="/#concepts">Concepts</a>
+      <a href="/#example">Example</a>
+      <a href="/#consumers">Consumers</a>
+      <a href="/#scope">Scope</a>
+      <a href="/#status">Status</a>
+      <a href="/registry/">Registry</a>
+      <a href="https://directory.openvaultdb.com/#explore">OVDB Directory</a>
+      <a class="nav-cta" href="https://github.com/specscore/modelspec" rel="noopener">GitHub ↗</a>
+    </nav>
+  </header>
+
+  <main class="legal-doc" id="top">
+    <h1>Privacy</h1>
+    <p class="effective">Effective 20 October 2026</p>
+    <p>modelspec.org is a static documentation site with a registry of published models. It has no accounts, no advertising and does not sell data. This page says what happens when you visit it, and the one choice you control: analytics.</p>
+
+    <h2 id="google-loads">Fonts from Google</h2>
+    <p>To display the site, your browser loads fonts from Google Fonts (fonts.googleapis.com and fonts.gstatic.com) on every page, before and regardless of your analytics choice. For these loads Google receives your IP address and browser details. They set no analytics cookies and do not depend on your analytics choice.</p>
+
+    <h2 id="search">Registry search</h2>
+    <p>On the Registry page, text you type into the search field is sent to search.openvaultdb.com, the registry search service run for OpenVaultDB. It is not a Google host, and it does not depend on your analytics choice.</p>
+
+    <h2 id="analytics">Analytics</h2>
+    <p>Google Analytics, provided by Google Ireland Limited, runs on modelspec.org only if you choose &ldquo;Accept analytics&rdquo; in the analytics banner. Until you accept, no analytics script loads and no analytics cookie is set.</p>
+    <p>After you accept, Google Analytics sets first-party cookies (<code>_ga</code> and <code>_ga_&lt;id&gt;</code>, kept for up to two years) and receives the page address and the referring page without their query or fragment, browser and device information, and an approximate location that Google derives from your IP address. Google Signals and advertising features are switched off.</p>
+    <p>The legal basis is your consent. We keep Google Analytics event data for no longer than 14 months.</p>
+
+    <h2 id="withdraw">Your choice and withdrawing it</h2>
+    <p>Your choice is stored in your browser (<code>localStorage</code>, key <code>modelspec.analytics-consent.v1</code>). You can change it at any time with &ldquo;Analytics choices&rdquo; in the site footer or the button below. Choosing &ldquo;Reject&rdquo; stops analytics and deletes the <code>_ga</code> cookies on this site.</p>
+    <button type="button" class="consent-btn" data-analytics-choices hidden>Analytics choices</button>
+
+    <h2 id="contact">Questions</h2>
+    <p>Open an issue at <a href="https://github.com/specscore/modelspec/issues" rel="noopener">github.com/specscore/modelspec</a>.</p>
+  </main>
+
+  <footer class="site-foot">
+    <div class="foot-brand">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 40 40" width="22" height="22">
+          <circle cx="9" cy="20" r="4" fill="currentColor"/>
+          <circle cx="31" cy="8" r="3" fill="none" stroke="currentColor" stroke-width="2"/>
+          <circle cx="31" cy="20" r="3" fill="none" stroke="currentColor" stroke-width="2"/>
+          <circle cx="31" cy="32" r="3" fill="none" stroke="currentColor" stroke-width="2"/>
+          <path d="M13 20 L28 9 M13 20 L28 20 M13 20 L28 31" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/>
+        </svg>
+      </span>
+      <span class="brand-name">ModelSpec</span>
+    </div>
+    <nav aria-label="Footer">
+      <a href="/registry/">Registry</a>
+      <a href="https://directory.openvaultdb.com/#explore">OVDB Directory</a>
+      <a href="https://github.com/specscore/modelspec" rel="noopener">GitHub ↗</a>
+      <a href="https://openvaultdb.com/" rel="noopener">OpenVaultDB ↗</a>
+      <a href="https://specscore.md/" rel="noopener">SpecScore ↗</a>
+      <a href="/privacy/">Privacy</a>
+      <button type="button" class="linklike" data-analytics-choices hidden>Analytics choices</button>
+    </nav>
+    <p class="foot-legal">Apache License 2.0 · An open specification · Preview</p>
+  </footer>
+
+  <script src="/script.js" defer></script>
+  <script src="/analytics.js" defer></script>
+</body>
+</html>
