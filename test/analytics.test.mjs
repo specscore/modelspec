@@ -286,3 +286,20 @@ test("focus returns without scrolling, and a control focused under the banner is
   assert.deepEqual(e.opener.focusOpts, { preventScroll: true });
   assert.equal(e.docListeners.focusin, undefined);
 });
+
+test("focus that follows a pointer press is never scrolled; keyboard focus is again after a key press", () => {
+  const e = env();
+  create(e.win).start();
+  e.banner().rect = { top: 500, bottom: 700, height: 200 };
+  const under = new El("a");
+  under.rect = { top: 560, bottom: 600, height: 40 };
+  e.docListeners.pointerdown({});
+  e.docListeners.focusin({ target: under });
+  assert.equal(e.scrolls.length, 0);
+  e.docListeners.keydown({});
+  e.docListeners.focusin({ target: under });
+  assert.equal(e.scrolls.length, 1);
+  e.docListeners.touchstart({});
+  e.docListeners.focusin({ target: under });
+  assert.equal(e.scrolls.length, 1);
+});

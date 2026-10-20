@@ -139,7 +139,13 @@
     function hideBanner() {
       if (banner && banner.parentNode) banner.parentNode.removeChild(banner);
       banner = null;
-      if (doc.removeEventListener) doc.removeEventListener("focusin", keepFocusClear);
+      if (doc.removeEventListener) {
+        doc.removeEventListener("focusin", keepFocusClear);
+        doc.removeEventListener("pointerdown", pointerDown, true);
+        doc.removeEventListener("touchstart", pointerDown, true);
+        doc.removeEventListener("keydown", keyDown, true);
+      }
+      pointerActive = false;
       var root = doc.documentElement;
       if (observer) { observer.disconnect(); observer = null; }
       if (root && root.classList) root.classList.remove("has-consent-banner");
@@ -166,8 +172,19 @@
 
     // Focus not obscured (WCAG 2.4.11): while the banner is open, a control that
     // takes focus under it is scrolled clear of it. Scroll-padding alone cannot do this.
+    // Only keyboard-initiated focus is moved: scrolling between pointer-down and
+    // click would swallow the click, so focus that follows a pointer or touch
+    // press is left alone (the flag clears on the next key press or after 500 ms).
+    var pointerActive = false;
+    function pointerDown() {
+      pointerActive = true;
+      if (win.setTimeout) win.setTimeout(function () { pointerActive = false; }, 500);
+    }
+    function keyDown() { pointerActive = false; }
+
     function keepFocusClear(e) {
       var t = e.target;
+      if (pointerActive) return;
       if (!banner || !t || !t.getBoundingClientRect || (banner.contains && banner.contains(t))) return;
       var top = banner.getBoundingClientRect().top;
       var r = t.getBoundingClientRect();
@@ -214,7 +231,12 @@
       doc.body.insertBefore(banner, ref && ref.parentNode === doc.body ? ref : doc.body.firstChild);
       reserveSpace();
       if (win.ResizeObserver) { observer = new win.ResizeObserver(reserveSpace); observer.observe(banner); }
-      if (doc.addEventListener) doc.addEventListener("focusin", keepFocusClear);
+      if (doc.addEventListener) {
+        doc.addEventListener("focusin", keepFocusClear);
+        doc.addEventListener("pointerdown", pointerDown, true);
+        doc.addEventListener("touchstart", pointerDown, true);
+        doc.addEventListener("keydown", keyDown, true);
+      }
       if (focus) banner.focus({ preventScroll: true });
     }
 

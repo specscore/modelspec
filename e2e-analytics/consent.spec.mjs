@@ -161,7 +161,17 @@ const atCentre = locator => locator.evaluate(el => {
   return !!top && (top === el || el.contains(top)) && !top.closest('.consent-banner');
 });
 
-const scrollY = page => page.evaluate(() => Math.round(window.scrollY));
+// Smooth scrolling moves the page after the event that started it, so wait until it stops.
+async function scrollY(page) {
+  let last = -1;
+  for (let i = 0; i < 40; i++) {
+    const y = await page.evaluate(() => Math.round(window.scrollY));
+    if (y === last) return y;
+    last = y;
+    await page.waitForTimeout(120);
+  }
+  return last;
+}
 const reservedVar = page => page.evaluate(() => document.documentElement.style.getPropertyValue('--consent-banner-h'));
 const VIEWPORTS = [[320, 568], [375, 667], [390, 844], [1280, 800], [1366, 768]];
 const MODEL = '/registry/models/chinook/';
@@ -231,8 +241,10 @@ for (const [w, h] of VIEWPORTS) {
     for (const path of ['/', '/registry/', MODEL, '/registry/sources/', '/privacy/']) {
       await page.goto(`${ORIGIN}${path}`);
       await expect(banner(page)).toBeVisible();
-      for (let i = 0; i < 16; i++) {
+      // every control on the page, until Tab leaves the document
+      for (let i = 0; i < 150; i++) {
         await page.keyboard.press('Tab');
+        if (i > 0 && await page.evaluate(() => document.activeElement === document.body)) break;
         const state = await page.evaluate(() => {
           const el = document.activeElement;
           if (!el || el === document.body || el.closest('.consent-banner')) return { skip: true };
@@ -242,6 +254,81 @@ for (const [w, h] of VIEWPORTS) {
         });
         if (!state.skip) expect(state.ok, `${path} tab ${i + 1}: ${state.name}`).toBe(true);
       }
+    }
+  });
+}
+
+// A pointer press must reach click: focus that follows it may not scroll the page.
+async function pressNearBanner(page, locator, gap, tap) {
+  const pos = await locator.evaluate((el, gap) => {
+    el.scrollIntoView({ block: 'end', behavior: 'instant' });
+    const bannerTop = document.querySelector('.consent-banner').getBoundingClientRect().top;
+    window.scrollBy({ top: el.getBoundingClientRect().bottom - (bannerTop + gap), behavior: 'instant' });
+    window.__clicked = false;
+    el.addEventListener('click', e => { window.__clicked = true; e.preventDefault(); }, { once: true });
+    const r = el.getBoundingClientRect();
+    return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
+  }, gap);
+  const before = await scrollY(page);
+  if (tap) await page.touchscreen.tap(pos.x, pos.y); else await page.mouse.click(pos.x, pos.y);
+  await page.waitForTimeout(150);
+  expect(await page.evaluate(() => window.__clicked), 'click fired').toBe(true);
+  expect(await scrollY(page), 'page did not jump').toBe(before);
+}
+
+const NEAR_BANNER = [
+  ['/', page => page.locator('.hero-actions').first().getByRole('link').first()],
+  ['/', page => page.locator('.site-foot').getByRole('button', { name: 'Analytics choices' })],
+  ['/registry/', page => page.locator('#registry-search-query')],
+  ['/registry/', page => page.locator('[data-registry-search] button').first()],
+];
+
+test.describe('mouse click at 1280x800', () => {
+  for (const gap of [-4, 6]) {
+    test(`controls whose edge is ${gap} px from the banner still receive the click`, async ({ page }) => {
+      await page.setViewportSize({ width: 1280, height: 800 });
+      await boot(page);
+      for (const [path, pick] of NEAR_BANNER) {
+        await page.goto(`${ORIGIN}${path}`);
+        await expect(banner(page)).toBeVisible();
+        await pressNearBanner(page, pick(page), gap, false);
+      }
+    });
+  }
+});
+
+test.describe('touch tap at 375x667', () => {
+  test.use({ hasTouch: true, viewport: { width: 375, height: 667 } });
+  for (const gap of [-4, 6]) {
+    test(`controls whose edge is ${gap} px from the banner still receive the tap`, async ({ page }) => {
+      await boot(page);
+      for (const [path, pick] of NEAR_BANNER) {
+        await page.goto(`${ORIGIN}${path}`);
+        await expect(banner(page)).toBeVisible();
+        await pressNearBanner(page, pick(page), gap, true);
+      }
+    });
+  }
+});
+
+for (const [w, h] of [[320, 568], [375, 667]]) {
+  test(`the open phone menu stays above the banner and every link is hittable at ${w}x${h}`, async ({ page }) => {
+    await page.setViewportSize({ width: w, height: h });
+    await boot(page);
+    await page.goto(`${ORIGIN}/`);
+    await expect(banner(page)).toBeVisible();
+    // The fixture build puts a notice above the header and production has none; the
+    // menu is positioned against the header, so drop the notice to get the production geometry.
+    await page.evaluate(() => document.querySelector('.build-banner')?.remove());
+    await page.locator('#navToggle').click();
+    const nav = page.locator('#siteNav');
+    await expect(nav).toHaveClass(/open/);
+    const bannerTop = (await banner(page).boundingBox()).y;
+    const navBox = await nav.boundingBox();
+    expect(navBox.y + navBox.height).toBeLessThanOrEqual(bannerTop);
+    for (const link of await nav.getByRole('link').all()) {
+      await link.scrollIntoViewIfNeeded();
+      expect(await atCentre(link), await link.innerText()).toBe(true);
     }
   });
 }
