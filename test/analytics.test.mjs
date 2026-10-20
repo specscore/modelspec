@@ -303,3 +303,18 @@ test("focus that follows a pointer press is never scrolled; keyboard focus is ag
   e.docListeners.focusin({ target: under });
   assert.equal(e.scrolls.length, 1);
 });
+
+test("a long press never expires the pointer flag: only a key press re-enables focus scrolling", async () => {
+  const e = env();
+  create(e.win).start();
+  e.banner().rect = { top: 500, bottom: 700, height: 200 };
+  const under = new El("a");
+  under.rect = { top: 560, bottom: 600, height: 40 };
+  e.docListeners.touchstart({});
+  await new Promise((r) => setTimeout(r, 700));
+  e.docListeners.focusin({ target: under });
+  assert.equal(e.scrolls.length, 0);
+  e.docListeners.keydown({});
+  e.docListeners.focusin({ target: under });
+  assert.equal(e.scrolls.length, 1);
+});

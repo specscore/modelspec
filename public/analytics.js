@@ -174,11 +174,11 @@
     // takes focus under it is scrolled clear of it. Scroll-padding alone cannot do this.
     // Only keyboard-initiated focus is moved: scrolling between pointer-down and
     // click would swallow the click, so focus that follows a pointer or touch
-    // press is left alone (the flag clears on the next key press or after 500 ms).
+    // press is left alone. The flag has no timer (a long press must not expire it) and
+    // clears on the next key press, which starts every keyboard-driven focus.
     var pointerActive = false;
     function pointerDown() {
       pointerActive = true;
-      if (win.setTimeout) win.setTimeout(function () { pointerActive = false; }, 500);
     }
     function keyDown() { pointerActive = false; }
 

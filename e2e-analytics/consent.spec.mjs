@@ -270,7 +270,14 @@ async function pressNearBanner(page, locator, gap, tap) {
     return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
   }, gap);
   const before = await scrollY(page);
-  if (tap) await page.touchscreen.tap(pos.x, pos.y); else await page.mouse.click(pos.x, pos.y);
+  if (tap === 'held') {
+    // a press held for 700 ms: touch start, wait, touch end
+    const cdp = await page.context().newCDPSession(page);
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: pos.x, y: pos.y }] });
+    await page.waitForTimeout(700);
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  } else if (tap) await page.touchscreen.tap(pos.x, pos.y);
+  else await page.mouse.click(pos.x, pos.y);
   await page.waitForTimeout(150);
   expect(await page.evaluate(() => window.__clicked), 'click fired').toBe(true);
   expect(await scrollY(page), 'page did not jump').toBe(before);
@@ -300,14 +307,16 @@ test.describe('mouse click at 1280x800', () => {
 test.describe('touch tap at 375x667', () => {
   test.use({ hasTouch: true, viewport: { width: 375, height: 667 } });
   for (const gap of [-4, 6]) {
-    test(`controls whose edge is ${gap} px from the banner still receive the tap`, async ({ page }) => {
-      await boot(page);
-      for (const [path, pick] of NEAR_BANNER) {
-        await page.goto(`${ORIGIN}${path}`);
-        await expect(banner(page)).toBeVisible();
-        await pressNearBanner(page, pick(page), gap, true);
-      }
-    });
+    for (const mode of [true, 'held']) {
+      test(`controls whose edge is ${gap} px from the banner still receive the ${mode === 'held' ? 'held (700 ms) ' : ''}tap`, async ({ page }) => {
+        await boot(page);
+        for (const [path, pick] of NEAR_BANNER) {
+          await page.goto(`${ORIGIN}${path}`);
+          await expect(banner(page)).toBeVisible();
+          await pressNearBanner(page, pick(page), gap, mode);
+        }
+      });
+    }
   }
 });
 
