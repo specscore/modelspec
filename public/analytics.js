@@ -22,6 +22,7 @@
     var loaded = false;
     var banner = null;
     var opener = null;
+    var observer = null;
 
     function isLocal() {
       var h = loc.hostname;
@@ -139,16 +140,20 @@
       if (banner && banner.parentNode) banner.parentNode.removeChild(banner);
       banner = null;
       var root = doc.documentElement;
+      if (observer) { observer.disconnect(); observer = null; }
       if (root && root.classList) root.classList.remove("has-consent-banner");
+      if (root && root.style && root.style.removeProperty) root.style.removeProperty("--consent-banner-h");
     }
 
-    // While the banner is open the page scrolls in a box that ends above it
-    // (see "has-consent-banner" in style.css), so it never covers page content.
+    // While the banner is open the page reserves its measured height as bottom
+    // padding (--consent-banner-h on <html>, see style.css), so the banner never
+    // covers content and the footer stays reachable by scrolling.
     function reserveSpace() {
       var root = doc.documentElement;
       if (!root || !root.classList || !banner) return;
       root.classList.add("has-consent-banner");
-      if (root.style && banner.offsetHeight) root.style.setProperty("--consent-h", banner.offsetHeight + "px");
+      var h = banner.getBoundingClientRect ? banner.getBoundingClientRect().height : 0;
+      if (root.style && h) root.style.setProperty("--consent-banner-h", Math.ceil(h) + "px");
     }
 
     // After a choice focus goes to the footer "Analytics choices" control (or the
@@ -192,8 +197,12 @@
       banner.appendChild(row);
       // First in DOM order, so keyboard users reach it in a few Tab presses; it
       // is fixed to the bottom of the viewport by CSS.
-      doc.body.insertBefore(banner, doc.body.firstChild);
+      // Before the page header or main content (after any build notice), so keyboard
+      // users reach it in a few Tab presses; it is fixed to the bottom by CSS.
+      var ref = doc.body.querySelector ? doc.body.querySelector(":scope > header, :scope > main") : null;
+      doc.body.insertBefore(banner, ref && ref.parentNode === doc.body ? ref : doc.body.firstChild);
       reserveSpace();
+      if (win.ResizeObserver) { observer = new win.ResizeObserver(reserveSpace); observer.observe(banner); }
       if (focus) banner.focus();
     }
 

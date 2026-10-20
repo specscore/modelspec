@@ -148,33 +148,55 @@ test('privacy page discloses Google Fonts', async ({ page }) => {
   expect(text).toContain('fonts.gstatic.com');
 });
 
-const overlaps = (a, b) => a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
+// Scrolls a control to the middle of the viewport and reports whether it is what
+// sits at its centre point (not the banner).
+async function reachable(page, locator) {
+  await locator.evaluate(el => el.scrollIntoView({ block: 'center', behavior: 'instant' }));
+  return locator.evaluate(el => {
+    const r = el.getBoundingClientRect();
+    const top = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2);
+    return !!top && (top === el || el.contains(top)) && !top.closest('.consent-banner');
+  });
+}
 
-for (const [w, h] of [[1366, 768], [1280, 800], [390, 844], [320, 640]]) {
-  test(`banner covers no primary action at ${w}x${h}`, async ({ page }) => {
+const VIEWPORTS = [[320, 568], [375, 667], [390, 844], [1280, 800], [1366, 768]];
+for (const [w, h] of VIEWPORTS) {
+  test(`banner covers no primary control and no footer link at ${w}x${h}; space is released after a choice`, async ({ page }) => {
     await page.setViewportSize({ width: w, height: h });
     await boot(page);
     await page.goto(`${ORIGIN}/registry/`);
     await expect(banner(page)).toBeVisible();
-    let b = await banner(page).boundingBox();
+    const b = await banner(page).boundingBox();
     expect(b.x).toBeGreaterThanOrEqual(0);
     expect(b.x + b.width).toBeLessThanOrEqual(w);
+    expect(b.height).toBeLessThanOrEqual(h * 0.35 + 1);
+    if (w >= 768) expect(b.width).toBeLessThanOrEqual(448 + 1);
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(w);
-    const field = page.locator('#registry-search-query');
-    await field.scrollIntoViewIfNeeded();
-    const search = await field.boundingBox();
-    expect(overlaps(b, search), 'registry search field').toBe(false);
-    expect(search.y + search.height, 'search field is above the banner').toBeLessThanOrEqual(b.y);
+    expect(await page.evaluate(() => document.documentElement.style.getPropertyValue('--consent-banner-h'))).toBe(`${Math.ceil(b.height)}px`);
+    expect(await reachable(page, page.locator('#registry-search-query')), 'registry search field').toBe(true);
 
     await page.goto(`${ORIGIN}/`);
     await expect(banner(page)).toBeVisible();
-    const b2 = await banner(page).boundingBox();
     for (const link of await page.locator('.hero-actions').first().getByRole('link').all()) {
-      await link.scrollIntoViewIfNeeded();
-      const lb = await link.boundingBox();
-      expect(overlaps(b2, lb), await link.innerText()).toBe(false);
-      expect(lb.y + lb.height).toBeLessThanOrEqual(b2.y);
+      expect(await reachable(page, link), await link.innerText()).toBe(true);
     }
+    for (const name of ['Registry', 'Why']) {
+      const nav = page.locator('.site-nav').getByRole('link', { name, exact: true });
+      if (w >= 768) expect(await reachable(page, nav), name).toBe(true);
+    }
+
+    await page.evaluate(() => window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'instant' }));
+    const foot = page.locator('.site-foot');
+    expect(await reachable(page, foot.getByRole('link', { name: 'Privacy' })), 'footer Privacy').toBe(true);
+    expect(await reachable(page, foot.getByRole('button', { name: 'Analytics choices' })), 'footer Analytics choices').toBe(true);
+
+    await banner(page).getByRole('button', { name: 'Reject' }).click();
+    const state = await page.evaluate(() => ({
+      v: document.documentElement.style.getPropertyValue('--consent-banner-h'),
+      pad: getComputedStyle(document.body).paddingBottom,
+      cls: document.documentElement.classList.contains('has-consent-banner'),
+    }));
+    expect(state).toEqual({ v: '', pad: '0px', cls: false });
   });
 }
 
