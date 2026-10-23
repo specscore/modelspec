@@ -4,14 +4,18 @@ JSON Schemas for the ModelSpec JSON serialization
 ([spec/json-format.md](../spec/json-format.md),
 [decision 0010](../spec/decisions/0010-json-schema-publication.md)).
 
-This repository is the source of truth for the schema files. The website publishes
-the same bytes at stable URLs.
+This repository retains the schema source. MeaningGraph publishes the current
+DataModel schema with its own `$id`, title and description; the validation object
+is unchanged. Historical source copies keep their original `$id` values.
 
-| File | Stable URL | Purpose |
+| Source file | Current distribution | Purpose |
 |---|---|---|
-| `modelspec-ast-1.0-draft-2.schema.json` | `https://modelspec.org/schema/modelspec-ast-1.0-draft-2.schema.json` | The `1.0-draft-2` vocabulary: `records`, `fields`, `record`. |
-| `modelspec-ast-1.0-draft.schema.json` | `https://modelspec.org/schema/modelspec-ast-1.0-draft.schema.json` | The deprecated `1.0-draft` vocabulary: `entities`, `properties`, `entity`. An error in a new or updated model. Kept as the description of a document that a pin names, so that a model pinned in that vocabulary can still be checked. |
-| `modelspec-ast.schema.json` | `https://modelspec.org/schema/modelspec-ast.schema.json` | The latest vocabulary. Today it is the `1.0-draft-2` schema under another `$id`. |
+| `modelspec-ast-1.0-draft-2.schema.json` | `https://meaninggraph.io/schema/datamodel-ast-1.0-draft-2.schema.json` | The current `1.0-draft-2` vocabulary: `records`, `fields`, `record`. |
+| `modelspec-ast-1.0-draft.schema.json` | Repository-only; use a pinned Git commit | Deprecated `1.0-draft` shape for retained documents. |
+| `modelspec-ast.schema.json` | `https://meaninggraph.io/schema/datamodel-ast.schema.json` | Current vocabulary alias. |
+
+ModelSpec.org schema URLs are retired by the clean website redirect cutover;
+they now resolve to an HTML MeaningGraph page, not a machine schema.
 
 The schemas use JSON Schema draft 2020-12.
 

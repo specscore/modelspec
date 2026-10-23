@@ -22,6 +22,7 @@
 import { lstat, readdir, readFile } from 'node:fs/promises';
 import { join, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { CUTOVER_REDIRECTS, RECEIPT_FILE } from '../src/cutover.mjs';
 import { DEFAULTS, DEPLOY_DIR_NAME, ROOT } from '../src/config.mjs';
 import { MANIFEST_FILE, manifestProblems } from '../src/build-manifest.mjs';
 import { INDEXES, isProductionIndexUrl } from '../src/index-commits.mjs';
@@ -89,7 +90,7 @@ export async function distProblems(root = ROOT) {
   } catch {
     problems.push('public/ cannot be read');
   }
-  const expected = new Set([...publicFiles, BUILD_INFO_FILE, BUILD_MARKER, MANIFEST_FILE, '.assetsignore', 'registry-search.json', 'registry-compatibility.json']);
+  const expected = new Set([...publicFiles, BUILD_INFO_FILE, BUILD_MARKER, MANIFEST_FILE, '.assetsignore', 'registry-search.json', 'registry-compatibility.json', '_redirects', RECEIPT_FILE]);
   const stray = files.filter(file => !expected.has(file) && !file.startsWith('registry/') && !file.startsWith(`${SCHEMA_DIR}/`));
   if (stray.length > 0) problems.push(`it contains files that are not part of the site and would be deployed: ${stray.slice(0, 8).join(', ')}`);
   for (const file of publicFiles) {
@@ -99,6 +100,12 @@ export async function distProblems(root = ROOT) {
     }
     const [built, source] = await Promise.all([readFile(join(dist, file)), readFile(join(root, 'public', file))]);
     if (!same(built, source)) problems.push(`${file} differs from public/${file}: rebuild (the landing page and assets must be exactly public/)`);
+  }
+
+  // Redirect policy and its internal provenance copy are part of the guarded release.
+  for (const [name, wanted] of [['_redirects', CUTOVER_REDIRECTS], [RECEIPT_FILE, await readFile(join(dist, BUILD_INFO_FILE), 'utf8').catch(() => '')]]) {
+    const actual = await readFile(join(dist, name), 'utf8').catch(() => null);
+    if (actual !== wanted) problems.push(`${name} differs from the clean-cutover contract: rebuild`);
   }
 
   // schema/ is exactly the repository's schema/*.schema.json, byte for byte, and nothing else
