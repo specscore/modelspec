@@ -253,14 +253,16 @@ The JSON Schemas of this serialization are published in this repository under
 - `schema/modelspec-ast.schema.json`, the latest, which is the `1.0-draft-2` schema
   today
 
-The website exposes stable copies at:
+MeaningGraph publishes the current DataModel schema at:
 
-- `https://modelspec.org/schema/modelspec-ast-1.0-draft-2.schema.json`
-- `https://modelspec.org/schema/modelspec-ast-1.0-draft.schema.json`
-- `https://modelspec.org/schema/modelspec-ast.schema.json`
+- `https://meaninggraph.io/schema/datamodel-ast-1.0-draft-2.schema.json`
+- `https://meaninggraph.io/schema/datamodel-ast.schema.json` (current vocabulary)
 
-The repository copy is the source of truth. Website URLs are stable distribution
-endpoints for tools and documentation.
+The schema validation object is unchanged; its publication `$id`, title and
+description identify MeaningGraph DataModels. Existing source copies retain their
+historical `$id` values. The deprecated draft-1 schema is repository-only; pin its
+Git commit when it is needed. Following the clean website cutover, modelspec.org
+URLs redirect to MeaningGraph pages and are no longer JSON Schema endpoints.
 
 A JSON Schema describes a document's shape. It cannot say that a reference resolves or
 that a key names a field, so a document that passes the schema is not thereby a valid

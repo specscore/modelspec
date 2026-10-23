@@ -7,6 +7,7 @@
 
 import { copyFile, cp, lstat, mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { dirname, join, relative, resolve, sep } from 'node:path';
+import { CUTOVER_REDIRECTS, RECEIPT_FILE } from './cutover.mjs';
 import { OUT_NAMES } from './config.mjs';
 import { MANIFEST_FILE, writeManifest } from './build-manifest.mjs';
 import { registrySearchExport } from './registry-search-export.mjs';
@@ -29,7 +30,7 @@ export const ASSETSIGNORE_TEXT = `${BUILD_MARKER}\n${MANIFEST_FILE}\n`;
 const MARKER_TEXT = 'Created by the modelspec.org build (scripts/build.mjs). The next build may delete this directory and everything in it.\n';
 
 /** Names in public/ that the build writes itself; a clash would be silently overwritten. */
-const RESERVED = ['registry', SCHEMA_DIR, BUILD_INFO_FILE, BUILD_MARKER, MANIFEST_FILE, '.assetsignore', 'registry-compatibility.json'];
+const RESERVED = ['registry', SCHEMA_DIR, BUILD_INFO_FILE, BUILD_MARKER, MANIFEST_FILE, '.assetsignore', 'registry-compatibility.json', '_redirects', RECEIPT_FILE];
 
 /**
  * The output directory a build may delete and rewrite, or an error. It must be
@@ -190,6 +191,10 @@ export async function buildSite({ root, config, data, readOptions = {}, log = ()
   for (const name of schemaNames) await copyFile(join(resolve(root), SCHEMA_DIR, name), join(out, SCHEMA_DIR, name));
   await writeFile(join(out, BUILD_INFO_FILE), `${JSON.stringify(info, null, 2)}\n`);
   await writeFile(join(out, 'registry-search.json'), `${JSON.stringify(searchExport)}\n`);
+  if (config.production) {
+    await writeFile(join(out, '_redirects'), CUTOVER_REDIRECTS);
+    await writeFile(join(out, RECEIPT_FILE), `${JSON.stringify(info, null, 2)}\n`);
+  }
   // Last: the hash of every file above, checked again right before the upload (scripts/check-build.mjs).
   await writeManifest(out);
   log(`Built ${registryPages.size + 1} pages into ${out}`);

@@ -210,20 +210,11 @@ test('expectOk retries with growing waits and then fails red', async () => {
   assert.deepEqual(waits, [5000, 10000, 15000, 20000, 30000, 30000, 30000], 'about two and a half minutes in all');
 });
 
-test('the smoke check fetches the landing page, the registry pages and the published schema, each with the expectOk retries', async () => {
-  assert.deepEqual(SMOKE_PATHS, ['/', '/registry/', '/registry/sources/', '/schema/modelspec-ast.schema.json']);
+test('the smoke check preserves build provenance and verifies actual redirect responses', () => {
+  assert.deepEqual(SMOKE_PATHS, ['/build-info.json']);
   const script = readFileSync(new URL('../scripts/smoke-live.mjs', import.meta.url), 'utf8');
-  assert.match(script, /for \(const path of SMOKE_PATHS\) \{\s*const page = await expectOk\(\{ url: `\$\{SITE_URL\}\$\{path\}` \}\);/, 'every path goes through expectOk');
-  const url = `https://site.test${SMOKE_PATHS[3]}`;
-  const waits = [];
-  const sleep = async ms => { waits.push(ms); };
-  assert.deepEqual(await expectOk({fetch: fakeFetch({[url]: n => (n < 3 ? 503 : {$id: 'x'})}), url, sleep}), {ok: true, reason: ''});
-  assert.deepEqual(waits, [5000, 10000]);
-  waits.length = 0;
-  const missing = await expectOk({fetch: fakeFetch({}), url, sleep});
-  assert.equal(missing.ok, false, 'a schema that is not served fails the smoke check');
-  assert.match(missing.reason, /schema\/modelspec-ast\.schema\.json answered HTTP 404/);
-  assert.equal(waits.length, 7);
+  assert.match(script, /await verifyCutover\(SITE_URL\)/);
+  assert.match(script, /verifyLive/);
 });
 
 test('verifyLive waits with growing waits too', async () => {

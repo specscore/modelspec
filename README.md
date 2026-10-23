@@ -1,3 +1,7 @@
+> **Clean website cutover:** modelspec.org now redirects public URLs to MeaningGraph. DataModels are a native MeaningGraph resource, not a separate public product. Registry URLs go to `https://meaninggraph.io/registry/models/`; other URLs (including retired schemas/feeds) go to `https://meaninggraph.io/`. Old fragments, document paths and API responses are intentionally not preserved, following the founder’s explicit instruction “Don’t worry about legacy - clean cutover”. Only `/build-info.json` remains a deployment-provenance endpoint. The source format/library is retained in Git; the old website is not the public entry point.
+
+The production build writes Cloudflare `_redirects` plus an internal copy of build provenance. Fixture builds retain the old renderer solely for source-format regression tests and remain refused by the deployment guard. The guard checks the exact redirect policy and receipt bytes; the live smoke requires actual HTTP301 responses and healthy MeaningGraph destinations. Deploy through the existing workflow. Rollback is a normal deployment of the prior source/artifact; already cached permanent redirects may persist in clients. No DNS change is needed.
+
 # ModelSpec format within MeaningGraph
 
 **Define your application data model once.**
@@ -280,7 +284,7 @@ GraphSpec consumes ModelSpec for structure; ModelSpec does not depend on GraphSp
 - [spec/](spec/README.md): the ModelSpec language specification.
 - [docs/](docs/README.md): architecture, [OpenVaultDB](https://openvaultdb.com/) integration, SpecScore integration, and catalog notes.
 - [examples/](examples/README.md): example ModelSpec modules.
-- [schema/](schema/README.md): the JSON Schemas of the JSON form, also served at `https://modelspec.org/schema/`.
+- [schema/](schema/README.md): the JSON Schemas of the JSON form, distributed for current DataModels under `https://meaninggraph.io/schema/`.
 - `public/`, `src/`, `scripts/`, `tools/`, `fixtures/`, `test/`, `e2e/`: the [modelspec.org](#website-modelspecorg) site and its build.
 
 ## Authored And Machine Formats
@@ -340,9 +344,9 @@ Model pages preserve related source evidence, filtered by explicit model ID.
 These metadata links do not establish native-field bindings or activate source
 access. Source metadata and pinned-index validation remain unchanged.
 
-**JSON Schemas.** Every build, production or not, copies each `schema/*.schema.json`
-of this repository, byte for byte, to `schema/<same name>` in its output, so the
-deployed site answers `https://modelspec.org/schema/<name>`
+**JSON Schemas.** Builds retain the source schema copies for regression checks, but
+the production redirect policy retires their ModelSpec.org URLs. Use the current
+MeaningGraph DataModel endpoints documented in [schema/README.md](schema/README.md).
 ([decision 0010](spec/decisions/0010-json-schema-publication.md)). Other files of
 `schema/`, `schema/README.md` among them, are not published. A build fails if
 `schema/` holds no `*.schema.json` file, and `public/schema` is refused as a clash.
