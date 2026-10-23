@@ -461,52 +461,46 @@
       </div>
     </section>
 
-    <!-- REGISTRY: where ModelSpec sits next to the OVDB Directory and MeaningGraph.
+    <!-- REGISTRY: MeaningGraph contains logical models and semantic definitions; the Directory lists physical databases.
          No .reveal here: that class is opacity 0 until script.js runs, and this copy must read without JavaScript. -->
     <section id="layers" class="band band--alt band--tight">
       <div class="band-head">
-        <p class="section-label">Registry — new, draft</p>
-        <h2>Where it is, what shape it has, what it means.</h2>
+        <p class="section-label">MeaningGraph registry</p>
+        <h2>Logical models, shared meanings, physical databases.</h2>
         <p class="section-sub">
-          One database can be described by three layers, each answering one question.
-          ModelSpec is the middle one, and the <a href="/registry/">model registry</a> is
-          its public list of published models. The registry is new and still a draft.
+          MeaningGraph is the open registry for logical DataModels and semantic definitions.
+          Models can stand alone or optionally link to shared meanings. ModelSpec remains an
+          independently usable technical format; the <a href="/registry/">existing model pages</a>
+          stay available here for compatibility.
         </p>
       </div>
 
       <div class="layers-grid">
         <article class="card">
-          <h3>ModelSpec</h3>
+          <h3>MeaningGraph</h3>
           <p>
-            The shape of the data (record types, fields, types and links), written once,
-            whatever stores it.
-            <a href="/registry/">Browse the models</a>
+            Logical models describe record types, fields, keys and relationships.
+            Semantic definitions describe domain concepts and vocabularies; links between
+            models and meanings are optional.
+            <a href="https://meaninggraph.io/registry/" rel="noopener">Browse MeaningGraph</a>
           </p>
         </article>
 
         <article class="card">
           <h3>OVDB Directory</h3>
           <p>
-            Where the data is, who publishes it and how to reach it.
+            Physical databases, their engines and deployments: where the data is,
+            who publishes it and how to reach it.
             <a href="https://directory.openvaultdb.com" rel="noopener">directory.openvaultdb.com&nbsp;↗</a>
-          </p>
-        </article>
-
-        <article class="card">
-          <h3>MeaningGraph</h3>
-          <p>
-            What the data means. Meanings are attached to ModelSpec fields, so one
-            description serves every copy of the same model.
-            <a href="https://meaninggraph.io" rel="noopener">meaninggraph.io&nbsp;↗</a>
           </p>
         </article>
       </div>
 
       <p class="layers-note">
-        Chinook is in all three:
-        <a href="https://directory.openvaultdb.com/ovdb/demodb.dev/chinook/" rel="noopener">listed in the OVDB Directory</a>,
-        <a href="/registry/models/chinook/">modelled in ModelSpec</a>,
-        <a href="https://meaninggraph.io/graphs/chinook/" rel="noopener">explained in MeaningGraph</a>.
+        Explore Chinook's
+        <a href="/registry/models/chinook/">logical model in the retained ModelSpec format view</a>,
+        <a href="https://meaninggraph.io/graphs/chinook/" rel="noopener">semantic definitions in MeaningGraph</a>,
+        and <a href="https://directory.openvaultdb.com/ovdb/demodb.dev/chinook/" rel="noopener">physical database in the OVDB Directory</a>.
       </p>
 
       <h3 class="layers-why-title">Why a shared model helps</h3>

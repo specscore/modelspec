@@ -186,7 +186,7 @@ test('the landing page: other base URLs replace only the two default addresses, 
   const html = renderLanding(template, ctx);
   assert.match(html, /href="http:\/\/127\.0\.0\.1:4011\/ovdb\/demodb\.dev\/chinook\/"/);
   assert.match(html, /href="http:\/\/127\.0\.0\.1:4010\/graphs\/chinook\/"/);
-  assert.match(html, /href="http:\/\/127\.0\.0\.1:4010" rel="noopener">meaninggraph\.io/);
+  assert.match(html, /href="http:\/\/127\.0\.0\.1:4010\/registry\/" rel="noopener"/);
   assert.doesNotMatch(html, /https:\/\/meaninggraph\.io|https:\/\/directory\.openvaultdb\.com/);
   assert.match(html, /href="https:\/\/openvaultdb\.com\/"/, 'other links are untouched');
   assert.match(html, /href="\/registry\/models\/chinook\/"/);
@@ -194,16 +194,14 @@ test('the landing page: other base URLs replace only the two default addresses, 
   assert.match(html, /<meta name="modelspec-build-source" content="fixture">\n<\/head>/);
 });
 
-test('the landing page has the nav link, the footer link and the section with its three links and three reasons', () => {
+test('the landing page retains compatibility links and presents one registry beside the physical Directory', () => {
   const nav = /<nav class="site-nav"[\s\S]*?<\/nav>/.exec(template)[0];
   const footer = /<footer class="site-foot">[\s\S]*?<\/footer>/.exec(template)[0];
   assert.match(nav, /<a href="\/registry\/">Registry<\/a>/);
   assert.match(footer, /<a href="\/registry\/">Registry<\/a>/);
   const section = /<section id="layers"[\s\S]*?<\/section>/.exec(template)[0];
-  assert.match(section, /Where it is, what shape it has, what it means\./);
-  assert.ok(section.indexOf('<h3>ModelSpec</h3>') < section.indexOf('<h3>OVDB Directory</h3>'));
-  assert.match(section, /Chinook is in all three:/);
-  for (const href of ['https://directory.openvaultdb.com/ovdb/demodb.dev/chinook/', '/registry/models/chinook/', 'https://meaninggraph.io/graphs/chinook/', 'https://directory.openvaultdb.com"', 'https://meaninggraph.io"']) {
+  assert.deepEqual([...section.matchAll(/<h3>(.*?)<\/h3>/g)].map(match => match[1]), ['MeaningGraph', 'OVDB Directory']);
+  for (const href of ['https://directory.openvaultdb.com/ovdb/demodb.dev/chinook/', '/registry/models/chinook/', 'https://meaninggraph.io/graphs/chinook/', 'https://directory.openvaultdb.com"', 'https://meaninggraph.io/registry/"']) {
     assert.ok(section.includes(`href="${href.replace(/"$/, '')}"`), href);
   }
   assert.equal((section.match(/<li><strong>/g) ?? []).length, 3);

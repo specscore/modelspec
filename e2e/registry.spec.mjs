@@ -242,19 +242,18 @@ test('Databases using this model: the Chinook database, with canonical URL, publ
   await noHorizontalScroll(page);
 });
 
-test('the landing page: the new section with its three links, the Chinook sentence and the three reasons', async ({ page }) => {
+test('the landing page keeps one registry, the physical Directory and the legacy model links', async ({ page }) => {
   await page.goto('/');
   const layers = page.locator('#layers');
   await layers.scrollIntoViewIfNeeded();
-  await expect(layers.getByRole('heading', { level: 2 })).toHaveText('Where it is, what shape it has, what it means.');
-  await expect(layers.locator('.layers-grid h3')).toHaveText(['ModelSpec', 'OVDB Directory', 'MeaningGraph']);
+  await expect(layers.getByRole('heading', { level: 2 })).toHaveText('Logical models, shared meanings, physical databases.');
+  await expect(layers.locator('.layers-grid h3')).toHaveText(['MeaningGraph', 'OVDB Directory']);
   await expect(layers.getByRole('link', { name: 'directory.openvaultdb.com' })).toHaveAttribute('href', DIRECTORY_BASE_URL);
-  await expect(layers.getByRole('link', { name: 'meaninggraph.io' })).toHaveAttribute('href', MEANINGGRAPH_BASE_URL);
+  await expect(layers.getByRole('link', { name: 'Browse MeaningGraph' })).toHaveAttribute('href', `${MEANINGGRAPH_BASE_URL}/registry/`);
   const note = layers.locator('.layers-note');
-  await expect(note).toContainText('Chinook is in all three');
-  await expect(note.getByRole('link', { name: 'listed in the OVDB Directory' })).toHaveAttribute('href', `${DIRECTORY_BASE_URL}${database.directoryPath}`);
-  await expect(note.getByRole('link', { name: 'modelled in ModelSpec' })).toHaveAttribute('href', MODEL_PAGE);
-  await expect(note.getByRole('link', { name: 'explained in MeaningGraph' })).toHaveAttribute('href', `${MEANINGGRAPH_BASE_URL}/graphs/chinook/`);
+  await expect(note.getByRole('link', { name: 'physical database in the OVDB Directory' })).toHaveAttribute('href', `${DIRECTORY_BASE_URL}${database.directoryPath}`);
+  await expect(note.getByRole('link', { name: 'logical model in the retained ModelSpec format view' })).toHaveAttribute('href', MODEL_PAGE);
+  await expect(note.getByRole('link', { name: 'semantic definitions in MeaningGraph' })).toHaveAttribute('href', `${MEANINGGRAPH_BASE_URL}/graphs/chinook/`);
   await expect(layers.locator('.layers-why li strong')).toHaveText(['Start from a published model.', 'Recognise the same data in different places.', 'Run many databases of one model.']);
   // nothing in the new section reaches past the viewport (the hero above it already does on a phone, as before)
   const overflow = await layers.evaluate(el => [...el.querySelectorAll('*')].filter(e => e.getBoundingClientRect().right > window.innerWidth + 0.5).length);
@@ -263,7 +262,7 @@ test('the landing page: the new section with its three links, the Chinook senten
 
 test('the landing section opens the Chinook model page', async ({ page }) => {
   await page.goto('/');
-  await page.locator('#layers .layers-note').getByRole('link', { name: 'modelled in ModelSpec' }).click();
+  await page.locator('#layers .layers-note').getByRole('link', { name: 'logical model in the retained ModelSpec format view' }).click();
   await expect(page).toHaveURL(new RegExp(`${MODEL_PAGE}$`));
   await expect(page.locator('#records')).toBeVisible();
 });
@@ -339,7 +338,7 @@ test.describe('without JavaScript', () => {
     }
     await expect(layers.locator('.layers-note')).toBeVisible();
     await expect(layers.locator('.layers-why li')).toHaveCount(3);
-    await expect(layers.getByRole('link', { name: 'modelled in ModelSpec' })).toBeVisible();
+    await expect(layers.getByRole('link', { name: 'logical model in the retained ModelSpec format view' })).toBeVisible();
   });
 
   test('the registry pages are static HTML', async ({ page }) => {

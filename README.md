@@ -66,15 +66,17 @@ earlier spelling (`modelspec-org/registry` at `a7325ea`, `meaninggraph/registry`
 
 ## Shape, Not Meaning
 
-ModelSpec answers one question about data: what shape it has. MeaningGraph says what
-the data means, and [OpenVaultDB](https://openvaultdb.com/) says where it is. A model
-declares names, types, keys, and references; it does not say what a name means or
-which database holds the data. See
+ModelSpec answers one question about data: what shape it has. A model declares
+names, types, keys, and references; it does not require semantic annotations or
+identify a physical database. The format remains independently usable. See
 [decision 0017](spec/decisions/0017-one-question-per-layer.md).
 
-Published models are listed in the
-[ModelSpec registry](https://github.com/modelspec-org/registry). Shared definitions of
-what data means belong to MeaningGraph, not to a ModelSpec catalog.
+[MeaningGraph](https://meaninggraph.io/registry/) is the public umbrella registry
+for logical DataModels and semantic definitions. Models can stand alone or
+optionally link to shared meanings. The
+[legacy ModelSpec catalog](https://github.com/modelspec-org/registry) and this
+site's model pages remain compatibility sources during migration. Physical
+engines and deployments belong to the [OpenVaultDB Directory](https://directory.openvaultdb.com/).
 
 ## Why ModelSpec Exists
 
@@ -308,8 +310,9 @@ dist/  =  copy of public/            the landing page, style.css, script.js, fav
        +  .assetsignore              keeps the marker out of the upload
 ```
 
-The registry is new and a draft. `/registry/` lists every model of the
-[ModelSpec registry](https://github.com/modelspec-org/registry); each model page
+MeaningGraph is the public registry. This site's retained `/registry/` view lists
+models from the [legacy ModelSpec catalog](https://github.com/modelspec-org/registry)
+for compatibility; each model page
 shows its record types and their fields (anchors `#record-<Name>` and
 `#field-<Record>-<member>`, under the section `#records`), the components it declares
 with their fields (`#component-<Name>`, `#field-<Component>-<Field>`) and the
@@ -518,9 +521,10 @@ check the links in its journey test.
 
 ## Status
 
-ModelSpec is in early specification development. The current work preserves and
-improves the original storage-neutral data-model design while positioning it as an
-independent open specification for application data models.
+ModelSpec is in early specification development. It remains an independently
+usable open format for storage-neutral logical data models. MeaningGraph is the
+public umbrella product and registry for logical DataModels and semantic
+definitions; links between models and meanings are optional.
 
 ## License
 
@@ -543,9 +547,9 @@ This repository remains the specification and legacy documentation/URL surface.
 The consolidated native registry and exact-version pages are implemented in the
 MeaningGraph website; the checked-in compatibility notice links to that umbrella.
 No domain redirect, page deletion or schema transformation occurs here. Existing
-registry pages remain available during the source/consumer migration. Releasing
-these notices is coordinated with the MeaningGraph site and the writer-fence
-runbook; this branch performs no production publish.
+model pages remain available during the source/consumer migration. ModelSpec's
+technical format can be used independently, without registry membership or
+semantic annotations.
 
 Physical engines and deployment/environment discovery remain separate from
 logical DataModels and belong to OpenVaultDB Directory integrations. A DataModel
