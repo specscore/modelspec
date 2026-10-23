@@ -33,7 +33,7 @@ test('landing, Registry in the header, the registry, the Chinook model page', as
   await openNav(page);
   await page.locator('.site-nav').getByRole('link', { name: 'Registry' }).click();
   await expect(page).toHaveURL(/\/registry\/$/);
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('The ModelSpec registry');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Data models · MeaningGraph');
   await expect(page.locator('.reg-draft')).toContainText('The registry is new');
   await expect(page.locator('.reg-draft').getByRole('link', { name: 'github.com/modelspec-org/registry' })).toHaveAttribute('href', 'https://github.com/modelspec-org/registry');
   const card = page.locator('.reg-model');
