@@ -20,7 +20,7 @@ test('a build is public/ plus registry/ plus schema/ plus build-info.json, and t
     const result = await buildSite({ root, config: { ...productionConfig(root), searchUi: searchUiConfig({}, { production: true, fixture: false }) }, data });
     assert.equal(result.pages, 4);
     const dist = join(root, 'dist');
-    assert.deepEqual((await readdir(dist)).sort(), ['.assetsignore', MANIFEST_FILE, BUILD_MARKER, 'analytics.js', 'build-info.json', 'favicon.svg', 'index.html', 'privacy', 'registry', 'registry-search-ui.css', 'registry-search-ui.js', 'registry-search.json', 'registry.css', 'schema', 'script.js', 'style.css']);
+    assert.deepEqual((await readdir(dist)).sort(), ['.assetsignore', MANIFEST_FILE, BUILD_MARKER, 'analytics.js', 'build-info.json', 'favicon.svg', 'index.html', 'privacy', 'registry', 'registry-compatibility.json', 'registry-search-ui.css', 'registry-search-ui.js', 'registry-search.json', 'registry.css', 'schema', 'script.js', 'style.css']);
     assert.equal(await read(dist, 'index.html'), await read(root, 'public', 'index.html'));
     for (const file of ['style.css', 'script.js', 'analytics.js', 'favicon.svg', 'registry.css']) assert.equal(await read(dist, file), await read(root, 'public', file));
     assert.ok(existsSync(join(dist, 'registry', 'index.html')));

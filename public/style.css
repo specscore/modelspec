@@ -860,3 +860,7 @@ html.has-consent-banner body { padding-bottom: calc(var(--consent-banner-h, 0px)
 }
 .linklike:hover { color: var(--accent); }
 .legal-doc .consent-btn { flex: none; margin-top: 8px; }
+
+.format-notice {max-width:72rem;margin:1rem auto;padding:1rem 1.25rem;border:1px solid currentColor;border-radius:.5rem;line-height:1.6;}
+.format-notice a {text-decoration:underline;}
+@media(max-width:600px){.format-notice{margin:1rem;}}

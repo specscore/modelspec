@@ -47,14 +47,15 @@ test('model, record type and inherited component field have distinct real destin
   } finally { await cleanup(); }
 });
 
-test('component cycles and unresolved component references fail export', () => {
+test('component values can be recursive while unknown bare components still fail', () => {
   const cyclic = modelspecWithComponents();
   cyclic.models[0].entities[0].use = [];
-  assert.throws(() => registrySearchExport(sampleData({modelspec: cyclic}), config()), /cyclic component reference/);
+  const result = registrySearchExport(sampleData({modelspec: cyclic}), config());
+  assert.ok(result.documents.some(doc => doc.identifier === 'meta'));
   const unresolved = modelspecWithComponents();
   unresolved.models[0].entities[0].use = [];
   unresolved.models[0].components[0].fields[2].component = 'Missing';
-  assert.throws(() => registrySearchExport(sampleData({modelspec: unresolved}), config()), /unresolved component Missing/);
+  assert.throws(() => registrySearchExport(sampleData({modelspec: unresolved}), config()), /unresolved local name Missing/);
 });
 
 test('registry export excludes inactive Directory sources and production search uses only the reviewed VM pilot', () => {

@@ -11,6 +11,7 @@
 
 import { readFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
+import {sourceName, conceptName, referenceName} from './model-compatibility.mjs';
 
 export const MODELSPEC_FORMAT = 'modelspec-registry/draft-1';
 export const MEANINGGRAPH_FORMAT = 'meaning-registry/draft-1';
@@ -24,8 +25,6 @@ export class IndexError extends Error {
 }
 
 const ID = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
-const NAME = /^[A-Za-z0-9_]+$/;
-const REFERENCE = /^[A-Za-z0-9_]+(?:\.[A-Za-z0-9_]+)*$/;
 const HANDLE = /^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})$/;
 const COMMIT = /^[0-9a-f]{40}$/;
 const CHECKSUM = /^sha256:[0-9a-f]{64}$/;
@@ -213,11 +212,13 @@ function fieldsKey(record) {
 
 function property(value, path, entityName, seen) {
   object(value, path);
-  const name = pattern(value.name, `${path}.name`, NAME, 'letters, digits and underscores');
+  const name = value.name;
+  if (!sourceName(name)) fail(`${path}.name`, 'must be a nonblank source field name');
   if (seen.has(name)) fail(`${path}.name`, `duplicates property ${entityName}.${name}`);
   seen.add(name);
-  const references = value.references === undefined ? undefined : pattern(value.references, `${path}.references`, REFERENCE, 'an entity name');
-  const component = value.component === undefined ? undefined : pattern(value.component, `${path}.component`, REFERENCE, 'a component name');
+  const references = value.references;
+  const component = value.component;
+  for (const [key, ref] of [['references', references], ['component', component]]) if (ref !== undefined && !referenceName(ref)) fail(`${path}.${key}`, 'must be a bare or module-qualified source name');
   for (const flag of ['required', 'key']) {
     if (value[flag] !== undefined && typeof value[flag] !== 'boolean') fail(`${path}.${flag}`, 'must be true or false');
   }
@@ -226,21 +227,29 @@ function property(value, path, entityName, seen) {
 
 function entity(value, path, seen) {
   object(value, path);
-  const name = pattern(value.name, `${path}.name`, NAME, 'letters, digits and underscores');
+  const name = value.name;
+  if (!conceptName(name)) fail(`${path}.name`, 'must be a nonblank source record name without a dot');
   if (seen.has(name)) fail(`${path}.name`, `duplicates entity ${name}`);
   seen.add(name);
   const names = new Set();
   const members = fieldsKey(value);
   const properties = list(value[members], `${path}.${members}`).map((p, i) => property(p, `${path}.${members}[${i}]`, name, names));
-  const key = value.key === undefined ? [] : list(value.key, `${path}.key`).map((k, i) => text(k, `${path}.key[${i}]`));
+  const key = value.key === undefined ? [] : list(value.key, `${path}.key`).map((k, i) => {
+    if (!sourceName(k)) fail(`${path}.key[${i}]`, 'must be a nonblank source field name');
+    return k;
+  });
   // The components the entity embeds (`use`).
-  const use = value.use === undefined ? [] : list(value.use, `${path}.use`).map((u, i) => pattern(u, `${path}.use[${i}]`, REFERENCE, 'a component name'));
+  const use = value.use === undefined ? [] : list(value.use, `${path}.use`).map((u, i) => {
+    if (!referenceName(u)) fail(`${path}.use[${i}]`, 'must be a bare or module-qualified source name');
+    return u;
+  });
   return { name, key, use, properties };
 }
 
 function component(value, path, seen) {
   object(value, path);
-  const name = pattern(value.name, `${path}.name`, NAME, 'letters, digits and underscores');
+  const name = value.name;
+  if (!conceptName(name)) fail(`${path}.name`, 'must be a nonblank source component name without a dot');
   if (seen.has(name)) fail(`${path}.name`, `duplicates component ${name}`);
   seen.add(name);
   const names = new Set();
@@ -278,6 +287,7 @@ export function validateModelspecIndex(json, options = {}) {
     }
     return {
       id,
+      ...(m.module === undefined ? {} : {module: conceptName(m.module) ? m.module : fail(`${at}.module`, 'must be a nonblank module alias without a dot')}),
       title: text(m.title, `${at}.title`),
       description: text(m.description, `${at}.description`),
       status: text(m.status, `${at}.status`),

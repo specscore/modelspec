@@ -10,6 +10,7 @@ import { dirname, join, relative, resolve, sep } from 'node:path';
 import { OUT_NAMES } from './config.mjs';
 import { MANIFEST_FILE, writeManifest } from './build-manifest.mjs';
 import { registrySearchExport } from './registry-search-export.mjs';
+import {compatibilityReport} from './model-compatibility.mjs';
 import { renderSearchPanel } from './registry-search-ui.mjs';
 import { loadIndex, validateDirectoryIndex, validateMeaningGraphIndex, validateModelspecIndex } from './indexes.mjs';
 import { SCHEMA_DIR, schemaFileNames } from './schema-files.mjs';
@@ -28,7 +29,7 @@ export const ASSETSIGNORE_TEXT = `${BUILD_MARKER}\n${MANIFEST_FILE}\n`;
 const MARKER_TEXT = 'Created by the modelspec.org build (scripts/build.mjs). The next build may delete this directory and everything in it.\n';
 
 /** Names in public/ that the build writes itself; a clash would be silently overwritten. */
-const RESERVED = ['registry', SCHEMA_DIR, BUILD_INFO_FILE, BUILD_MARKER, MANIFEST_FILE, '.assetsignore'];
+const RESERVED = ['registry', SCHEMA_DIR, BUILD_INFO_FILE, BUILD_MARKER, MANIFEST_FILE, '.assetsignore', 'registry-compatibility.json'];
 
 /**
  * The output directory a build may delete and rewrite, or an error. It must be
@@ -149,6 +150,10 @@ export async function buildSite({ root, config, data, readOptions = {}, log = ()
   const out = await prepareOutput(root, config.outName);
   const publicDir = join(resolve(root), 'public');
   const indexes = validateSourceModelTargets(data ?? await loadData(config, readOptions));
+  // Validate all local targets and bound the legacy view before rendering or
+  // writing output. Diagnostics are a separate artifact, not a v1 wire change.
+  const compatibility = compatibilityReport(indexes.modelspec.models);
+  const searchExport = registrySearchExport(indexes, config, config.requireSearchPins === true);
 
   const template = await readFile(join(publicDir, 'index.html'), 'utf8');
   for (const name of RESERVED) {
@@ -162,7 +167,7 @@ export async function buildSite({ root, config, data, readOptions = {}, log = ()
   assertChinookEverywhere(indexes);
   const schemaNames = await schemaFileNames(root);
   const shell = extractShell(template);
-  const registryPages = renderRegistryPages(indexes, config, shell);
+  const registryPages = renderRegistryPages(indexes, {...config, compatibilityReports: new Map(compatibility.models.map(row => [row.id, row]))}, shell);
   const searchPanel = renderSearchPanel('modelspec', config.searchUi, '/registry/');
   if (searchPanel && !registryPages.get('registry/index.html').includes('<section class="reg-section" id="models"')) throw new Error('Registry page has no search insertion point');
   if (searchPanel) registryPages.set('registry/index.html', registryPages.get('registry/index.html').replace('<section class="reg-section" id="models"', `${searchPanel}<section class="reg-section" id="models"`));
@@ -174,6 +179,7 @@ export async function buildSite({ root, config, data, readOptions = {}, log = ()
   // The marker is not a page: keep it out of what wrangler uploads (build-info.json is served on purpose).
   await writeFile(join(out, '.assetsignore'), ASSETSIGNORE_TEXT);
   await cp(publicDir, out, { recursive: true });
+  await writeFile(join(out, 'registry-compatibility.json'), `${JSON.stringify(compatibility, null, 2)}\n`);
   await writeFile(join(out, 'index.html'), landing);
   for (const [path, html] of registryPages) {
     await mkdir(dirname(join(out, path)), { recursive: true });
@@ -183,7 +189,7 @@ export async function buildSite({ root, config, data, readOptions = {}, log = ()
   await mkdir(join(out, SCHEMA_DIR));
   for (const name of schemaNames) await copyFile(join(resolve(root), SCHEMA_DIR, name), join(out, SCHEMA_DIR, name));
   await writeFile(join(out, BUILD_INFO_FILE), `${JSON.stringify(info, null, 2)}\n`);
-  await writeFile(join(out, 'registry-search.json'), `${JSON.stringify(registrySearchExport(indexes, config, config.requireSearchPins === true))}\n`);
+  await writeFile(join(out, 'registry-search.json'), `${JSON.stringify(searchExport)}\n`);
   // Last: the hash of every file above, checked again right before the upload (scripts/check-build.mjs).
   await writeManifest(out);
   log(`Built ${registryPages.size + 1} pages into ${out}`);

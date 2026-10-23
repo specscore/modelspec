@@ -1,0 +1,563 @@
+{
+  "format": "modelspec-reader-language-fixtures/v1",
+  "reference": {
+    "module": "github.com/modelspec-org/cli",
+    "commit": "21c631470d1564b17eb7d68e63e7d052f54291c6",
+    "profile": "ProfileDefault",
+    "adapter": "meaninggraph/registry@b034db05dc74c13e2503d5135d4b4f1f814077bf",
+    "registration_metadata": "synthetic; not admission or publisher provenance"
+  },
+  "cases": [
+    {
+      "name": "qualified-original",
+      "modules": [
+        {
+          "alias": "Orders",
+          "hcl": "record \"Order\" {\n use = [\"Common.Left\", \"Common.Right\"]\n key = [\"id\"]\n field \"id\" { type = \"int\" }\n field \"customer\" { record = \"Common.Customer\" }\n field \"address\" { component = \"Common.A\" }\n field \"status\" {\n type = \"string\"\n enum = \"Common.Status\"\n }\n}\nrecord \"Keyless\" {}\n",
+          "json": "{\"modelspec\":\"1.0-draft-2\",\"module\":{\"id\":\"github.com/acme/orders/Orders\",\"name\":\"Orders\",\"version\":\"0.1.0\"},\"records\":{\"Order\":{\"use\":[\"Common.Left\",\"Common.Right\"],\"key\":[\"id\"],\"fields\":{\"id\":{\"type\":\"int\"},\"customer\":{\"record\":\"Common.Customer\"},\"address\":{\"component\":\"Common.A\"},\"status\":{\"type\":\"string\",\"enum\":\"Common.Status\"}}},\"Keyless\":{\"fields\":{}}}}",
+          "revision_id": "7e387620d18c6e454c3a545795888ae0e5b82487dc35e986f0fdbf153e4d5290",
+          "hcl_path": "model.hcl",
+          "json_path": "model.json"
+        },
+        {
+          "alias": "Common",
+          "hcl": "component \"Left\" {\n field \"id\" { type = \"uuid\" }\n field \"shared\" { type = \"string\" }\n}\ncomponent \"Right\" {\n field \"shared\" { type = \"int\" }\n}\ncomponent \"A\" {\n field \"b\" { component = \"B\" }\n}\ncomponent \"B\" {\n field \"a\" { component = \"A\" }\n}\nenum \"Status\" { values = [\"open\", \"closed\"] }\nrecord \"Customer\" {\n field \"parent\" { record = \"Customer\" }\n}\n",
+          "json": "{\"modelspec\":\"1.0-draft-2\",\"module\":{\"id\":\"github.com/acme/common/Common\",\"name\":\"Common\",\"version\":\"0.1.0\"},\"components\":{\"Left\":{\"fields\":{\"id\":{\"type\":\"uuid\"},\"shared\":{\"type\":\"string\"}}},\"Right\":{\"fields\":{\"shared\":{\"type\":\"int\"}}},\"A\":{\"fields\":{\"b\":{\"component\":\"B\"}}},\"B\":{\"fields\":{\"a\":{\"component\":\"A\"}}}},\"enums\":{\"Status\":{\"values\":[\"open\",\"closed\"]}},\"records\":{\"Customer\":{\"fields\":{\"parent\":{\"record\":\"Customer\"}}}}}",
+          "revision_id": "ba7b4d98cf11b7e43ab502bcd0e81b2c58ed4e316ab42f5d3fe0bbe31d1c269b",
+          "hcl_path": "model.hcl",
+          "json_path": "model.json"
+        }
+      ],
+      "model": {
+        "id": "qualified-original",
+        "title": "qualified-original",
+        "description": "Go-validated compatibility fixture; registry metadata is synthetic.",
+        "status": "draft",
+        "address": "modelspec://github.com/acme/qualified-original/Orders",
+        "repository": "https://github.com/acme/qualified-original",
+        "commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "module": "Orders",
+        "module_id": "github.com/acme/orders/Orders",
+        "module_version": "0.1.0",
+        "modelspec": "1.0-draft-2",
+        "licence": "MIT",
+        "files": {
+          "source": "model.hcl",
+          "json": "model.json"
+        },
+        "maintainers": [
+          "acme"
+        ],
+        "records": [
+          {
+            "name": "Order",
+            "key": [
+              "id"
+            ],
+            "use": [
+              "Common.Left",
+              "Common.Right"
+            ],
+            "fields": [
+              {
+                "name": "id",
+                "type": "int",
+                "required": false,
+                "key": true
+              },
+              {
+                "name": "customer",
+                "type": "reference",
+                "references": "Common.Customer",
+                "required": false,
+                "key": false
+              },
+              {
+                "name": "address",
+                "type": "component",
+                "component": "Common.A",
+                "required": false,
+                "key": false
+              },
+              {
+                "name": "status",
+                "type": "string",
+                "required": false,
+                "key": false
+              }
+            ]
+          },
+          {
+            "name": "Keyless",
+            "key": [],
+            "use": [],
+            "fields": []
+          }
+        ],
+        "components": []
+      },
+      "reference_findings": []
+    },
+    {
+      "name": "recursive-local",
+      "modules": [
+        {
+          "alias": "Common",
+          "hcl": "component \"Left\" {\n field \"id\" { type = \"uuid\" }\n field \"shared\" { type = \"string\" }\n}\ncomponent \"Right\" {\n field \"shared\" { type = \"int\" }\n}\ncomponent \"A\" {\n field \"b\" { component = \"B\" }\n}\ncomponent \"B\" {\n field \"a\" { component = \"A\" }\n}\nenum \"Status\" { values = [\"open\", \"closed\"] }\nrecord \"Customer\" {\n field \"parent\" { record = \"Customer\" }\n}\n\nrecord \"Root\" {\n field \"nested\" { component = \"A\" }\n}\n",
+          "json": "{\"modelspec\":\"1.0-draft-2\",\"module\":{\"id\":\"github.com/acme/common/Common\",\"name\":\"Common\",\"version\":\"0.1.0\"},\"components\":{\"Left\":{\"fields\":{\"id\":{\"type\":\"uuid\"},\"shared\":{\"type\":\"string\"}}},\"Right\":{\"fields\":{\"shared\":{\"type\":\"int\"}}},\"A\":{\"fields\":{\"b\":{\"component\":\"B\"}}},\"B\":{\"fields\":{\"a\":{\"component\":\"A\"}}}},\"enums\":{\"Status\":{\"values\":[\"open\",\"closed\"]}},\"records\":{\"Customer\":{\"fields\":{\"parent\":{\"record\":\"Customer\"}}},\"Root\":{\"fields\":{\"nested\":{\"component\":\"A\"}}}}}",
+          "revision_id": "ba7b4d98cf11b7e43ab502bcd0e81b2c58ed4e316ab42f5d3fe0bbe31d1c269b",
+          "hcl_path": "model.hcl",
+          "json_path": "model.json"
+        }
+      ],
+      "model": {
+        "id": "recursive-local",
+        "title": "recursive-local",
+        "description": "Go-validated compatibility fixture; registry metadata is synthetic.",
+        "status": "draft",
+        "address": "modelspec://github.com/acme/recursive-local/Common",
+        "repository": "https://github.com/acme/recursive-local",
+        "commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "module": "Common",
+        "module_id": "github.com/acme/common/Common",
+        "module_version": "0.1.0",
+        "modelspec": "1.0-draft-2",
+        "licence": "MIT",
+        "files": {
+          "source": "model.hcl",
+          "json": "model.json"
+        },
+        "maintainers": [
+          "acme"
+        ],
+        "records": [
+          {
+            "name": "Customer",
+            "key": [],
+            "use": [],
+            "fields": [
+              {
+                "name": "parent",
+                "type": "reference",
+                "references": "Customer",
+                "required": false,
+                "key": false
+              }
+            ]
+          },
+          {
+            "name": "Root",
+            "key": [],
+            "use": [],
+            "fields": [
+              {
+                "name": "nested",
+                "type": "component",
+                "component": "A",
+                "required": false,
+                "key": false
+              }
+            ]
+          }
+        ],
+        "components": [
+          {
+            "name": "Left",
+            "fields": [
+              {
+                "name": "id",
+                "type": "uuid",
+                "required": false
+              },
+              {
+                "name": "shared",
+                "type": "string",
+                "required": false
+              }
+            ]
+          },
+          {
+            "name": "Right",
+            "fields": [
+              {
+                "name": "shared",
+                "type": "int",
+                "required": false
+              }
+            ]
+          },
+          {
+            "name": "A",
+            "fields": [
+              {
+                "name": "b",
+                "type": "component",
+                "component": "B",
+                "required": false
+              }
+            ]
+          },
+          {
+            "name": "B",
+            "fields": [
+              {
+                "name": "a",
+                "type": "component",
+                "component": "A",
+                "required": false
+              }
+            ]
+          }
+        ]
+      },
+      "reference_findings": []
+    },
+    {
+      "name": "repeated-use",
+      "modules": [
+        {
+          "alias": "Common",
+          "hcl": "component \"Left\" {\n field \"id\" { type = \"uuid\" }\n field \"shared\" { type = \"string\" }\n}\ncomponent \"Right\" {\n field \"shared\" { type = \"int\" }\n}\ncomponent \"A\" {\n field \"b\" { component = \"B\" }\n}\ncomponent \"B\" {\n field \"a\" { component = \"A\" }\n}\nenum \"Status\" { values = [\"open\", \"closed\"] }\nrecord \"Customer\" {\n field \"parent\" { record = \"Customer\" }\n}\n\nrecord \"Repeat\" {\n use = [\"Left\",\"Left\"]\n}\n",
+          "json": "{\"modelspec\":\"1.0-draft-2\",\"module\":{\"id\":\"github.com/acme/common/Common\",\"name\":\"Common\",\"version\":\"0.1.0\"},\"components\":{\"Left\":{\"fields\":{\"id\":{\"type\":\"uuid\"},\"shared\":{\"type\":\"string\"}}},\"Right\":{\"fields\":{\"shared\":{\"type\":\"int\"}}},\"A\":{\"fields\":{\"b\":{\"component\":\"B\"}}},\"B\":{\"fields\":{\"a\":{\"component\":\"A\"}}}},\"enums\":{\"Status\":{\"values\":[\"open\",\"closed\"]}},\"records\":{\"Customer\":{\"fields\":{\"parent\":{\"record\":\"Customer\"}}},\"Repeat\":{\"use\":[\"Left\",\"Left\"],\"fields\":{}}}}",
+          "revision_id": "ba7b4d98cf11b7e43ab502bcd0e81b2c58ed4e316ab42f5d3fe0bbe31d1c269b",
+          "hcl_path": "model.hcl",
+          "json_path": "model.json"
+        }
+      ],
+      "model": {
+        "id": "repeated-use",
+        "title": "repeated-use",
+        "description": "Go-validated compatibility fixture; registry metadata is synthetic.",
+        "status": "draft",
+        "address": "modelspec://github.com/acme/repeated-use/Common",
+        "repository": "https://github.com/acme/repeated-use",
+        "commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "module": "Common",
+        "module_id": "github.com/acme/common/Common",
+        "module_version": "0.1.0",
+        "modelspec": "1.0-draft-2",
+        "licence": "MIT",
+        "files": {
+          "source": "model.hcl",
+          "json": "model.json"
+        },
+        "maintainers": [
+          "acme"
+        ],
+        "records": [
+          {
+            "name": "Customer",
+            "key": [],
+            "use": [],
+            "fields": [
+              {
+                "name": "parent",
+                "type": "reference",
+                "references": "Customer",
+                "required": false,
+                "key": false
+              }
+            ]
+          },
+          {
+            "name": "Repeat",
+            "key": [],
+            "use": [
+              "Left",
+              "Left"
+            ],
+            "fields": []
+          }
+        ],
+        "components": [
+          {
+            "name": "Left",
+            "fields": [
+              {
+                "name": "id",
+                "type": "uuid",
+                "required": false
+              },
+              {
+                "name": "shared",
+                "type": "string",
+                "required": false
+              }
+            ]
+          },
+          {
+            "name": "Right",
+            "fields": [
+              {
+                "name": "shared",
+                "type": "int",
+                "required": false
+              }
+            ]
+          },
+          {
+            "name": "A",
+            "fields": [
+              {
+                "name": "b",
+                "type": "component",
+                "component": "B",
+                "required": false
+              }
+            ]
+          },
+          {
+            "name": "B",
+            "fields": [
+              {
+                "name": "a",
+                "type": "component",
+                "component": "A",
+                "required": false
+              }
+            ]
+          }
+        ]
+      },
+      "reference_findings": []
+    },
+    {
+      "name": "broad-names",
+      "modules": [
+        {
+          "alias": "Common",
+          "hcl": "component \"Left\" {\n field \"id\" { type = \"uuid\" }\n field \"shared\" { type = \"string\" }\n}\ncomponent \"Right\" {\n field \"shared\" { type = \"int\" }\n}\ncomponent \"A\" {\n field \"b\" { component = \"B\" }\n}\ncomponent \"B\" {\n field \"a\" { component = \"A\" }\n}\nenum \"Status\" { values = [\"open\", \"closed\"] }\nrecord \"Customer\" {\n field \"parent\" { record = \"Customer\" }\n}\n\nrecord \"Owner-One\" {\n field \"Leaf\" { type = \"string\" }\n}\n\nrecord \"Owner\" {\n field \"One-Leaf\" { type = \"string\" }\n}\n\nrecord \"Percent%\" {\n field \"Leaf\" { type = \"string\" }\n}\n\nrecord \"Percent_25\" {\n field \"Leaf\" { type = \"string\" }\n}\n\nrecord \"Record/Δ\" {\n field \"field/100%Δ\" { type = \"string\" }\n}\n\nrecord \"﻿\" {\n field \"﻿\" { type = \"string\" }\n}\n",
+          "json": "{\"modelspec\":\"1.0-draft-2\",\"module\":{\"id\":\"github.com/acme/common/Common\",\"name\":\"Common\",\"version\":\"0.1.0\"},\"components\":{\"Left\":{\"fields\":{\"id\":{\"type\":\"uuid\"},\"shared\":{\"type\":\"string\"}}},\"Right\":{\"fields\":{\"shared\":{\"type\":\"int\"}}},\"A\":{\"fields\":{\"b\":{\"component\":\"B\"}}},\"B\":{\"fields\":{\"a\":{\"component\":\"A\"}}}},\"enums\":{\"Status\":{\"values\":[\"open\",\"closed\"]}},\"records\":{\"Customer\":{\"fields\":{\"parent\":{\"record\":\"Customer\"}}},\"Owner-One\":{\"fields\":{\"Leaf\":{\"type\":\"string\"}}},\"Owner\":{\"fields\":{\"One-Leaf\":{\"type\":\"string\"}}},\"Percent%\":{\"fields\":{\"Leaf\":{\"type\":\"string\"}}},\"Percent_25\":{\"fields\":{\"Leaf\":{\"type\":\"string\"}}},\"Record/Δ\":{\"fields\":{\"field/100%Δ\":{\"type\":\"string\"}}},\"﻿\":{\"fields\":{\"﻿\":{\"type\":\"string\"}}}}}",
+          "revision_id": "ba7b4d98cf11b7e43ab502bcd0e81b2c58ed4e316ab42f5d3fe0bbe31d1c269b",
+          "hcl_path": "model.hcl",
+          "json_path": "model.json"
+        }
+      ],
+      "model": {
+        "id": "broad-names",
+        "title": "broad-names",
+        "description": "Go-validated compatibility fixture; registry metadata is synthetic.",
+        "status": "draft",
+        "address": "modelspec://github.com/acme/broad-names/Common",
+        "repository": "https://github.com/acme/broad-names",
+        "commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "module": "Common",
+        "module_id": "github.com/acme/common/Common",
+        "module_version": "0.1.0",
+        "modelspec": "1.0-draft-2",
+        "licence": "MIT",
+        "files": {
+          "source": "model.hcl",
+          "json": "model.json"
+        },
+        "maintainers": [
+          "acme"
+        ],
+        "records": [
+          {
+            "name": "Customer",
+            "key": [],
+            "use": [],
+            "fields": [
+              {
+                "name": "parent",
+                "type": "reference",
+                "references": "Customer",
+                "required": false,
+                "key": false
+              }
+            ]
+          },
+          {
+            "name": "Owner-One",
+            "key": [],
+            "use": [],
+            "fields": [
+              {
+                "name": "Leaf",
+                "type": "string",
+                "required": false,
+                "key": false
+              }
+            ]
+          },
+          {
+            "name": "Owner",
+            "key": [],
+            "use": [],
+            "fields": [
+              {
+                "name": "One-Leaf",
+                "type": "string",
+                "required": false,
+                "key": false
+              }
+            ]
+          },
+          {
+            "name": "Percent%",
+            "key": [],
+            "use": [],
+            "fields": [
+              {
+                "name": "Leaf",
+                "type": "string",
+                "required": false,
+                "key": false
+              }
+            ]
+          },
+          {
+            "name": "Percent_25",
+            "key": [],
+            "use": [],
+            "fields": [
+              {
+                "name": "Leaf",
+                "type": "string",
+                "required": false,
+                "key": false
+              }
+            ]
+          },
+          {
+            "name": "Record/Δ",
+            "key": [],
+            "use": [],
+            "fields": [
+              {
+                "name": "field/100%Δ",
+                "type": "string",
+                "required": false,
+                "key": false
+              }
+            ]
+          },
+          {
+            "name": "﻿",
+            "key": [],
+            "use": [],
+            "fields": [
+              {
+                "name": "﻿",
+                "type": "string",
+                "required": false,
+                "key": false
+              }
+            ]
+          }
+        ],
+        "components": [
+          {
+            "name": "Left",
+            "fields": [
+              {
+                "name": "id",
+                "type": "uuid",
+                "required": false
+              },
+              {
+                "name": "shared",
+                "type": "string",
+                "required": false
+              }
+            ]
+          },
+          {
+            "name": "Right",
+            "fields": [
+              {
+                "name": "shared",
+                "type": "int",
+                "required": false
+              }
+            ]
+          },
+          {
+            "name": "A",
+            "fields": [
+              {
+                "name": "b",
+                "type": "component",
+                "component": "B",
+                "required": false
+              }
+            ]
+          },
+          {
+            "name": "B",
+            "fields": [
+              {
+                "name": "a",
+                "type": "component",
+                "component": "A",
+                "required": false
+              }
+            ]
+          }
+        ]
+      },
+      "reference_findings": []
+    },
+    {
+      "name": "whitespace-key",
+      "modules": [
+        {
+          "alias": "Names",
+          "revision_id": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+          "hcl_path": "model.hcl",
+          "json_path": "model.json",
+          "hcl": "record \"﻿\" {\n key = [\"﻿\"]\n field \"﻿\" {\n type = \"int\"\n required = true\n }\n field \"self\" { record = \"﻿\" }\n}\n",
+          "json": "{\"modelspec\":\"1.0-draft-2\",\"module\":{\"id\":\"github.com/acme/whitespace-key/Names\",\"name\":\"Names\",\"version\":\"1.0.0\"},\"records\":{\"﻿\":{\"key\":[\"﻿\"],\"fields\":{\"﻿\":{\"type\":\"int\",\"required\":true},\"self\":{\"record\":\"﻿\"}}}}}"
+        }
+      ],
+      "model": {
+        "id": "whitespace-key",
+        "title": "whitespace-key",
+        "description": "Go-approved FEFF key and reference; synthetic registry metadata.",
+        "status": "draft",
+        "address": "modelspec://github.com/acme/whitespace-key/Names",
+        "repository": "https://github.com/acme/whitespace-key",
+        "commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "module": "Names",
+        "module_id": "github.com/acme/whitespace-key/Names",
+        "module_version": "1.0.0",
+        "modelspec": "1.0-draft-2",
+        "licence": "MIT",
+        "files": {
+          "source": "model.hcl",
+          "json": "model.json"
+        },
+        "maintainers": [
+          "acme"
+        ],
+        "records": [
+          {
+            "name": "﻿",
+            "key": [
+              "﻿"
+            ],
+            "use": [],
+            "fields": [
+              {
+                "name": "﻿",
+                "type": "int",
+                "required": true,
+                "key": true
+              },
+              {
+                "name": "self",
+                "type": "reference",
+                "references": "﻿",
+                "required": false,
+                "key": false
+              }
+            ]
+          }
+        ],
+        "components": []
+      },
+      "reference_findings": []
+    }
+  ]
+}
