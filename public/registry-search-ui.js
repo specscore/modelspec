@@ -24,9 +24,15 @@
     try {
       const url = new URL(value);
       const local = ['localhost', '127.0.0.1', '[::1]'].includes(location.hostname);
-      const allowed = url.origin === origins[domain] || (local && url.origin === location.origin);
+      const legacyModelRoute = /^\/registry\/models\/[^/]+\/$/.test(url.pathname);
+      const meaninggraphModelRootRoute = /^\/registry\/models\/[a-z0-9]+(?:-[a-z0-9]+)*\/$/.test(url.pathname);
+      const versionedModelRoute = /^\/registry\/models\/[a-z0-9]+(?:-[a-z0-9]+)*\/versions\/[a-f0-9]{40}\/$/.test(url.pathname);
+      const meaninggraphModelDestination = domain === 'modelspec' && url.origin === origins.meaninggraph &&
+        value === `${url.origin}${url.pathname}${url.hash}` &&
+        (meaninggraphModelRootRoute && !url.hash || versionedModelRoute && (!url.hash || /^#member-[a-f0-9]{64}$/.test(url.hash)));
+      const allowed = url.origin === origins[domain] && (domain !== 'modelspec' || legacyModelRoute) || meaninggraphModelDestination || (local && url.origin === location.origin);
       const route = domain === 'meaninggraph' ? /^\/graphs\/[^/]+\/concepts\/[^/]+\/$/.test(url.pathname)
-        : domain === 'modelspec' ? /^\/registry\/models\/[^/]+\/$/.test(url.pathname)
+        : domain === 'modelspec' ? legacyModelRoute || meaninggraphModelRootRoute && !url.hash || versionedModelRoute && (!url.hash || /^#member-[a-f0-9]{64}$/.test(url.hash))
           : /^\/(?:databases\/[^/]+\/|ovdb\/[^/]+\/.+\/|servers\/[0-9a-f]{64}\/)$/.test(url.pathname);
       return url.protocol === 'https:' && allowed && route && !url.username && !url.password && !url.search ? url.href : null;
     } catch { return null; }

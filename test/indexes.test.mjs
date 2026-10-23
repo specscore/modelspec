@@ -65,13 +65,13 @@ test('ModelSpec models: ids, addresses, repositories, commits and paths are chec
   assert.throws(() => validateModelspecIndex(modelspecJson({ models: [modelspecJson().models[0], modelspecJson().models[0]] })), /duplicates/);
 });
 
-test('ModelSpec entities and properties: names become anchors, so they are identifiers', () => {
+test('ModelSpec source names are preserved and shape errors remain rejected', () => {
   const withEntities = entities => modelspecJson({ models: [{ ...modelspecJson().models[0], entities }] });
-  assert.throws(() => validateModelspecIndex(withEntities([{ name: 'A B', properties: [] }])), /letters, digits and underscores/);
+  assert.equal(validateModelspecIndex(withEntities([{ name: 'A B', properties: [] }])).models[0].entities[0].name, 'A B');
   assert.throws(() => validateModelspecIndex(withEntities([{ name: 'A', properties: [] }, { name: 'A', properties: [] }])), /duplicates entity/);
-  assert.throws(() => validateModelspecIndex(withEntities([{ name: 'A', properties: [{ name: 'x"y', type: 'int' }] }])), /letters, digits and underscores/);
+  assert.equal(validateModelspecIndex(withEntities([{ name: 'A', properties: [{ name: 'x"y', type: 'int' }] }])).models[0].entities[0].properties[0].name, 'x"y');
   assert.throws(() => validateModelspecIndex(withEntities([{ name: 'A', properties: [{ name: 'x', type: 'int' }, { name: 'x', type: 'int' }] }])), /duplicates property/);
-  assert.throws(() => validateModelspecIndex(withEntities([{ name: 'A', properties: [{ name: 'x', type: 'reference', references: '<b>' }] }])), /entity name/);
+  assert.throws(() => validateModelspecIndex(withEntities([{ name: 'A', properties: [{ name: 'x', type: 'reference', references: 'A..B' }] }])), /module-qualified source name/);
   assert.throws(() => validateModelspecIndex(withEntities([{ name: 'A', properties: [{ name: 'x', type: 'int', required: 'yes' }] }])), /true or false/);
   const ok = validateModelspecIndex(withEntities([{ name: 'A', properties: [{ name: 'x', type: 'reference', references: 'other.B' }] }]));
   assert.equal(ok.models[0].entities[0].properties[0].references, 'other.B');
@@ -215,13 +215,13 @@ test('components and use are read, validated and kept: nothing the pages show is
   assert.equal(model.entities[0].properties.at(-1).component, 'Auditable');
   const withComponents = patch => { const json = modelspecWithComponents(); Object.assign(json.models[0], patch(json.models[0])); return json; };
   assert.throws(() => validateModelspecIndex(withComponents(m => ({ components: [...m.components, { name: 'Auditable', fields: [] }] }))), /duplicates component/);
-  assert.throws(() => validateModelspecIndex(withComponents(() => ({ components: [{ name: 'a b', fields: [] }] }))), /letters, digits and underscores/);
-  assert.throws(() => validateModelspecIndex(withComponents(() => ({ components: [{ name: 'X', fields: [{ name: 'f"', type: 'int' }] }] }))), /letters, digits and underscores/);
+  assert.equal(validateModelspecIndex(withComponents(() => ({ components: [{ name: 'a b', fields: [] }] }))).models[0].components[0].name, 'a b');
+  assert.equal(validateModelspecIndex(withComponents(() => ({ components: [{ name: 'X', fields: [{ name: 'f"', type: 'int' }] }] }))).models[0].components[0].fields[0].name, 'f"');
   assert.throws(() => validateModelspecIndex(withComponents(() => ({ components: [{ name: 'X', fields: [{ name: 'f', type: 'int' }, { name: 'f', type: 'int' }] }] }))), /duplicates property/);
   assert.throws(() => validateModelspecIndex(withComponents(() => ({ components: {} }))), /components must be an array/);
-  assert.throws(() => validateModelspecIndex(withComponents(m => ({ entities: [{ ...m.entities[0], use: ['<b>'] }] }))), /use\[0\]/);
+  assert.throws(() => validateModelspecIndex(withComponents(m => ({ entities: [{ ...m.entities[0], use: ['A..B'] }] }))), /use\[0\]/);
   assert.throws(() => validateModelspecIndex(withComponents(m => ({ entities: [{ ...m.entities[0], use: 'Auditable' }] }))), /use must be an array/);
-  assert.throws(() => validateModelspecIndex(withComponents(m => ({ entities: [{ ...m.entities[0], properties: [{ name: 'p', type: 'component', component: '<x>' }] }] }))), /component name/);
+  assert.throws(() => validateModelspecIndex(withComponents(m => ({ entities: [{ ...m.entities[0], properties: [{ name: 'p', type: 'component', component: 'A..B' }] }] }))), /module-qualified source name/);
   assert.deepEqual(validateModelspecIndex(modelspecJson()).models[0].components, [], 'older indexes without components still validate');
 });
 
