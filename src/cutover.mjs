@@ -3,7 +3,7 @@
 export const RECEIPT_FILE = 'deployment-receipt.json';
 export const CUTOVER_REDIRECTS = `/build-info.json /${RECEIPT_FILE} 200
 /registry https://meaninggraph.io/registry/models/ 301
-/registry/* https://meaninggraph.io/registry/models/ 301
+/registry/ https://meaninggraph.io/registry/models/ 301
 /* https://meaninggraph.io/ 301
 `;
 
@@ -11,7 +11,7 @@ export const CUTOVER_PROBES = [
   ['/', 'https://meaninggraph.io/'],
   ['/registry', 'https://meaninggraph.io/registry/models/'],
   ['/registry/', 'https://meaninggraph.io/registry/models/'],
-  ['/registry/models/chinook/', 'https://meaninggraph.io/registry/models/'],
+  ['/registry/models/chinook/', 'https://meaninggraph.io/'],
   ['/schema/modelspec-ast.schema.json', 'https://meaninggraph.io/'],
   ['/privacy/', 'https://meaninggraph.io/'],
   ['/unknown-retired-path', 'https://meaninggraph.io/'],
