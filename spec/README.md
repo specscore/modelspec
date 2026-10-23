@@ -39,7 +39,7 @@ meaning of its own.
 OpenVaultDB describes databases: a published database names the model it follows, and
 `ovdb publisher check` verifies that the recordsets the publisher lists are the
 record types of that model. Using a model inside a vault for schema validation, migration
-planning, backend mapping, GraphQL generation, DTQL typing metadata, DALGO metadata,
+planning, backend mapping, GraphQL generation, TugQL typing metadata, DALGO metadata,
 and backend generators is the intended integration. None of it is implemented.
 
 GraphSpec is not one of those three layers. It describes what an application's

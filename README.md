@@ -219,7 +219,7 @@ the target ModelSpec, then use them for:
 - migration planning
 - backend mapping
 - GraphQL schema generation
-- DTQL typing metadata
+- TugQL typing metadata
 - DALGO metadata
 - backend generators
 
@@ -260,7 +260,7 @@ never references GraphSpec. See
      OpenVaultDB  DALGO  GraphSpec  Generators
            |
       GraphQL
-      DTQL
+      TugQL
       SQLite
       Firestore
       PostgreSQL

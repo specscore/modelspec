@@ -9,7 +9,7 @@ ModelSpec is the independent specification for application data models.
      OpenVaultDB  DALGO  GraphSpec  Generators
            |
       GraphQL
-      DTQL
+      TugQL
       SQLite
       Firestore
       PostgreSQL
