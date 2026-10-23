@@ -42,7 +42,7 @@ Vault validates, plans migration, and chooses backend mapping
           v
 Generated artifacts:
   GraphQL schema
-  DTQL typing metadata
+  TugQL typing metadata
   DALGO metadata
   SQLite DDL
   PostgreSQL DDL
@@ -61,7 +61,7 @@ OpenVaultDB uses ModelSpec for:
 - migration planning
 - backend mapping
 - GraphQL schema generation
-- DTQL typing metadata
+- TugQL typing metadata
 - DALGO metadata
 - backend generators
 
