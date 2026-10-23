@@ -25,7 +25,7 @@ test('esc and safeUrl', () => {
 test('anchor ids keep safe characters and encode the rest', () => {
   assert.equal(anchorId('record', 'Artist'), 'record-Artist');
   assert.equal(anchorId('field', 'Album', 'ArtistId'), 'field-Album-ArtistId');
-  assert.equal(anchorId('x', 'a b"c'), 'x-a_20b_22c');
+  assert.match(anchorId('x', 'a b"c'), /^x--[0-9a-f]{64}$/);
 });
 
 test('the model page carries the title, address, repository, pinned commit, licence and files at the pinned commit', () => {
@@ -119,7 +119,7 @@ test('everything from the indexes is escaped', () => {
 
 test('the registry page lists every model, says it is a draft and links the registry repository', () => {
   const { index } = render();
-  assert.match(index, /<h1>The ModelSpec registry<\/h1>/);
+  assert.match(index, /<h1>Data models · MeaningGraph<\/h1>/);
   assert.match(index, /<strong>Draft\.<\/strong> The registry is new/);
   assert.match(index, /href="https:\/\/github\.com\/modelspec-org\/registry"/);
   assert.match(index, /href="\/registry\/models\/chinook\/"/);

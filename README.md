@@ -1,8 +1,8 @@
-# ModelSpec
+# ModelSpec format within MeaningGraph
 
 **Define your application data model once.**
 
-ModelSpec is an open specification language for application data models.
+ModelSpec is the supported logical data model format within MeaningGraph. MeaningGraph is an open registry for data models and semantic definitions: describe structure, meaning, or both. Semantic annotations are optional.
 
 It describes the logical model of an application independently of storage engines,
 programming languages, API layers, and deployment platforms.
@@ -529,3 +529,25 @@ ModelSpec is licensed under the Apache License, Version 2.0. See [LICENSE](LICEN
 ## Open Questions
 
 None at this time.
+
+
+## Consolidation compatibility
+
+MeaningGraph is the public umbrella product and registry. `DataModel` names a
+logical resource, including record types, fields, keys, constraints and structural
+relationships. It is not a separate product. ModelSpec remains the format name;
+its schemas, `.modelspec.hcl`/`.modelspec.json` files, `modelspec://` identifiers,
+Go import paths and published versions are preserved.
+
+This repository remains the specification and legacy documentation/URL surface.
+The consolidated native registry and exact-version pages are implemented in the
+MeaningGraph website; the checked-in compatibility notice links to that umbrella.
+No domain redirect, page deletion or schema transformation occurs here. Existing
+registry pages remain available during the source/consumer migration. Releasing
+these notices is coordinated with the MeaningGraph site and the writer-fence
+runbook; this branch performs no production publish.
+
+Physical engines and deployment/environment discovery remain separate from
+logical DataModels and belong to OpenVaultDB Directory integrations. A DataModel
+can be shared by SQLite, PostgreSQL and SQL Server implementations without forcing
+semantic entities or engine-specific attributes into its logical definition.

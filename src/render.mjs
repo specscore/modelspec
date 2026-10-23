@@ -3,6 +3,7 @@
 
 import { DEFAULTS } from './config.mjs';
 import { databasesForModel, graphsForModel, sourcesForModel } from './match.mjs';
+import {compatibilityAnchor, compatibilityModelView} from './model-compatibility.mjs';
 
 export const SOURCE_META = 'modelspec-build-source';
 export const REGISTRY_PATH = '/registry/';
@@ -32,10 +33,7 @@ export function safeUrl(value) {
 
 /** An element id. Characters outside [A-Za-z0-9_.-] become _<hex> so the id stays valid and unique. */
 export function anchorId(prefix, ...names) {
-  const part = name => [...String(name)]
-    .map(ch => (/[A-Za-z0-9_.-]/.test(ch) ? ch : `_${ch.codePointAt(0).toString(16)}`))
-    .join('');
-  return [prefix, ...names.map(part)].join('-');
+  return compatibilityAnchor(prefix, ...names);
 }
 
 /**
@@ -183,6 +181,7 @@ ${shell.headLinks}
   ${renderBanner(ctx)}
   ${shell.grain}
   ${shell.header.replaceAll(DEFAULTS.ovdbDirectoryBaseUrl, esc(trimBase(ctx.ovdbDirectoryBaseUrl)))}
+  <aside class="format-notice" aria-label="MeaningGraph data model format"><strong>ModelSpec is the data model format within MeaningGraph.</strong> <a href="${safeUrl(trimBase(ctx.meaningGraphBaseUrl)+'/registry/')}">Discover data models and semantic definitions in MeaningGraph</a>. Existing documents and links remain compatible.</aside>
 ${main}
   ${shell.footer.replaceAll(DEFAULTS.ovdbDirectoryBaseUrl, esc(trimBase(ctx.ovdbDirectoryBaseUrl)))}
   <script src="/script.js" defer></script>
@@ -280,7 +279,7 @@ export function renderRegistryPage(data, ctx, shell) {
     ${crumbs(['ModelSpec', '/'], ['Registry', REGISTRY_PATH])}
     <header class="reg-hero">
       <p class="section-label">Registry — new, draft</p>
-      <h1>The ModelSpec registry</h1>
+      <h1>Data models · MeaningGraph</h1>
       <p class="reg-lede">Published ModelSpec models. Each has one address, a pinned commit in its repository and the record types it defines, so a project can start from it and others can tell they share it.</p>
     </header>
     <p class="reg-draft" role="note"><strong>Draft.</strong> The registry is new: the models listed here and the format of the index they are built from may still change. To register a model, open a pull request on ${externalLink(REGISTRY_REPOSITORY_URL, 'github.com/modelspec-org/registry')}, which explains how.</p>
@@ -327,11 +326,11 @@ export function renderSourcesPage(data, ctx, shell) {
 function typeCell(prop, localEntities, localComponents) {
   const arrow = '<span class="reg-arrow" aria-label="to">→</span>';
   if (prop.references) {
-    const target = localEntities.has(prop.references) ? `<a href="#${esc(anchorId('record', prop.references))}">${esc(prop.references)}</a>` : esc(prop.references);
+    const target = localEntities.has(prop.references) ? `<a href="#${esc(anchorId('record', localEntities.get(prop.references)))}">${esc(prop.references)}</a>` : esc(prop.references);
     return `${esc(prop.type)} ${arrow} ${target}`;
   }
   if (prop.component) {
-    const target = localComponents.has(prop.component) ? `<a href="#${esc(anchorId('component', prop.component))}">${esc(prop.component)}</a>` : esc(prop.component);
+    const target = localComponents.has(prop.component) ? `<a href="#${esc(anchorId('component', localComponents.get(prop.component)))}">${esc(prop.component)}</a>` : esc(prop.component);
     return `${esc(prop.type)} ${arrow} ${target}`;
   }
   return esc(prop.type);
@@ -352,7 +351,7 @@ function renderRecordType(entity, localEntities, localComponents) {
   const rows = entity.properties.map(prop => renderField(entity, prop, localEntities, localComponents)).join('\n            ');
   const key = entity.key.length > 0 ? `<p class="reg-entity-key">Key: ${entity.key.map(k => `<code>${esc(k)}</code>`).join(', ')}</p>` : '';
   const use = entity.use.length > 0
-    ? `<p class="reg-entity-use">Uses components: ${entity.use.map(u => (localComponents.has(u) ? `<a href="#${esc(anchorId('component', u))}"><code>${esc(u)}</code></a>` : `<code>${esc(u)}</code>`)).join(', ')}</p>`
+    ? `<p class="reg-entity-use">Uses components: ${entity.use.map(u => (localComponents.has(u) ? `<a href="#${esc(anchorId('component', localComponents.get(u)))}"><code>${esc(u)}</code></a>` : `<code>${esc(u)}</code>`)).join(', ')}</p>`
     : '';
   const table = entity.properties.length === 0
     ? '<p class="reg-none">No fields.</p>'
@@ -421,8 +420,12 @@ function renderDatabaseRow({ database, via }, ctx) {
 export function renderModelPage(model, data, ctx, shell) {
   const { graphs, databases } = modelCounts(model, data);
   const sources = sourcesForModel(model, data.directory.sources);
-  const localEntities = new Set(model.entities.map(e => e.name));
-  const localComponents = new Set(model.components.map(c => c.name));
+  const view = ctx.compatibilityReports?.get(model.id) ?? compatibilityModelView(model);
+  const aliases = declarations => new Map(declarations.flatMap(item => [[item.name, item.name], ...(model.module ? [[`${model.module}.${item.name}`, item.name]] : [])]));
+  const localEntities = aliases(model.entities);
+  const localComponents = aliases(model.components);
+  const limitation = view.diagnostics.length || view.omittedDiagnostics || view.omitted_diagnostics
+    ? '<aside class="reg-section-note" role="note">This declaration summary stops at recursive references, unavailable module definitions or expansion limits. Original model files retain the complete definition. <a href="/registry-compatibility.json">View compatibility details</a>.</aside>' : '';
   const fieldCountOfRecords = model.entities.reduce((n, e) => n + e.properties.length, 0);
   const files = [['source', model.files.source], ['JSON', model.files.json]]
     .filter(([, path]) => path)
@@ -432,7 +435,7 @@ export function renderModelPage(model, data, ctx, shell) {
   const website = model.homepage === undefined ? '' : `\n        <div><dt>Website</dt><dd>${externalLink(model.homepage, homepageLabel(model.homepage), 'reg-homepage')}</dd></div>`;
   const versions = [model.moduleVersion && `module ${model.moduleVersion}`, model.modelspecVersion && `ModelSpec ${model.modelspecVersion}`].filter(Boolean);
   const recordIndex = model.entities.map(e => `<li><a href="#${esc(anchorId('record', e.name))}">${esc(e.name)}</a></li>`).join('');
-  const records = model.entities.map(e => renderRecordType(e, localEntities, localComponents)).join('\n      ');
+  const records = limitation + model.entities.map(e => renderRecordType(e, localEntities, localComponents)).join('\n      ');
   const fieldCount = model.components.reduce((n, c) => n + c.fields.length, 0);
   const componentsSection = model.components.length === 0 ? '' : `<section class="reg-section" id="components" aria-labelledby="components-heading">
       <h2 id="components-heading">Components <span class="reg-count">${model.components.length}</span></h2>

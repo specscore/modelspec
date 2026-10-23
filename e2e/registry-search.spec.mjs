@@ -124,3 +124,45 @@ test('the kind filter shows the current words and sends the same request for eac
   }
   expect(bodies.concat(Object.values(expected)).join('')).not.toContain('model_collection');
 });
+
+test('ModelSpec search accepts canonical MeaningGraph model destinations while keeping strict host and route guards', async ({page}) => {
+  const validVersion = 'https://meaninggraph.io/registry/models/chinook/versions/' + 'a'.repeat(40) + '/#member-' + 'b'.repeat(64);
+  const validRoot = 'https://meaninggraph.io/registry/models/chinook/';
+  const legacy = 'https://modelspec.org/registry/models/chinook/#entity-Artist';
+  const invalid = [
+    'https://meaninggraph.io.evil.test/registry/models/chinook/',
+    'https://meaninggraph.io/graphs/chinook/concepts/artist/',
+    'https://meaninggraph.io/registry/models/chinook/versions/' + 'A'.repeat(40) + '/#member-' + 'b'.repeat(64),
+    validVersion + '?ref=x',
+    'https://meaninggraph.io/registry/models/chinook/versions/' + 'a'.repeat(40) + '/#entity-Artist',
+    'https://modelspec.org/registry/models/chinook/versions/' + 'a'.repeat(40) + '/',
+    'https://meaninggraph.io/registry/models/chinook/../chinook/versions/' + 'a'.repeat(40) + '/',
+    'https://meaninggraph.io/registry/./models/chinook/versions/' + 'a'.repeat(40) + '/',
+    'https://meaninggraph.io/registry/models/chinook/%2e%2e/chinook/versions/' + 'a'.repeat(40) + '/',
+    'https://meaninggraph.io/registry\\models\\chinook\\versions\\' + 'a'.repeat(40) + '\\',
+    'https://meaninggraph.io/registry/models/chinook/versions/' + 'a'.repeat(40) + '/ ',
+    'https://meaninggraph.io:443/registry/models/chinook/versions/' + 'a'.repeat(40) + '/',
+    'HTTPS://meaninggraph.io/registry/models/chinook/versions/' + 'a'.repeat(40) + '/',
+    ' https://meaninggraph.io/registry/models/chinook/versions/' + 'a'.repeat(40) + '/',
+    'https://meaninggraph.io/registry/models/chinook.v1/versions/' + 'a'.repeat(40) + '/',
+    'https://meaninggraph.io/registry/models/chinook_v1/versions/' + 'a'.repeat(40) + '/',
+    'https://meaninggraph.io/registry/models/chinook--v1/versions/' + 'a'.repeat(40) + '/',
+    'https://meaninggraph.io:444/registry/models/chinook/versions/' + 'a'.repeat(40) + '/',
+  ];
+  await page.route(endpoint, route => {
+    const {q} = route.request().postDataJSON();
+    const canonical_url = q === 'version' ? validVersion : q === 'root' ? validRoot : q === 'legacy' ? legacy : invalid[Number(q.slice(3))];
+    return route.fulfill({status: 200, contentType: 'application/json', body: JSON.stringify({hits: [{...hit('Artist'), canonical_url}], found: 1, page: 1})});
+  });
+  await page.goto('/registry/');
+  const input = page.getByRole('searchbox', {name: 'Name or identifier'});
+  for (const [query, href] of [['version', validVersion], ['root', validRoot], ['legacy', legacy]]) {
+    await input.fill(query);
+    await expect(page.locator('.registry-result-link')).toHaveAttribute('href', href);
+  }
+  for (let i = 0; i < invalid.length; i++) {
+    await input.fill(`bad${i}`);
+    await expect(page.locator('#registry-search-status')).toContainText('Search is unavailable');
+    await expect(page.locator('.registry-result-link')).toHaveCount(0);
+  }
+});

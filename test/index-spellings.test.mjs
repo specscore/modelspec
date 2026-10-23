@@ -172,8 +172,8 @@ test('an index with neither key, or a key that is not a list, is refused and the
   delete fields.models[0].records[1].fields;
   assert.throws(() => validateModelspecIndex(fields), /models\[0\]\.records\[1\]\.properties must be an array/);
   const fieldsWrong = currentSpelling(modelspecJson());
-  fieldsWrong.models[0].records[0].fields[1].name = 'a b';
-  assert.throws(() => validateModelspecIndex(fieldsWrong), /models\[0\]\.records\[0\]\.fields\[1\]\.name .*letters, digits and underscores/);
+  fieldsWrong.models[0].records[0].fields[1].name = '\u0085';
+  assert.throws(() => validateModelspecIndex(fieldsWrong), /models\[0\]\.records\[0\]\.fields\[1\]\.name .*nonblank source field name/);
   const duplicate = currentSpelling(modelspecJson());
   duplicate.models[0].records.push({ name: 'Artist', fields: [] });
   assert.throws(() => validateModelspecIndex(duplicate), /duplicates entity Artist/);
